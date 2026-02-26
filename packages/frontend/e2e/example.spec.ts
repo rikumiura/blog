@@ -1,18 +1,16 @@
 import { test, expect } from '@playwright/test';
 
-test('has title', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+test('トップページが表示される', async ({ page }) => {
+  await page.goto('/');
 
-  // Expect a title "to contain" a substring.
-  await expect(page).toHaveTitle(/Playwright/);
+  // "Frontend: React Router v7 + Vite" のテキストが表示されていること
+  await expect(page.getByText('Frontend: React Router v7 + Vite')).toBeVisible();
 });
 
-test('get started link', async ({ page }) => {
-  await page.goto('https://playwright.dev/');
+test('トップページに見出しが存在する', async ({ page }) => {
+  await page.goto('/');
 
-  // Click the get started link.
-  await page.getByRole('link', { name: 'Get started' }).click();
-
-  // Expects page to have a heading with the name of Installation.
-  await expect(page.getByRole('heading', { name: 'Installation' })).toBeVisible();
+  // h1 要素が存在すること
+  const heading = page.locator('h1');
+  await expect(heading).toBeVisible();
 });
