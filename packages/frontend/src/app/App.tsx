@@ -22,8 +22,8 @@ function App() {
   }, [])
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-      <h1>{}</h1>
+    <div className="p-5 font-sans">
+      <h1>{message}</h1>
       <p>1 + 2 = {result}</p>
       <p>Frontend: React Router v7 + Vite</p>
       <p>Backend: Hono</p>
