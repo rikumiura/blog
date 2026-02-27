@@ -11,7 +11,9 @@
     "format": "biome check --fix .",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test": "vitest"
+    "test": "vitest",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "hono": "^4.12.1",
@@ -29,7 +31,17 @@
     "msw": "^2.12.10",
     "typescript": "~5.9.3",
     "vite": "^8.0.0-beta.13",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "storybook": "^10.2.13",
+    "@storybook/react-vite": "^10.2.13",
+    "@chromatic-com/storybook": "^5.0.1",
+    "@storybook/addon-vitest": "^10.2.13",
+    "@storybook/addon-a11y": "^10.2.13",
+    "@storybook/addon-docs": "^10.2.13",
+    "@storybook/addon-onboarding": "^10.2.13",
+    "playwright": "^1.58.2",
+    "@vitest/browser-playwright": "4.0.18",
+    "@vitest/coverage-v8": "4.0.18"
   },
   "pnpm": {
     "overrides": {
