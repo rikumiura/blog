@@ -23,6 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 
+# Storybook
+/storybook-static/
+
 # Playwright
 /test-results/
 /playwright-report/
