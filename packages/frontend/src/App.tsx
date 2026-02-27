@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
-import { hc } from 'hono/client'
 // バックエンドから型だけをインポート！
 import type { AppType } from '@my-blog/backend/src/index'
+import { hc } from 'hono/client'
+import { useEffect, useState } from 'react'
 
 // Hono RPC クライアントの初期化 (Wranglerのデフォルトポートは8787)
 const client = hc<AppType>('http://localhost:8787')
