@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react'
 import { add } from '../core/lib/math'
 
 // Hono RPC クライアントの初期化
-const client = hc<AppType>(import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787')
+const client = hc<AppType>(
+  import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787',
+)
 
 function App() {
   const [message, setMessage] = useState('Loading...')
