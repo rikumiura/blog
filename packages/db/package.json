@@ -1,6 +1,9 @@
 {
   "name": "@my-blog/db",
   "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "generate": "drizzle-kit generate",
     "migrate:local": "wrangler d1 migrations apply my-blog-db --local",

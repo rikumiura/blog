@@ -1,6 +1,6 @@
+import { createDb, posts } from '@my-blog/db'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { createDb, posts } from '@my-blog/db'
 
 type Bindings = {
   DB: D1Database
