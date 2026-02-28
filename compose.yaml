@@ -1,0 +1,38 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/frontend/node_modules
+      - /workspace/packages/backend/node_modules
+      - pnpm-store:/root/.local/share/pnpm/store
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8787
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    ports:
+      - "8787:8787"
+    volumes:
+      - .:/workspace
+      - /workspace/node_modules
+      - /workspace/packages/frontend/node_modules
+      - /workspace/packages/backend/node_modules
+      - pnpm-store:/root/.local/share/pnpm/store
+    networks:
+      - app-network
+
+volumes:
+  pnpm-store:
+
+networks:
+  app-network:

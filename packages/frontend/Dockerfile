@@ -1,0 +1,23 @@
+FROM node:22-slim
+
+RUN corepack enable && corepack prepare pnpm@10.30.1 --activate
+
+WORKDIR /workspace
+
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/frontend/package.json packages/frontend/
+COPY packages/backend/package.json packages/backend/
+
+RUN pnpm install --frozen-lockfile
+
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+RUN sha256sum pnpm-lock.yaml | cut -d' ' -f1 > node_modules/.lockfile-hash
+
+COPY packages/frontend/ packages/frontend/
+COPY packages/backend/ packages/backend/
+
+EXPOSE 5173
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["pnpm", "--filter", "frontend", "dev", "--host"]
