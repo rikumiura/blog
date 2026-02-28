@@ -1,0 +1,17 @@
+{
+  "name": "@my-blog/db",
+  "type": "module",
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "migrate:local": "wrangler d1 migrations apply my-blog-db --local",
+    "migrate:remote": "wrangler d1 migrations apply my-blog-db --remote",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.0",
+    "wrangler": "^4.17.0"
+  }
+}

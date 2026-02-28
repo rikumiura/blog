@@ -7,6 +7,7 @@ WORKDIR /workspace
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/frontend/package.json packages/frontend/
 COPY packages/backend/package.json packages/backend/
+COPY packages/db/package.json packages/db/
 
 RUN pnpm install --frozen-lockfile
 
@@ -16,6 +17,7 @@ RUN sha256sum pnpm-lock.yaml | cut -d' ' -f1 > node_modules/.lockfile-hash
 
 COPY packages/frontend/ packages/frontend/
 COPY packages/backend/ packages/backend/
+COPY packages/db/ packages/db/
 
 EXPOSE 8787
 

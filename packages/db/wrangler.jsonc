@@ -1,13 +1,11 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "backend",
-  "compatibility_date": "2025-08-03",
-  "main": "./src/index.tsx",
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "my-blog-db",
-      "database_id": "placeholder-id"
+      "database_id": "placeholder-id",
+      "migrations_dir": "./migrations"
     }
   ]
 }

@@ -5,9 +5,10 @@ you have to wright japanese
 
 ## Project Overview
 
-A blog application built as a pnpm monorepo with two workspaces:
+A blog application built as a pnpm monorepo with three workspaces:
 - `packages/frontend` — React SPA (Vite, React Router v7, Tailwind CSS v4, shadcn/ui)
 - `packages/backend` — Hono API on Cloudflare Workers
+- `packages/db` — Drizzle ORM + Cloudflare D1（SQLiteベースのデータベース）
 
 ## Commands
 
@@ -39,6 +40,14 @@ pnpm deploy             # Build and deploy to Cloudflare Workers
 pnpm cf-typegen         # Generate Cloudflare bindings types
 ```
 
+### DB (run from packages/db)
+```bash
+pnpm generate           # Drizzle KitでマイグレーションSQL生成
+pnpm migrate:local      # ローカルD1にマイグレーション適用
+pnpm migrate:remote     # リモートD1にマイグレーション適用
+pnpm studio             # Drizzle Studioを起動
+```
+
 ## Architecture
 
 ### Type-Safe RPC (Key Pattern)
@@ -56,6 +65,13 @@ Backend exports `AppType` from route definitions. Frontend imports this type and
 - Single `index.tsx` entry point exporting Hono app and `AppType`
 - CORS enabled for all routes
 - Zod + @hono/zod-validator for request validation
+- `@my-blog/db`の`createDb`でD1バインディングからDrizzleクライアントを生成
+
+### DB Structure (`packages/db/`)
+- `src/schema.ts` — Drizzleスキーマ定義（`drizzle-orm/sqlite-core`を使用）
+- `src/index.ts` — `createDb`ファクトリ関数とスキーマの再エクスポート
+- `drizzle.config.ts` — Drizzle Kit設定
+- `migrations/` — 自動生成されたマイグレーションSQL（`pnpm generate`で生成）
 
 ## Code Style
 
