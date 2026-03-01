@@ -1,9 +1,12 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-export const posts = sqliteTable('posts', {
+export const companies = sqliteTable('companies', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  title: text('title').notNull(),
-  content: text('content').notNull(),
+  name: text('name').notNull(),
+  address: text('address').notNull(),
+  phone: text('phone').notNull(),
+  postalCode: text('postal_code').notNull(),
+  contactPerson: text('contact_person').notNull(),
   createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
   updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 })
