@@ -11,6 +11,9 @@ const client = hc<AppType>(
 export const companyApi: CompanyRepository = {
   async findAll(): Promise<Company[]> {
     const res = await client.api.companies.$get()
+    if (!res.ok) {
+      throw new Error(`会社一覧の取得に失敗しました: ${res.status}`)
+    }
     return await res.json()
   },
 }

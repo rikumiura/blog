@@ -8,10 +8,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { companiesAtom, fetchCompaniesAtom } from './companies.atom'
+import {
+  companiesAtom,
+  companiesErrorAtom,
+  companiesLoadingAtom,
+  fetchCompaniesAtom,
+} from './companies.atom'
 
 export function CompaniesTable() {
   const companies = useAtomValue(companiesAtom)
+  const isLoading = useAtomValue(companiesLoadingAtom)
+  const error = useAtomValue(companiesErrorAtom)
   const fetchCompanies = useSetAtom(fetchCompaniesAtom)
 
   useEffect(() => {
@@ -33,7 +40,22 @@ export function CompaniesTable() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {companies.length === 0 ? (
+        {isLoading ? (
+          <TableRow>
+            <TableCell
+              colSpan={8}
+              className="text-center text-muted-foreground"
+            >
+              読み込み中...
+            </TableCell>
+          </TableRow>
+        ) : error ? (
+          <TableRow>
+            <TableCell colSpan={8} className="text-center text-destructive">
+              {error}
+            </TableCell>
+          </TableRow>
+        ) : companies.length === 0 ? (
           <TableRow>
             <TableCell
               colSpan={8}
