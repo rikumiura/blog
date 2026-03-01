@@ -64,3 +64,5 @@ lerna-debug.log*
 
 # local agent state
 .claude/agent-memory/
+
+plan.md

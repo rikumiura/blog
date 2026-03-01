@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+export CI=true
+
 LOCKFILE="/workspace/pnpm-lock.yaml"
 STAMP="/workspace/node_modules/.lockfile-hash"
 
