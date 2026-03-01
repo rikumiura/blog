@@ -12,6 +12,11 @@
 - `packages/backend` — Cloudflare Workers 上で動作する Hono API
 - `packages/db` — Drizzle ORM + Cloudflare D1（SQLite ベースのデータベース）
 
+## 設計ドキュメント
+
+- `dock/modeling-definition.md` に SUDO モデリング（S: システム関連図 / U: ユースケース図 / D: ドメインモデル図 / O: オブジェクト図）による設計定義を管理している
+- モデルは最初から完成形ではなく、開発の進行に合わせて段階的に改善・拡充していく
+
 ## 開発ルール
 
 - 開発を開始する前に、**必ず新しい Git ブランチを作成してから作業すること**
