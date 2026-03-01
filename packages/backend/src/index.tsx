@@ -1,8 +1,8 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { createDbClient } from './infrastructure/database'
-import { DrizzlePostRepository } from './infrastructure/repositories/drizzle-post-repository'
-import { listPosts } from './use-cases/list-posts'
+import { DrizzleCompanyRepository } from './infrastructure/repositories/drizzle-company-repository'
+import { listCompanies } from './use-cases/list-companies'
 
 type Bindings = {
   DB: D1Database
@@ -20,10 +20,10 @@ const routes = app
       message: 'Hello World from Hono & Cloudflare Workers!'
     })
   })
-  .get('/api/posts', async (c) => {
+  .get('/api/companies', async (c) => {
     const db = createDbClient(c.env.DB)
-    const repository = new DrizzlePostRepository(db)
-    const result = await listPosts(repository)
+    const repository = new DrizzleCompanyRepository(db)
+    const result = await listCompanies(repository)
     return c.json(result)
   })
 
