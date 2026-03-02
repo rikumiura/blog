@@ -24,6 +24,8 @@
 2. **状態遷移制約** — `Draft` → `Published` のみ許可。`Published` → `Draft` への巻き戻しは不可。
 3. **公開日時の記録** — `publish()` 実行時に `PublishedAt` をサーバー側の現在日時で記録する。
 4. **日時の信頼性** — `CreatedAt`・`UpdatedAt`・`PublishedAt` はすべてバックエンド側で採番し、クライアントからの指定は受け付けない。
+5. **公開識別子の一意性** — PublicArticleId はシステム全体で一意でなければならない。
+6. **公開識別子の不変性** — PublicArticleId は生成後に変更できない。
 
 ## 補足：Body と R2 の関係
 
