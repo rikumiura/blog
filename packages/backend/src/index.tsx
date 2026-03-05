@@ -22,7 +22,10 @@ const app = new Hono<{ Bindings: Bindings }>()
 app.use('/*', cors())
 
 const createArticleSchema = z.object({
-  title: z.string().min(1, 'タイトルは必須です'),
+  title: z
+    .string()
+    .min(1, 'タイトルは必須です')
+    .max(100, 'タイトルは100文字以内にしてください'),
   body: z.string(),
 })
 

@@ -33,10 +33,15 @@ export type Article = {
 
 // --- Factory / Domain Logic ---
 
+const TITLE_MAX_LENGTH = 100
+
 export function createTitle(value: string): Title {
   const trimmed = value.trim()
   if (trimmed.length === 0) {
     throw new Error('タイトルは空にできません')
+  }
+  if (trimmed.length > TITLE_MAX_LENGTH) {
+    throw new Error(`タイトルは${TITLE_MAX_LENGTH}文字以内にしてください`)
   }
   return trimmed as Title
 }
