@@ -2,6 +2,8 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { type FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   articlesErrorAtom,
   articlesLoadingAtom,
@@ -32,13 +34,12 @@ export function ArticleCreateForm() {
         <label htmlFor="title" className="text-sm font-medium">
           タイトル
         </label>
-        <input
+        <Input
           id="title"
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="w-full rounded-md border px-3 py-2 text-sm"
           placeholder="記事のタイトルを入力"
         />
       </div>
@@ -47,12 +48,13 @@ export function ArticleCreateForm() {
         <label htmlFor="body" className="text-sm font-medium">
           本文（Markdown）
         </label>
-        <textarea
+        <Textarea
           id="body"
           value={body}
           onChange={(e) => setBody(e.target.value)}
           rows={15}
-          className="w-full rounded-md border px-3 py-2 font-mono text-sm"
+          required
+          className="font-mono"
           placeholder="Markdown で本文を入力"
         />
       </div>
