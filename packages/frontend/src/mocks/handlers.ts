@@ -31,4 +31,32 @@ export const handlers = [
       },
     ])
   }),
+
+  // 記事詳細の取得
+  http.get(`${baseUrl}/api/articles/:publicId`, ({ params }) => {
+    const { publicId } = params
+    return HttpResponse.json({
+      id: 1,
+      publicId,
+      title: 'サンプル記事',
+      body: '# サンプル記事\n\nこれはサンプルの本文です。',
+      status: 'draft',
+      createdAt: '2026-03-01T00:00:00.000Z',
+      updatedAt: '2026-03-01T00:00:00.000Z',
+    })
+  }),
+
+  // 記事の公開
+  http.patch(`${baseUrl}/api/articles/:publicId/publish`, ({ params }) => {
+    const { publicId } = params
+    return HttpResponse.json({
+      id: 1,
+      publicId,
+      title: 'サンプル記事',
+      body: '# サンプル記事\n\nこれはサンプルの本文です。',
+      status: 'published',
+      createdAt: '2026-03-01T00:00:00.000Z',
+      updatedAt: '2026-03-06T00:00:00.000Z',
+    })
+  }),
 ]
