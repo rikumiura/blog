@@ -1,4 +1,5 @@
 import { HttpResponse, http } from 'msw'
+import type { CreateArticleInput } from '@/core/types/article'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
@@ -58,7 +59,7 @@ export const handlers = [
   }),
 
   http.post(`${baseUrl}/api/articles`, async ({ request }) => {
-    const body = (await request.json()) as { title: string; body: string }
+    const body = (await request.json()) as CreateArticleInput
     return HttpResponse.json(
       {
         id: '019577a0-0000-7000-8000-000000000003',
