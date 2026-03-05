@@ -52,12 +52,19 @@ const routes = app
     const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
     const idGenerator = new IdGeneratorImpl()
 
-    const article = await createArticle(input, {
-      repository,
-      bodyStorage,
-      idGenerator,
-    })
-    return c.json(article, 201)
+    try {
+      const article = await createArticle(input, {
+        repository,
+        bodyStorage,
+        idGenerator,
+      })
+      return c.json(article, 201)
+    } catch (error) {
+      if (error instanceof Error) {
+        return c.json({ error: error.message }, 400)
+      }
+      throw error
+    }
   })
 
 // フロントエンドで使うために型をエクスポート（これが超重要！）
