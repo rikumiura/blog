@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Article, ArticleId, BodyKey, PublicArticleId } from '../article'
+import type { ArticleId, BodyKey, DraftArticle, PublicArticleId, PublishedArticle } from '../article'
 import {
   createDraftArticle,
   createTitle,
@@ -8,7 +8,7 @@ import {
 } from '../article'
 
 // テスト用ヘルパー
-function createTestArticle(overrides: Partial<Article> = {}): Article {
+function createTestDraftArticle(overrides: Partial<DraftArticle> = {}): DraftArticle {
   return {
     id: 'test-id' as ArticleId,
     publicId: 'test-public-id' as PublicArticleId,
@@ -18,6 +18,20 @@ function createTestArticle(overrides: Partial<Article> = {}): Article {
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
     publishedAt: null,
+    ...overrides,
+  }
+}
+
+function createTestPublishedArticle(overrides: Partial<PublishedArticle> = {}): PublishedArticle {
+  return {
+    id: 'test-id' as ArticleId,
+    publicId: 'test-public-id' as PublicArticleId,
+    title: createTitle('テスト記事'),
+    bodyKey: 'test-body-key' as BodyKey,
+    status: 'published',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    publishedAt: '2026-01-01T00:00:00.000Z',
     ...overrides,
   }
 }
@@ -93,7 +107,7 @@ describe('createDraftArticle', () => {
 
 describe('publishArticle', () => {
   it('下書き記事を公開できる', () => {
-    const draftArticle = createTestArticle({ status: 'draft' })
+    const draftArticle = createTestDraftArticle()
     const now = '2026-03-06T15:00:00.000Z'
 
     const published = publishArticle(draftArticle, now)
@@ -102,7 +116,7 @@ describe('publishArticle', () => {
   })
 
   it('公開時にpublishedAtが設定される', () => {
-    const draftArticle = createTestArticle({ status: 'draft' })
+    const draftArticle = createTestDraftArticle()
     const now = '2026-03-06T15:00:00.000Z'
 
     const published = publishArticle(draftArticle, now)
@@ -111,7 +125,7 @@ describe('publishArticle', () => {
   })
 
   it('公開時にupdatedAtが更新される', () => {
-    const draftArticle = createTestArticle({ status: 'draft' })
+    const draftArticle = createTestDraftArticle()
     const now = '2026-03-06T15:00:00.000Z'
 
     const published = publishArticle(draftArticle, now)
@@ -120,7 +134,7 @@ describe('publishArticle', () => {
   })
 
   it('元の記事は変更されない（イミュータブル）', () => {
-    const draftArticle = createTestArticle({ status: 'draft' })
+    const draftArticle = createTestDraftArticle()
     const now = '2026-03-06T15:00:00.000Z'
 
     publishArticle(draftArticle, now)
@@ -129,22 +143,18 @@ describe('publishArticle', () => {
     expect(draftArticle.publishedAt).toBeNull()
   })
 
-  it('既に公開済みの記事を公開しようとするとエラーになる', () => {
-    const publishedArticle = createTestArticle({
-      status: 'published',
-      publishedAt: '2026-03-06T12:00:00.000Z',
-    })
-    const now = '2026-03-06T15:00:00.000Z'
-
-    expect(() => publishArticle(publishedArticle, now)).toThrow(
-      '既に公開済みの記事です',
-    )
+  it('公開済みの記事はpublishArticleに渡せない（型レベルで防止）', () => {
+    // PublishedArticle型はpublishArticleの引数型（DraftArticle）に合致しないため、
+    // コンパイル時にエラーになる。ランタイムテストは不要。
+    const publishedArticle = createTestPublishedArticle()
+    expect(publishedArticle.status).toBe('published')
+    expect(publishedArticle.publishedAt).toBeDefined()
   })
 })
 
 describe('updateArticleContent', () => {
   it('タイトルが更新される', () => {
-    const article = createTestArticle()
+    const article = createTestDraftArticle()
     const newTitle = createTitle('更新後のタイトル')
     const now = '2026-03-06T16:00:00.000Z'
 
@@ -154,7 +164,7 @@ describe('updateArticleContent', () => {
   })
 
   it('updatedAtが更新される', () => {
-    const article = createTestArticle()
+    const article = createTestDraftArticle()
     const newTitle = createTitle('更新後のタイトル')
     const now = '2026-03-06T16:00:00.000Z'
 
@@ -164,7 +174,7 @@ describe('updateArticleContent', () => {
   })
 
   it('元の記事は変更されない（イミュータブル）', () => {
-    const article = createTestArticle()
+    const article = createTestDraftArticle()
     const originalTitle = article.title
     const originalUpdatedAt = article.updatedAt
     const newTitle = createTitle('更新後のタイトル')
@@ -177,7 +187,7 @@ describe('updateArticleContent', () => {
   })
 
   it('タイトル以外のフィールドは変更されない', () => {
-    const article = createTestArticle()
+    const article = createTestDraftArticle()
     const newTitle = createTitle('更新後のタイトル')
     const now = '2026-03-06T16:00:00.000Z'
 

@@ -10,14 +10,27 @@
 
 | 名前 | 分類 | 型 / 実装 | 説明 |
 | :--- | :--- | :--- | :--- |
-| `ArticleId` | 内部識別子 | UUIDv7 | 記事を一意に識別するシステムが使用する値 |
-| `PublicArticleId` | 公開識別子 | nanoID | 記事を一意に識別するユーザーが見れる範囲で使用する値 |
-| `Title` | 値オブジェクト | `string`（空文字不可） | 記事のタイトル。必須項目 |
-| `Body` | 値オブジェクト | R2 ファイル識別子 | 本文の実体は R2 に保存し、識別子で参照する |
-| `ArticleStatus` | 値オブジェクト | `Draft` \| `Published` | 記事の公開状態を表す |
+| `ArticleId` | 内部識別子 | UUIDv7（Branded Type） | 記事を一意に識別するシステムが使用する値 |
+| `PublicArticleId` | 公開識別子 | nanoID（Branded Type） | 記事を一意に識別するユーザーが見れる範囲で使用する値 |
+| `Title` | 値オブジェクト | `string`（Branded Type・空文字不可・100文字以内） | 記事のタイトル。必須項目 |
+| `Body` | 値オブジェクト | R2 ファイル識別子（Branded Type） | 本文の実体は R2 に保存し、識別子で参照する |
+| `ArticleStatus` | 値オブジェクト | `'draft'` \| `'published'` | 記事の公開状態を表す |
 | `CreatedAt` | 値オブジェクト | 日時（サーバー側で採番） | 記事の作成日時 |
 | `UpdatedAt` | 値オブジェクト | 日時（サーバー側で採番） | 記事の最終更新日時 |
 | `PublishedAt` | 値オブジェクト | 日時（サーバー側で採番）\| `null` | 公開日時。下書き状態では `null` |
+
+## 型設計：判別共用体パターン
+
+`Article` 型は判別共用体（Discriminated Union）パターンを採用し、`status` と `publishedAt` の整合性を型レベルで保証する。
+
+- **`DraftArticle`**: `status: 'draft'` かつ `publishedAt: null`
+- **`PublishedArticle`**: `status: 'published'` かつ `publishedAt: string`
+- **`Article = DraftArticle | PublishedArticle`**
+
+この設計により、以下を実現する：
+- 「下書きなのに公開日時がある」「公開済みなのに公開日時がない」といった不整合をコンパイル時に検出できる
+- `publishArticle()` は引数に `DraftArticle` のみを受け付け、`PublishedArticle` を返す。公開済み記事の再公開は型レベルで防止される
+- フロントエンド・バックエンド間で同一の型設計を共有し、一貫性を保つ
 
 ## 不変条件（ビジネスルール）
 

@@ -18,17 +18,33 @@ export type BodyKey = string & { readonly [BodyKeyBrand]: never }
 
 export type ArticleStatus = 'draft' | 'published'
 
-// --- エンティティ ---
+// --- エンティティ（判別共用体パターン） ---
 
-export type Article = {
+type ArticleBase = {
   id: ArticleId
   publicId: PublicArticleId
   title: Title
   bodyKey: BodyKey
-  status: ArticleStatus
   createdAt: string
   updatedAt: string
-  publishedAt: string | null
+}
+
+export type DraftArticle = ArticleBase & {
+  status: 'draft'
+  publishedAt: null
+}
+
+export type PublishedArticle = ArticleBase & {
+  status: 'published'
+  publishedAt: string
+}
+
+export type Article = DraftArticle | PublishedArticle
+
+// --- 入力型 ---
+
+export type CreateArticleInput = {
+  title: string
 }
 
 // --- ファクトリ・ドメインロジック ---
@@ -53,7 +69,7 @@ export function createDraftArticle(params: {
   title: Title
   bodyKey: BodyKey
   now: string
-}): Article {
+}): DraftArticle {
   return {
     id: params.id,
     publicId: params.publicId,
@@ -66,10 +82,7 @@ export function createDraftArticle(params: {
   }
 }
 
-export function publishArticle(article: Article, now: string): Article {
-  if (article.status === 'published') {
-    throw new Error('既に公開済みの記事です')
-  }
+export function publishArticle(article: DraftArticle, now: string): PublishedArticle {
   return {
     ...article,
     status: 'published',

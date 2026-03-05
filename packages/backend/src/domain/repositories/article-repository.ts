@@ -1,4 +1,4 @@
-import type { Article, ArticleId, PublicArticleId } from '../models/article'
+import type { Article, ArticleId, DraftArticle, PublicArticleId, PublishedArticle } from '../models/article'
 
 export interface ArticleRepository {
   save(article: Article): Promise<void>
