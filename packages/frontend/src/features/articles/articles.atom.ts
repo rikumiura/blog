@@ -1,6 +1,7 @@
 import { atom } from 'jotai'
 import type { ArticleRepository } from '@/core/ports/article-repository'
 import type { Article } from '@/core/types/article'
+import type { Result } from '@/core/types/result'
 import { articleApi } from './articles.api'
 
 /** 記事リポジトリの依存注入用atom（テスト時に差し替え可能） */
@@ -36,7 +37,7 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
 /** 記事を作成して一覧を再取得するアクション */
 export const createArticleAtom = atom(
   null,
-  async (get, set, input: { title: string; body: string }) => {
+  async (get, set, input: { title: string; body: string }): Promise<Result> => {
     set(articlesLoadingAtom, true)
     set(articlesErrorAtom, null)
     try {
@@ -44,11 +45,12 @@ export const createArticleAtom = atom(
       await repository.create(input)
       const articles = await repository.findAll()
       set(articlesAtom, articles)
+      return { status: 'success', data: undefined }
     } catch (error) {
-      set(
-        articlesErrorAtom,
-        error instanceof Error ? error.message : '記事の作成に失敗しました',
-      )
+      const message =
+        error instanceof Error ? error.message : '記事の作成に失敗しました'
+      set(articlesErrorAtom, message)
+      return { status: 'error', error: message }
     } finally {
       set(articlesLoadingAtom, false)
     }

@@ -18,8 +18,10 @@ export function ArticleCreateForm() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    await createArticle({ title, body })
-    navigate('/articles')
+    const result = await createArticle({ title, body })
+    if (result.status === 'success') {
+      navigate('/articles')
+    }
   }
 
   return (
