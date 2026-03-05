@@ -23,7 +23,7 @@ app.use('/*', cors())
 
 const createArticleSchema = z.object({
   title: z.string().min(1, 'タイトルは必須です'),
-  body: z.string(),
+  body: z.string().min(1, '本文は必須です'),
 })
 
 // APIエンドポイントの作成
