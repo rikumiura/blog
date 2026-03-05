@@ -31,4 +31,46 @@ export const handlers = [
       },
     ])
   }),
+
+  http.get(`${baseUrl}/api/articles`, () => {
+    return HttpResponse.json([
+      {
+        id: '019577a0-0000-7000-8000-000000000001',
+        publicId: 'abc123def456',
+        title: 'テスト記事',
+        bodyKey: '019577a0-0000-7000-8000-000000000001.md',
+        status: 'draft',
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+        publishedAt: null,
+      },
+      {
+        id: '019577a0-0000-7000-8000-000000000002',
+        publicId: 'xyz789ghi012',
+        title: '公開済み記事',
+        bodyKey: '019577a0-0000-7000-8000-000000000002.md',
+        status: 'published',
+        createdAt: '2026-03-01T01:00:00.000Z',
+        updatedAt: '2026-03-02T00:00:00.000Z',
+        publishedAt: '2026-03-02T00:00:00.000Z',
+      },
+    ])
+  }),
+
+  http.post(`${baseUrl}/api/articles`, async ({ request }) => {
+    const body = (await request.json()) as { title: string; body: string }
+    return HttpResponse.json(
+      {
+        id: '019577a0-0000-7000-8000-000000000003',
+        publicId: 'new123article',
+        title: body.title,
+        bodyKey: '019577a0-0000-7000-8000-000000000003.md',
+        status: 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        publishedAt: null,
+      },
+      { status: 201 },
+    )
+  }),
 ]
