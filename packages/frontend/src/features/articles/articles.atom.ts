@@ -42,9 +42,8 @@ export const createArticleAtom = atom(
     set(articlesErrorAtom, null)
     try {
       const repository = get(articleRepositoryAtom)
-      await repository.create(input)
-      const articles = await repository.findAll()
-      set(articlesAtom, articles)
+      const created = await repository.create(input)
+      set(articlesAtom, (prev) => [...prev, created])
       return { status: 'success', data: undefined }
     } catch (error) {
       const message =
