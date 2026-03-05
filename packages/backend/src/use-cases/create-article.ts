@@ -19,7 +19,16 @@ export async function createArticle(
   await deps.bodyStorage.save(bodyKey, input.body)
 
   const article = createDraftArticle({ id, publicId, title, bodyKey })
-  await deps.repository.save(article)
+  try {
+    await deps.repository.save(article)
+  } catch (error) {
+    // DB保存失敗時にR2の孤立ファイルを削除する補償処理
+    await deps.bodyStorage.delete(bodyKey).catch(() => {
+      // 補償処理自体の失敗はログのみ（二重障害を防ぐ）
+      console.error(`補償処理失敗: R2ファイル ${bodyKey} の削除に失敗しました`)
+    })
+    throw error
+  }
 
   return article
 }
