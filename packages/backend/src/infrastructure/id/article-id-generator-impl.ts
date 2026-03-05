@@ -5,9 +5,9 @@ import type {
   BodyKey,
   PublicArticleId,
 } from '../../domain/models/article'
-import type { IdGenerator } from '../../domain/repositories/id-generator'
+import type { ArticleIdGenerator } from '../../domain/repositories/id-generator'
 
-export class IdGeneratorImpl implements IdGenerator {
+export class ArticleIdGeneratorImpl implements ArticleIdGenerator {
   generateArticleId(): ArticleId {
     return uuidv7() as ArticleId
   }
