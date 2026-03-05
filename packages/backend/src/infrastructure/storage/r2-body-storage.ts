@@ -17,4 +17,8 @@ export class R2BodyStorage implements BodyStorage {
     if (!object) return null
     return await object.text()
   }
+
+  async delete(key: BodyKey): Promise<void> {
+    await this.bucket.delete(key)
+  }
 }
