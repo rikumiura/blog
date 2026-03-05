@@ -7,16 +7,34 @@ const client = hc<AppType>(
   import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787',
 )
 
-function toArticle(data: Record<string, unknown>): Article {
+function toArticle({
+  id,
+  publicId,
+  title,
+  bodyKey,
+  status,
+  createdAt,
+  updatedAt,
+  publishedAt,
+}: {
+  id: string
+  publicId: string
+  title: string
+  bodyKey: string
+  status: string
+  createdAt: string
+  updatedAt: string
+  publishedAt: string | null
+}): Article {
   return {
-    id: data.id as string,
-    publicId: data.publicId as string,
-    title: data.title as string,
-    bodyKey: data.bodyKey as string,
-    status: data.status as Article['status'],
-    createdAt: data.createdAt as string,
-    updatedAt: data.updatedAt as string,
-    publishedAt: (data.publishedAt as string) ?? null,
+    id,
+    publicId,
+    title,
+    bodyKey,
+    status,
+    createdAt,
+    updatedAt,
+    publishedAt,
   }
 }
 
