@@ -1,5 +1,3 @@
-import type { ArticleStatusEnum } from '@my-blog/db'
-
 // --- Branded Types ---
 
 declare const ArticleIdBrand: unique symbol
@@ -18,7 +16,8 @@ export type BodyKey = string & { readonly [BodyKeyBrand]: never }
 
 // --- Value Objects ---
 
-export type ArticleStatus = ArticleStatusEnum
+export const ARTICLE_STATUSES = ['draft', 'published'] as const
+export type ArticleStatus = (typeof ARTICLE_STATUSES)[number]
 
 // --- Entity ---
 
