@@ -5,6 +5,7 @@ export const articles = sqliteTable('articles', {
   publicId: text('public_id').notNull().unique(), // PublicArticleId (nanoID)
   title: text('title').notNull(),
   bodyKey: text('body_key').notNull(), // R2 ファイル識別子
+  // ステータスの定義元はドメインモデル (backend/src/domain/models/article.ts)
   status: text('status', { enum: ['draft', 'published'] })
     .notNull()
     .default('draft'),
