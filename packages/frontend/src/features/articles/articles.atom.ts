@@ -33,7 +33,7 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
   }
 })
 
-/** 記事を作成して一覧を再取得するアクション */
+/** 記事を作成して一覧を再取得するアクション（成功時true、失敗時false） */
 export const createArticleAtom = atom(
   null,
   async (get, set, input: { title: string; body: string }) => {
@@ -44,11 +44,13 @@ export const createArticleAtom = atom(
       await repository.create(input)
       const articles = await repository.findAll()
       set(articlesAtom, articles)
+      return true
     } catch (error) {
       set(
         articlesErrorAtom,
         error instanceof Error ? error.message : '記事の作成に失敗しました',
       )
+      return false
     } finally {
       set(articlesLoadingAtom, false)
     }
