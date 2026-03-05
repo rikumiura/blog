@@ -15,6 +15,16 @@ import {
   fetchArticlesAtom,
 } from './articles.atom'
 
+function formatDateTime(isoString: string): string {
+  return new Date(isoString).toLocaleString('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function ArticleList() {
   const articles = useAtomValue(articlesAtom)
   const isLoading = useAtomValue(articlesLoadingAtom)
@@ -75,8 +85,8 @@ export function ArticleList() {
                 </span>
               </TableCell>
               <TableCell className="font-medium">{article.title}</TableCell>
-              <TableCell>{article.createdAt}</TableCell>
-              <TableCell>{article.updatedAt}</TableCell>
+              <TableCell>{formatDateTime(article.createdAt)}</TableCell>
+              <TableCell>{formatDateTime(article.updatedAt)}</TableCell>
             </TableRow>
           ))
         )}
