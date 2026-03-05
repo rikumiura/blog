@@ -16,8 +16,7 @@ export type BodyKey = string & { readonly [BodyKeyBrand]: never }
 
 // --- Value Objects ---
 
-export const ARTICLE_STATUSES = ['draft', 'published'] as const
-export type ArticleStatus = (typeof ARTICLE_STATUSES)[number]
+export type ArticleStatus = 'draft' | 'published'
 
 // --- Entity ---
 
