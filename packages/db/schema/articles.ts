@@ -8,7 +8,11 @@ export const articles = sqliteTable('articles', {
   status: text('status', { enum: ['draft', 'published'] })
     .notNull()
     .default('draft'),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull(),
+  createdAt: text('created_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text('updated_at')
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
   publishedAt: text('published_at'), // null 許容
 })
