@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { z } from 'zod'
 import { createDbClient } from './infrastructure/database'
-import { IdGeneratorImpl } from './infrastructure/id/id-generator-impl'
+import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator-impl'
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
 import { DrizzleCompanyRepository } from './infrastructure/repositories/drizzle-company-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
@@ -50,7 +50,7 @@ const routes = app
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
     const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
-    const idGenerator = new IdGeneratorImpl()
+    const idGenerator = new ArticleIdGeneratorImpl()
 
     try {
       const article = await createArticle(input, {

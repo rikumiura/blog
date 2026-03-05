@@ -1,6 +1,6 @@
 import type { ArticleId, BodyKey, PublicArticleId } from '../models/article'
 
-export interface IdGenerator {
+export interface ArticleIdGenerator {
   generateArticleId(): ArticleId
   generatePublicArticleId(): PublicArticleId
   generateBodyKey(): BodyKey
