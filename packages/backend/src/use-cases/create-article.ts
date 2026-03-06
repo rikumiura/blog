@@ -20,7 +20,6 @@ export async function createArticle(
   const publicId = deps.idGenerator.generatePublicArticleId()
   const bodyKey = deps.idGenerator.generateBodyKey()
 
-  // R2保存が失敗した場合は例外をそのまま伝播させる（リトライ等はインフラ層の責務）
   await deps.bodyStorage.save(bodyKey, input.body)
 
   const now = new Date().toISOString()

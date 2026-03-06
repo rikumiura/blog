@@ -5,7 +5,7 @@ import {
   PublicArticleId,
 } from '../../domain/models/article'
 import type { ArticleRepository } from '../../domain/ports/article-repository'
-import type { BodyStorage } from '../../domain/ports/body-storage'
+import type { BodyGetResult, BodyStorage } from '../../domain/ports/body-storage'
 import type { ArticleIdGenerator } from '../../domain/ports/id-generator'
 
 export class InMemoryArticleRepository implements ArticleRepository {
@@ -47,8 +47,10 @@ export class InMemoryBodyStorage implements BodyStorage {
     this.bodies.set(key, content)
   }
 
-  async get(key: BodyKey): Promise<string | null> {
-    return this.bodies.get(key) ?? null
+  async get(key: BodyKey): Promise<BodyGetResult> {
+    const content = this.bodies.get(key)
+    if (content === undefined) return { found: false }
+    return { found: true, content }
   }
 
   async delete(key: BodyKey): Promise<void> {

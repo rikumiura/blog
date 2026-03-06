@@ -8,35 +8,34 @@ import {
 } from './in-memory-test-doubles'
 
 describe('createArticle', () => {
-  let repository: InMemoryArticleRepository
-  let bodyStorage: InMemoryBodyStorage
-  let idGenerator: FakeArticleIdGenerator
-
   const FIXED_DATE = '2025-01-15T10:00:00.000Z'
 
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(FIXED_DATE))
-
-    repository = new InMemoryArticleRepository()
-    bodyStorage = new InMemoryBodyStorage()
-    idGenerator = new FakeArticleIdGenerator(
-      'article-1',
-      'public-1',
-      'body-key-1',
-    )
   })
 
   afterEach(() => {
     vi.useRealTimers()
   })
 
-  const deps = () => ({ repository, bodyStorage, idGenerator })
+  const setup = () => {
+    const repository = new InMemoryArticleRepository()
+    const bodyStorage = new InMemoryBodyStorage()
+    const idGenerator = new FakeArticleIdGenerator(
+      'article-1',
+      'public-1',
+      'body-key-1',
+    )
+    return { repository, bodyStorage, idGenerator }
+  }
 
   it('下書き記事が作成される', async () => {
+    const deps = setup()
+
     const result = await createArticle(
       { title: 'テスト記事', body: '本文です' },
-      deps(),
+      deps,
     )
 
     expect(result).toEqual({
@@ -52,42 +51,53 @@ describe('createArticle', () => {
   })
 
   it('記事がリポジトリに保存される', async () => {
-    await createArticle({ title: 'テスト記事', body: '本文' }, deps())
+    const deps = setup()
 
-    const saved = await repository.findAll()
-    expect(saved).toHaveLength(1)
-    expect(saved[0]?.title).toBe('テスト記事')
+    await createArticle({ title: 'テスト記事', body: '本文' }, deps)
+
+    const saved = await deps.repository.findAll()
+    expect(saved).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ title: 'テスト記事' }),
+      ]),
+    )
   })
 
   it('本文がストレージに保存される', async () => {
-    await createArticle({ title: 'テスト記事', body: '本文です' }, deps())
+    const deps = setup()
 
-    const body = await bodyStorage.get(BodyKey('body-key-1'))
-    expect(body).toBe('本文です')
+    await createArticle({ title: 'テスト記事', body: '本文です' }, deps)
+
+    const result = await deps.bodyStorage.get(BodyKey('body-key-1'))
+    expect(result).toEqual({ found: true, content: '本文です' })
   })
 
   it('タイトルが空の場合エラー', async () => {
+    const deps = setup()
+
     await expect(
-      createArticle({ title: '', body: '本文' }, deps()),
+      createArticle({ title: '', body: '本文' }, deps),
     ).rejects.toThrow('タイトルは空にできません')
   })
 
   it('リポジトリ保存失敗時にストレージの本文が削除される', async () => {
-    repository.simulateSaveError()
+    const deps = setup()
+    deps.repository.simulateSaveError()
 
     await expect(
-      createArticle({ title: 'テスト記事', body: '本文' }, deps()),
+      createArticle({ title: 'テスト記事', body: '本文' }, deps),
     ).rejects.toThrow('リポジトリ保存エラー')
 
-    expect(bodyStorage.has(BodyKey('body-key-1'))).toBe(false)
+    expect(deps.bodyStorage.has(BodyKey('body-key-1'))).toBe(false)
   })
 
   it('補償処理の削除も失敗した場合でもエラーがスローされる', async () => {
-    repository.simulateSaveError()
-    bodyStorage.simulateDeleteError()
+    const deps = setup()
+    deps.repository.simulateSaveError()
+    deps.bodyStorage.simulateDeleteError()
 
     await expect(
-      createArticle({ title: 'テスト記事', body: '本文' }, deps()),
+      createArticle({ title: 'テスト記事', body: '本文' }, deps),
     ).rejects.toThrow('リポジトリ保存エラー')
   })
 })

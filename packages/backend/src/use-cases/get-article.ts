@@ -19,7 +19,7 @@ export async function getArticle(
   const article = await deps.repository.findByPublicId(publicId)
   if (!article) return { status: 'not_found' }
 
-  const body = await deps.bodyStorage.get(article.bodyKey)
-  if (body === null) return { status: 'body_not_found' }
-  return { status: 'found', article: { ...article, body } }
+  const bodyResult = await deps.bodyStorage.get(article.bodyKey)
+  if (!bodyResult.found) return { status: 'body_not_found' }
+  return { status: 'found', article: { ...article, body: bodyResult.content } }
 }
