@@ -8,7 +8,7 @@ import {
   publishArticle as publishDomainArticle,
 } from '../../domain/models/article'
 import { publishArticle } from '../publish-article'
-import { InMemoryArticleRepository } from './fakes'
+import { InMemoryArticleRepository } from './in-memory-test-doubles'
 
 describe('publishArticle', () => {
   let repository: InMemoryArticleRepository

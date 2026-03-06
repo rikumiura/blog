@@ -5,7 +5,7 @@ import {
   FakeArticleIdGenerator,
   InMemoryArticleRepository,
   InMemoryBodyStorage,
-} from './fakes'
+} from './in-memory-test-doubles'
 
 describe('createArticle', () => {
   let repository: InMemoryArticleRepository

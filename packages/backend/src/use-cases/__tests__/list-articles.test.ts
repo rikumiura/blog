@@ -6,7 +6,7 @@ import {
   PublicArticleId,
 } from '../../domain/models/article'
 import { listArticles } from '../list-articles'
-import { InMemoryArticleRepository } from './fakes'
+import { InMemoryArticleRepository } from './in-memory-test-doubles'
 
 describe('listArticles', () => {
   let repository: InMemoryArticleRepository

@@ -7,7 +7,7 @@ import {
   createTitle,
 } from '../../domain/models/article'
 import { getArticle } from '../get-article'
-import { InMemoryArticleRepository, InMemoryBodyStorage } from './fakes'
+import { InMemoryArticleRepository, InMemoryBodyStorage } from './in-memory-test-doubles'
 
 describe('getArticle', () => {
   let repository: InMemoryArticleRepository
