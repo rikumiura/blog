@@ -1,14 +1,13 @@
 import { articles } from '@my-blog/db'
 import { eq } from 'drizzle-orm'
-import type {
-  Article,
+import {
+  type Article,
   ArticleId,
-  ArticleStatus,
   BodyKey,
   PublicArticleId,
-  Title,
 } from '../../domain/models/article'
-import type { ArticleRepository } from '../../domain/repositories/article-repository'
+import { createTitle } from '../../domain/models/article'
+import type { ArticleRepository } from '../../domain/ports/article-repository'
 import type { DbClient } from '../database'
 
 export class DrizzleArticleRepository implements ArticleRepository {
@@ -70,14 +69,17 @@ export class DrizzleArticleRepository implements ArticleRepository {
 }
 
 function toEntity(row: typeof articles.$inferSelect): Article {
-  return {
-    id: row.id as ArticleId,
-    publicId: row.publicId as PublicArticleId,
-    title: row.title as Title,
-    bodyKey: row.bodyKey as BodyKey,
-    status: row.status as ArticleStatus,
+  const base = {
+    id: ArticleId(row.id),
+    publicId: PublicArticleId(row.publicId),
+    title: createTitle(row.title),
+    bodyKey: BodyKey(row.bodyKey),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
-    publishedAt: row.publishedAt,
   }
+
+  if (row.status === 'published' && row.publishedAt !== null) {
+    return { ...base, status: 'published', publishedAt: row.publishedAt }
+  }
+  return { ...base, status: 'draft', publishedAt: null }
 }

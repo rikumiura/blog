@@ -1,22 +1,22 @@
 import { nanoid } from 'nanoid'
 import { uuidv7 } from 'uuidv7'
-import type {
+import {
   ArticleId,
   BodyKey,
   PublicArticleId,
 } from '../../domain/models/article'
-import type { ArticleIdGenerator } from '../../domain/repositories/id-generator'
+import type { ArticleIdGenerator } from '../../domain/ports/id-generator'
 
 export class ArticleIdGeneratorImpl implements ArticleIdGenerator {
   generateArticleId(): ArticleId {
-    return uuidv7() as ArticleId
+    return ArticleId(uuidv7())
   }
 
   generatePublicArticleId(): PublicArticleId {
-    return nanoid() as PublicArticleId
+    return PublicArticleId(nanoid())
   }
 
   generateBodyKey(): BodyKey {
-    return `${uuidv7()}.md` as BodyKey
+    return BodyKey(`${uuidv7()}.md`)
   }
 }

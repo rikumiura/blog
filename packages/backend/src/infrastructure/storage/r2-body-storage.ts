@@ -1,5 +1,5 @@
 import type { BodyKey } from '../../domain/models/article'
-import type { BodyStorage } from '../../domain/repositories/body-storage'
+import type { BodyGetResult, BodyStorage } from '../../domain/ports/body-storage'
 
 export class R2BodyStorage implements BodyStorage {
   private bucket: R2Bucket
@@ -12,10 +12,10 @@ export class R2BodyStorage implements BodyStorage {
     await this.bucket.put(key, content)
   }
 
-  async get(key: BodyKey): Promise<string | null> {
+  async get(key: BodyKey): Promise<BodyGetResult> {
     const object = await this.bucket.get(key)
-    if (!object) return null
-    return await object.text()
+    if (!object) return { found: false }
+    return { found: true, content: await object.text() }
   }
 
   async delete(key: BodyKey): Promise<void> {
