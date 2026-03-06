@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { ArticleId, BodyKey, DraftArticle, PublicArticleId, PublishedArticle } from '../article'
+import type { DraftArticle, PublishedArticle } from '../article'
 import {
+  ArticleId,
+  BodyKey,
+  PublicArticleId,
   createDraftArticle,
   createTitle,
   publishArticle,
@@ -10,10 +13,10 @@ import {
 // テスト用ヘルパー
 function createTestDraftArticle(overrides: Partial<DraftArticle> = {}): DraftArticle {
   return {
-    id: 'test-id' as ArticleId,
-    publicId: 'test-public-id' as PublicArticleId,
+    id: ArticleId('test-id'),
+    publicId: PublicArticleId('test-public-id'),
     title: createTitle('テスト記事'),
-    bodyKey: 'test-body-key' as BodyKey,
+    bodyKey: BodyKey('test-body-key'),
     status: 'draft',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
@@ -24,10 +27,10 @@ function createTestDraftArticle(overrides: Partial<DraftArticle> = {}): DraftArt
 
 function createTestPublishedArticle(overrides: Partial<PublishedArticle> = {}): PublishedArticle {
   return {
-    id: 'test-id' as ArticleId,
-    publicId: 'test-public-id' as PublicArticleId,
+    id: ArticleId('test-id'),
+    publicId: PublicArticleId('test-public-id'),
     title: createTitle('テスト記事'),
-    bodyKey: 'test-body-key' as BodyKey,
+    bodyKey: BodyKey('test-body-key'),
     status: 'published',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
@@ -73,10 +76,10 @@ describe('createDraftArticle', () => {
   it('正しい初期状態で下書き記事が作成される', () => {
     const now = '2026-03-06T12:00:00.000Z'
     const article = createDraftArticle({
-      id: 'article-1' as ArticleId,
-      publicId: 'public-1' as PublicArticleId,
+      id: ArticleId('article-1'),
+      publicId: PublicArticleId('public-1'),
       title: createTitle('新規記事'),
-      bodyKey: 'body-key-1' as BodyKey,
+      bodyKey: BodyKey('body-key-1'),
       now,
     })
 
@@ -93,10 +96,10 @@ describe('createDraftArticle', () => {
   it('渡したnowがcreatedAtとupdatedAtに使われる', () => {
     const now = '2026-06-15T09:30:00.000Z'
     const article = createDraftArticle({
-      id: 'article-2' as ArticleId,
-      publicId: 'public-2' as PublicArticleId,
+      id: ArticleId('article-2'),
+      publicId: PublicArticleId('public-2'),
       title: createTitle('日時テスト'),
-      bodyKey: 'body-key-2' as BodyKey,
+      bodyKey: BodyKey('body-key-2'),
       now,
     })
 

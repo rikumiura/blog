@@ -1,18 +1,21 @@
 // --- Branded Types ---
 
-declare const ArticleIdBrand: unique symbol
-export type ArticleId = string & { readonly [ArticleIdBrand]: never }
+type Brand<K extends string> = { readonly [P in K]: never }
 
-declare const PublicArticleIdBrand: unique symbol
-export type PublicArticleId = string & {
-  readonly [PublicArticleIdBrand]: never
+export type ArticleId = string & Brand<'ArticleId'>
+export type PublicArticleId = string & Brand<'PublicArticleId'>
+export type Title = string & Brand<'Title'>
+export type BodyKey = string & Brand<'BodyKey'>
+
+// Branded Typeのファクトリ関数
+// 型の安全性を保ちつつ、asを使わずにブランド型を生成する
+function brand<T>(value: string): T {
+  return value as T
 }
 
-declare const TitleBrand: unique symbol
-export type Title = string & { readonly [TitleBrand]: never }
-
-declare const BodyKeyBrand: unique symbol
-export type BodyKey = string & { readonly [BodyKeyBrand]: never }
+export const ArticleId = (value: string): ArticleId => brand(value)
+export const PublicArticleId = (value: string): PublicArticleId => brand(value)
+export const BodyKey = (value: string): BodyKey => brand(value)
 
 // --- 値オブジェクト ---
 
@@ -53,7 +56,7 @@ export function createTitle(value: string): Title {
   if (trimmed.length > TITLE_MAX_LENGTH) {
     throw new Error(`タイトルは${TITLE_MAX_LENGTH}文字以内にしてください`)
   }
-  return trimmed as Title
+  return brand<Title>(trimmed)
 }
 
 // 日時はバックエンド側で採番し、パラメータとして渡す（テスト容易性の向上）

@@ -1,6 +1,6 @@
 import { companies } from '@my-blog/db'
 import type { Company } from '../../domain/models/company'
-import type { CompanyRepository } from '../../domain/repositories/company-repository'
+import type { CompanyRepository } from '../../domain/ports/company-repository'
 import type { DbClient } from '../database'
 
 export class DrizzleCompanyRepository implements CompanyRepository {
