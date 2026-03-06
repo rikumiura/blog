@@ -7,6 +7,7 @@ export type ArticleWithBody = Article & { body: string }
 export type GetArticleResult =
   | { status: 'found'; article: ArticleWithBody }
   | { status: 'not_found' }
+  | { status: 'body_not_found' }
 
 export async function getArticle(
   publicId: PublicArticleId,
@@ -19,5 +20,6 @@ export async function getArticle(
   if (!article) return { status: 'not_found' }
 
   const body = await deps.bodyStorage.get(article.bodyKey)
-  return { status: 'found', article: { ...article, body: body ?? '' } }
+  if (body === null) return { status: 'body_not_found' }
+  return { status: 'found', article: { ...article, body } }
 }

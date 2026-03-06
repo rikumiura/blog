@@ -39,7 +39,7 @@ describe('getArticle', () => {
     })
   })
 
-  it('本文がストレージにない場合、空文字列が返る', async () => {
+  it('本文がストレージにない場合、statusがbody_not_foundになる', async () => {
     const article = createDraftArticle({
       id: ArticleId('article-1'),
       publicId: PublicArticleId('public-1'),
@@ -51,10 +51,7 @@ describe('getArticle', () => {
 
     const result = await getArticle(PublicArticleId('public-1'), deps())
 
-    expect(result.status).toBe('found')
-    if (result.status === 'found') {
-      expect(result.article.body).toBe('')
-    }
+    expect(result).toEqual({ status: 'body_not_found' })
   })
 
   it('存在しないpublicIdの場合、statusがnot_foundになる', async () => {
