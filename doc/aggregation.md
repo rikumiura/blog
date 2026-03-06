@@ -19,19 +19,6 @@
 | `UpdatedAt` | 値オブジェクト | 日時（サーバー側で採番） | 記事の最終更新日時 |
 | `PublishedAt` | 値オブジェクト | 日時（サーバー側で採番）\| `null` | 公開日時。下書き状態では `null` |
 
-## 型設計：判別共用体パターン
-
-`Article` 型は判別共用体（Discriminated Union）パターンを採用し、`status` と `publishedAt` の整合性を型レベルで保証する。
-
-- **`DraftArticle`**: `status: 'draft'` かつ `publishedAt: null`
-- **`PublishedArticle`**: `status: 'published'` かつ `publishedAt: string`
-- **`Article = DraftArticle | PublishedArticle`**
-
-この設計により、以下を実現する：
-- 「下書きなのに公開日時がある」「公開済みなのに公開日時がない」といった不整合をコンパイル時に検出できる
-- `publishArticle()` は引数に `DraftArticle` のみを受け付け、`PublishedArticle` を返す。公開済み記事の再公開は型レベルで防止される
-- フロントエンド・バックエンド間で同一の型設計を共有し、一貫性を保つ
-
 ## 不変条件（ビジネスルール）
 
 1. **タイトル必須** — `Title` は空文字・未設定を許容しない。

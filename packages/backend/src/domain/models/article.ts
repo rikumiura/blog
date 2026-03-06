@@ -41,12 +41,6 @@ export type PublishedArticle = ArticleBase & {
 
 export type Article = DraftArticle | PublishedArticle
 
-// --- 入力型 ---
-
-export type CreateArticleInput = {
-  title: string
-}
-
 // --- ファクトリ・ドメインロジック ---
 
 const TITLE_MAX_LENGTH = 100
