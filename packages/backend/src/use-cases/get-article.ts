@@ -1,6 +1,6 @@
 import type { PublicArticleId } from '../domain/models/article'
-import type { ArticleRepository } from '../domain/repositories/article-repository'
-import type { BodyStorage } from '../domain/repositories/body-storage'
+import type { ArticleRepository } from '../domain/ports/article-repository'
+import type { BodyStorage } from '../domain/ports/body-storage'
 
 export async function getArticle(
   publicId: PublicArticleId,

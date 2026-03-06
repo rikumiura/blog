@@ -1,7 +1,7 @@
 import { createDraftArticle, createTitle } from '../domain/models/article'
-import type { ArticleRepository } from '../domain/repositories/article-repository'
-import type { BodyStorage } from '../domain/repositories/body-storage'
-import type { ArticleIdGenerator } from '../domain/repositories/id-generator'
+import type { ArticleRepository } from '../domain/ports/article-repository'
+import type { BodyStorage } from '../domain/ports/body-storage'
+import type { ArticleIdGenerator } from '../domain/ports/id-generator'
 
 export async function createArticle(
   input: { title: string; body: string },
