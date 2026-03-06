@@ -1,5 +1,5 @@
-import type {
-  Article,
+import {
+  type Article,
   ArticleId,
   BodyKey,
   PublicArticleId,
@@ -79,14 +79,14 @@ export class FakeArticleIdGenerator implements ArticleIdGenerator {
   }
 
   generateArticleId(): ArticleId {
-    return this._articleId as ArticleId
+    return ArticleId(this._articleId)
   }
 
   generatePublicArticleId(): PublicArticleId {
-    return this._publicArticleId as PublicArticleId
+    return PublicArticleId(this._publicArticleId)
   }
 
   generateBodyKey(): BodyKey {
-    return this._bodyKey as BodyKey
+    return BodyKey(this._bodyKey)
   }
 }

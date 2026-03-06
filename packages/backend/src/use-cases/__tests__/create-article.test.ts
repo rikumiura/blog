@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { BodyKey } from '../../domain/models/article'
+import { BodyKey } from '../../domain/models/article'
 import { createArticle } from '../create-article'
 import {
   FakeArticleIdGenerator,
@@ -62,7 +62,7 @@ describe('createArticle', () => {
   it('本文がストレージに保存される', async () => {
     await createArticle({ title: 'テスト記事', body: '本文です' }, deps())
 
-    const body = await bodyStorage.get('body-key-1' as BodyKey)
+    const body = await bodyStorage.get(BodyKey('body-key-1'))
     expect(body).toBe('本文です')
   })
 
@@ -79,7 +79,7 @@ describe('createArticle', () => {
       createArticle({ title: 'テスト記事', body: '本文' }, deps()),
     ).rejects.toThrow('リポジトリ保存エラー')
 
-    expect(bodyStorage.has('body-key-1' as BodyKey)).toBe(false)
+    expect(bodyStorage.has(BodyKey('body-key-1'))).toBe(false)
   })
 
   it('補償処理の削除も失敗した場合でもエラーがスローされる', async () => {
