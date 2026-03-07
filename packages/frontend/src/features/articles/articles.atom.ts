@@ -48,8 +48,8 @@ export const createArticleAtom = atom(
     set(articlesErrorAtom, null)
     try {
       const repository = get(articleRepositoryAtom)
-      const created = await repository.create(input)
-      set(articlesAtom, (prev) => [...prev, created])
+      await repository.create(input)
+      await set(fetchArticlesAtom)
       return { status: 'success', data: undefined }
     } catch (error) {
       const message =
@@ -70,10 +70,8 @@ export const publishArticleAtom = atom(
     set(articlesErrorAtom, null)
     try {
       const repository = get(articleRepositoryAtom)
-      const published = await repository.publish(publicId)
-      set(articlesAtom, (prev) =>
-        prev.map((a) => (a.publicId === publicId ? published : a)),
-      )
+      await repository.publish(publicId)
+      await set(fetchArticlesAtom)
       return { status: 'success', data: undefined }
     } catch (error) {
       const message =
