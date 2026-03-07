@@ -1,5 +1,5 @@
 import type { ArticleRepository } from '@/core/ports/article-repository'
-import type { Article } from '@/core/types/article'
+import type { Article, ArticleStatus } from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
 
 function toArticle({
@@ -16,7 +16,7 @@ function toArticle({
   publicId: string
   title: string
   bodyKey: string
-  status: string
+  status: ArticleStatus
   createdAt: string
   updatedAt: string
   publishedAt: string | null
@@ -26,7 +26,7 @@ function toArticle({
     publicId,
     title,
     bodyKey,
-    status: status as Article['status'],
+    status,
     createdAt,
     updatedAt,
     publishedAt,
