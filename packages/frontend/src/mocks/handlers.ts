@@ -2,12 +2,21 @@ import { HttpResponse, http } from 'msw'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
+type MockArticle = {
+  publicId: string
+  title: string
+  status: 'draft' | 'published'
+  createdAt: string
+  updatedAt: string
+  publishedAt: string | null
+}
+
 /** モック用の記事データ（APIレスポンスのDTO構造に準拠） */
-const mockArticles = [
+const mockArticles: MockArticle[] = [
   {
     publicId: 'abc123',
     title: 'はじめてのブログ記事',
-    status: 'published' as const,
+    status: 'published',
     createdAt: '2026-03-01T00:00:00.000Z',
     updatedAt: '2026-03-01T12:00:00.000Z',
     publishedAt: '2026-03-01T12:00:00.000Z',
@@ -15,7 +24,7 @@ const mockArticles = [
   {
     publicId: 'def456',
     title: '下書きの記事',
-    status: 'draft' as const,
+    status: 'draft',
     createdAt: '2026-03-02T00:00:00.000Z',
     updatedAt: '2026-03-02T00:00:00.000Z',
     publishedAt: null,
@@ -23,7 +32,7 @@ const mockArticles = [
   {
     publicId: 'ghi789',
     title: 'Markdownで書く技術記事',
-    status: 'draft' as const,
+    status: 'draft',
     createdAt: '2026-03-03T10:00:00.000Z',
     updatedAt: '2026-03-03T10:00:00.000Z',
     publishedAt: null,
@@ -72,7 +81,7 @@ export const handlers = [
     const newArticle = {
       publicId: `mock-${Date.now()}`,
       title: body.title,
-      status: 'draft' as const,
+      status: 'draft',
       createdAt: now,
       updatedAt: now,
       publishedAt: null,

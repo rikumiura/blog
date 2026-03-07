@@ -1,5 +1,5 @@
 import { articles } from '@my-blog/db'
-import { eq } from 'drizzle-orm'
+import { desc, eq } from 'drizzle-orm'
 import {
   type Article,
   ArticleId,
@@ -63,7 +63,10 @@ export class DrizzleArticleRepository implements ArticleRepository {
   }
 
   async findAll(): Promise<Article[]> {
-    const rows = await this.db.select().from(articles)
+    const rows = await this.db
+      .select()
+      .from(articles)
+      .orderBy(desc(articles.updatedAt))
     return rows.map(toEntity)
   }
 }
@@ -78,8 +81,13 @@ function toEntity(row: typeof articles.$inferSelect): Article {
     updatedAt: row.updatedAt,
   }
 
+  if (row.status === 'draft' && row.publishedAt === null) {
+    return { ...base, status: 'draft', publishedAt: null }
+  }
   if (row.status === 'published' && row.publishedAt !== null) {
     return { ...base, status: 'published', publishedAt: row.publishedAt }
   }
-  return { ...base, status: 'draft', publishedAt: null }
+  throw new Error(
+    `articles テーブルの status と publishedAt の組み合わせが不正です (id: ${row.id}, status: ${row.status}, publishedAt: ${row.publishedAt})`,
+  )
 }

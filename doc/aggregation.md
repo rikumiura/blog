@@ -11,9 +11,9 @@
 | 名前 | 分類 | 型 / 実装 | 説明 |
 | :--- | :--- | :--- | :--- |
 | `ArticleId` | 内部識別子 | UUIDv7（Branded Type） | 記事を一意に識別するシステムが使用する値 |
-| `PublicArticleId` | 公開識別子 | nanoID（Branded Type） | 記事を一意に識別するユーザーが見れる範囲で使用する値 |
+| `PublicArticleId` | 公開識別子 | nanoID（Branded Type） | 記事を一意に識別するユーザーが見られる範囲で使用する値 |
 | `Title` | 値オブジェクト | `string`（Branded Type・空文字不可・100文字以内） | 記事のタイトル。必須項目 |
-| `Body` | 値オブジェクト | R2 ファイル識別子（Branded Type） | 本文の実体は R2 に保存し、識別子で参照する |
+| `BodyKey` | 値オブジェクト | R2 ファイル識別子（Branded Type） | 本文の実体は R2 に保存し、識別子で参照する |
 | `ArticleStatus` | 値オブジェクト | `'draft'` \| `'published'` | 記事の公開状態を表す |
 | `CreatedAt` | 値オブジェクト | 日時（サーバー側で採番） | 記事の作成日時 |
 | `UpdatedAt` | 値オブジェクト | 日時（サーバー側で採番） | 記事の最終更新日時 |

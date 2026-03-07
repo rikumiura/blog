@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { BodyKey } from '../../domain/models/article'
 import { createArticle } from '../create-article'
 import {
@@ -89,13 +89,19 @@ describe('createArticle', () => {
     expect(deps.bodyStorage.has(BodyKey('body-key-1'))).toBe(false)
   })
 
-  it('補償処理の削除も失敗した場合でもエラーがスローされる', async () => {
+  it('補償処理の削除も失敗した場合、元のエラーがスローされ補償失敗がログ出力される', async () => {
     const deps = setup()
     deps.repository.simulateSaveError()
     deps.bodyStorage.simulateDeleteError()
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     await expect(
       createArticle({ title: 'テスト記事', body: '本文' }, deps),
     ).rejects.toThrow('リポジトリ保存エラー')
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '補償処理失敗: R2ファイル body-key-1 の削除に失敗しました',
+    )
+    consoleSpy.mockRestore()
   })
 })
