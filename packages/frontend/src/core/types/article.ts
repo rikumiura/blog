@@ -3,10 +3,8 @@ export type ArticleStatus = 'draft' | 'published'
 
 /** 記事の共通フィールド */
 type ArticleBase = {
-  id: string
   publicId: string
   title: string
-  bodyKey: string
   createdAt: string
   updatedAt: string
 }

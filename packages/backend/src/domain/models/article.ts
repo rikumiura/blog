@@ -17,6 +17,9 @@ export const ArticleId = (value: string): ArticleId => brand(value)
 export const PublicArticleId = (value: string): PublicArticleId => brand(value)
 export const BodyKey = (value: string): BodyKey => brand(value)
 
+// DB復元用: バリデーション済みのデータからTitleを復元する（バリデーションなし）
+export const restoreTitle = (value: string): Title => brand(value)
+
 // --- 値オブジェクト ---
 
 export type ArticleStatus = 'draft' | 'published'

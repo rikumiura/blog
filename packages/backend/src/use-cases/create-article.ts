@@ -1,7 +1,7 @@
 import {
-  type DraftArticle,
   createDraftArticle,
   createTitle,
+  type DraftArticle,
 } from '../domain/models/article'
 import type { ArticleRepository } from '../domain/ports/article-repository'
 import type { BodyStorage } from '../domain/ports/body-storage'
@@ -17,6 +17,7 @@ export async function createArticle(
     repository: ArticleRepository
     bodyStorage: BodyStorage
     idGenerator: ArticleIdGenerator
+    now: () => string
   },
 ): Promise<CreateArticleResult> {
   let title: ReturnType<typeof createTitle>
@@ -34,7 +35,7 @@ export async function createArticle(
 
   await deps.bodyStorage.save(bodyKey, input.body)
 
-  const now = new Date().toISOString()
+  const now = deps.now()
   const article = createDraftArticle({ id, publicId, title, bodyKey, now })
   try {
     await deps.repository.save(article)

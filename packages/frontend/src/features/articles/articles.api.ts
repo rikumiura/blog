@@ -1,35 +1,32 @@
 import type { ArticleRepository } from '@/core/ports/article-repository'
-import type { Article, ArticleStatus } from '@/core/types/article'
+import type { Article } from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
 
-function toArticle({
-  id,
-  publicId,
-  title,
-  bodyKey,
-  status,
-  createdAt,
-  updatedAt,
-  publishedAt,
-}: {
-  id: string
+function toArticle(data: {
   publicId: string
   title: string
-  bodyKey: string
-  status: ArticleStatus
+  status: string
   createdAt: string
   updatedAt: string
   publishedAt: string | null
 }): Article {
+  if (data.status === 'published' && data.publishedAt !== null) {
+    return {
+      publicId: data.publicId,
+      title: data.title,
+      status: 'published',
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      publishedAt: data.publishedAt,
+    }
+  }
   return {
-    id,
-    publicId,
-    title,
-    bodyKey,
-    status,
-    createdAt,
-    updatedAt,
-    publishedAt,
+    publicId: data.publicId,
+    title: data.title,
+    status: 'draft',
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+    publishedAt: null,
   }
 }
 
