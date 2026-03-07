@@ -6,14 +6,14 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   articlesErrorAtom,
-  articlesLoadingAtom,
+  createLoadingAtom,
   createArticleAtom,
 } from './articles.atom'
 
 export function ArticleCreateForm() {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
-  const isLoading = useAtomValue(articlesLoadingAtom)
+  const isLoading = useAtomValue(createLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
   const createArticle = useSetAtom(createArticleAtom)
   const navigate = useNavigate()

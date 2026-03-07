@@ -4,11 +4,18 @@ import {
   BodyKey,
   createDraftArticle,
   createTitle,
+  type Title,
   PublicArticleId,
   publishArticle as publishDomainArticle,
 } from '../../domain/models/article'
 import { publishArticle } from '../publish-article'
 import { InMemoryArticleRepository } from './in-memory-test-doubles'
+
+function unwrapTitle(value: string): Title {
+  const result = createTitle(value)
+  if (!result.ok) throw new Error(result.message)
+  return result.value
+}
 
 describe('publishArticle', () => {
   let repository: InMemoryArticleRepository
@@ -21,7 +28,7 @@ describe('publishArticle', () => {
     createDraftArticle({
       id: ArticleId('article-1'),
       publicId: PublicArticleId('public-1'),
-      title: createTitle('テスト記事'),
+      title: unwrapTitle('テスト記事'),
       bodyKey: BodyKey('body-key-1'),
       now: '2025-01-01T00:00:00.000Z',
     })

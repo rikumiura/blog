@@ -10,15 +10,17 @@ export const articleRepositoryAtom = atom<ArticleRepository>(articleApi)
 /** 記事一覧の状態 */
 export const articlesAtom = atom<Article[]>([])
 
-/** ローディング状態 */
-export const articlesLoadingAtom = atom(false)
+/** 操作ごとのローディング状態 */
+export const fetchLoadingAtom = atom(false)
+export const createLoadingAtom = atom(false)
+export const publishLoadingAtom = atom(false)
 
 /** エラー状態 */
 export const articlesErrorAtom = atom<string | null>(null)
 
 /** 記事一覧を取得して状態を更新するアクション */
 export const fetchArticlesAtom = atom(null, async (get, set) => {
-  set(articlesLoadingAtom, true)
+  set(fetchLoadingAtom, true)
   set(articlesErrorAtom, null)
   try {
     const repository = get(articleRepositoryAtom)
@@ -30,7 +32,7 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
       error instanceof Error ? error.message : '記事一覧の取得に失敗しました',
     )
   } finally {
-    set(articlesLoadingAtom, false)
+    set(fetchLoadingAtom, false)
   }
 })
 
@@ -42,12 +44,12 @@ export const createArticleAtom = atom(
     set,
     input: { title: string; body: string },
   ): Promise<Result> => {
-    set(articlesLoadingAtom, true)
+    set(createLoadingAtom, true)
     set(articlesErrorAtom, null)
     try {
       const repository = get(articleRepositoryAtom)
-      const created = await repository.create(input)
-      set(articlesAtom, (prev) => [...prev, created])
+      await repository.create(input)
+      await set(fetchArticlesAtom)
       return { status: 'success', data: undefined }
     } catch (error) {
       const message =
@@ -55,7 +57,7 @@ export const createArticleAtom = atom(
       set(articlesErrorAtom, message)
       return { status: 'error', error: message }
     } finally {
-      set(articlesLoadingAtom, false)
+      set(createLoadingAtom, false)
     }
   },
 )
@@ -64,14 +66,12 @@ export const createArticleAtom = atom(
 export const publishArticleAtom = atom(
   null,
   async (get, set, publicId: string): Promise<Result> => {
-    set(articlesLoadingAtom, true)
+    set(publishLoadingAtom, true)
     set(articlesErrorAtom, null)
     try {
       const repository = get(articleRepositoryAtom)
-      const published = await repository.publish(publicId)
-      set(articlesAtom, (prev) =>
-        prev.map((a) => (a.publicId === publicId ? published : a)),
-      )
+      await repository.publish(publicId)
+      await set(fetchArticlesAtom)
       return { status: 'success', data: undefined }
     } catch (error) {
       const message =
@@ -79,7 +79,7 @@ export const publishArticleAtom = atom(
       set(articlesErrorAtom, message)
       return { status: 'error', error: message }
     } finally {
-      set(articlesLoadingAtom, false)
+      set(publishLoadingAtom, false)
     }
   },
 )

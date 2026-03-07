@@ -20,15 +20,11 @@ export async function createArticle(
     now: () => string
   },
 ): Promise<CreateArticleResult> {
-  let title: ReturnType<typeof createTitle>
-  try {
-    title = createTitle(input.title)
-  } catch (error) {
-    if (error instanceof Error) {
-      return { status: 'validation_error', message: error.message }
-    }
-    throw error
+  const titleResult = createTitle(input.title)
+  if (!titleResult.ok) {
+    return { status: 'validation_error', message: titleResult.message }
   }
+  const title = titleResult.value
   const id = deps.idGenerator.generateArticleId()
   const publicId = deps.idGenerator.generatePublicArticleId()
   const bodyKey = deps.idGenerator.generateBodyKey()

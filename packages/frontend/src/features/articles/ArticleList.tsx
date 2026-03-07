@@ -12,7 +12,8 @@ import {
 import {
   articlesAtom,
   articlesErrorAtom,
-  articlesLoadingAtom,
+  fetchLoadingAtom,
+  publishLoadingAtom,
   fetchArticlesAtom,
   publishArticleAtom,
 } from './articles.atom'
@@ -29,7 +30,8 @@ function formatDateTime(isoString: string): string {
 
 export function ArticleList() {
   const articles = useAtomValue(articlesAtom)
-  const isLoading = useAtomValue(articlesLoadingAtom)
+  const isFetching = useAtomValue(fetchLoadingAtom)
+  const isPublishing = useAtomValue(publishLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
   const fetchArticles = useSetAtom(fetchArticlesAtom)
   const publishArticle = useSetAtom(publishArticleAtom)
@@ -50,7 +52,7 @@ export function ArticleList() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {isLoading ? (
+        {isFetching ? (
           <TableRow>
             <TableCell
               colSpan={5}
@@ -97,7 +99,7 @@ export function ArticleList() {
                     variant="outline"
                     size="sm"
                     onClick={() => publishArticle(article.publicId)}
-                    disabled={isLoading}
+                    disabled={isPublishing}
                   >
                     公開する
                   </Button>

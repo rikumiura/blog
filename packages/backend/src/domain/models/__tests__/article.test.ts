@@ -11,11 +11,17 @@ import {
 } from '../article'
 
 // テスト用ヘルパー
+function unwrapTitle(value: string) {
+  const result = createTitle(value)
+  if (!result.ok) throw new Error(result.message)
+  return result.value
+}
+
 function createTestDraftArticle(overrides: Partial<DraftArticle> = {}): DraftArticle {
   return {
     id: ArticleId('test-id'),
     publicId: PublicArticleId('test-public-id'),
-    title: createTitle('テスト記事'),
+    title: unwrapTitle('テスト記事'),
     bodyKey: BodyKey('test-body-key'),
     status: 'draft',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -29,7 +35,7 @@ function createTestPublishedArticle(overrides: Partial<PublishedArticle> = {}): 
   return {
     id: ArticleId('test-id'),
     publicId: PublicArticleId('test-public-id'),
-    title: createTitle('テスト記事'),
+    title: unwrapTitle('テスト記事'),
     bodyKey: BodyKey('test-body-key'),
     status: 'published',
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -41,34 +47,38 @@ function createTestPublishedArticle(overrides: Partial<PublishedArticle> = {}): 
 
 describe('createTitle', () => {
   it('正常な文字列からTitleを生成できる', () => {
-    const title = createTitle('テスト記事タイトル')
-    expect(title).toBe('テスト記事タイトル')
+    const result = createTitle('テスト記事タイトル')
+    expect(result).toEqual({ ok: true, value: 'テスト記事タイトル' })
   })
 
   it('前後の空白がトリムされる', () => {
-    const title = createTitle('  スペース付きタイトル  ')
-    expect(title).toBe('スペース付きタイトル')
+    const result = createTitle('  スペース付きタイトル  ')
+    expect(result).toEqual({ ok: true, value: 'スペース付きタイトル' })
   })
 
   it('空文字列の場合エラーになる', () => {
-    expect(() => createTitle('')).toThrow('タイトルは空にできません')
+    const result = createTitle('')
+    expect(result).toEqual({ ok: false, message: 'タイトルは空にできません' })
   })
 
   it('空白のみの場合エラーになる', () => {
-    expect(() => createTitle('   ')).toThrow('タイトルは空にできません')
+    const result = createTitle('   ')
+    expect(result).toEqual({ ok: false, message: 'タイトルは空にできません' })
   })
 
   it('101文字以上の場合エラーになる', () => {
     const longTitle = 'あ'.repeat(101)
-    expect(() => createTitle(longTitle)).toThrow(
-      'タイトルは100文字以内にしてください',
-    )
+    const result = createTitle(longTitle)
+    expect(result).toEqual({
+      ok: false,
+      message: 'タイトルは100文字以内にしてください',
+    })
   })
 
   it('100文字ちょうどの場合は正常に生成できる', () => {
     const exactTitle = 'あ'.repeat(100)
-    const title = createTitle(exactTitle)
-    expect(title).toBe(exactTitle)
+    const result = createTitle(exactTitle)
+    expect(result).toEqual({ ok: true, value: exactTitle })
   })
 })
 
@@ -78,7 +88,7 @@ describe('createDraftArticle', () => {
     const article = createDraftArticle({
       id: ArticleId('article-1'),
       publicId: PublicArticleId('public-1'),
-      title: createTitle('新規記事'),
+      title: unwrapTitle('新規記事'),
       bodyKey: BodyKey('body-key-1'),
       now,
     })
@@ -98,7 +108,7 @@ describe('createDraftArticle', () => {
     const article = createDraftArticle({
       id: ArticleId('article-2'),
       publicId: PublicArticleId('public-2'),
-      title: createTitle('日時テスト'),
+      title: unwrapTitle('日時テスト'),
       bodyKey: BodyKey('body-key-2'),
       now,
     })
@@ -158,7 +168,7 @@ describe('publishArticle', () => {
 describe('updateArticleContent', () => {
   it('タイトルが更新される', () => {
     const article = createTestDraftArticle()
-    const newTitle = createTitle('更新後のタイトル')
+    const newTitle = unwrapTitle('更新後のタイトル')
     const now = '2026-03-06T16:00:00.000Z'
 
     const updated = updateArticleContent(article, { title: newTitle }, now)
@@ -168,7 +178,7 @@ describe('updateArticleContent', () => {
 
   it('updatedAtが更新される', () => {
     const article = createTestDraftArticle()
-    const newTitle = createTitle('更新後のタイトル')
+    const newTitle = unwrapTitle('更新後のタイトル')
     const now = '2026-03-06T16:00:00.000Z'
 
     const updated = updateArticleContent(article, { title: newTitle }, now)
@@ -180,7 +190,7 @@ describe('updateArticleContent', () => {
     const article = createTestDraftArticle()
     const originalTitle = article.title
     const originalUpdatedAt = article.updatedAt
-    const newTitle = createTitle('更新後のタイトル')
+    const newTitle = unwrapTitle('更新後のタイトル')
     const now = '2026-03-06T16:00:00.000Z'
 
     updateArticleContent(article, { title: newTitle }, now)
@@ -191,7 +201,7 @@ describe('updateArticleContent', () => {
 
   it('タイトル以外のフィールドは変更されない', () => {
     const article = createTestDraftArticle()
-    const newTitle = createTitle('更新後のタイトル')
+    const newTitle = unwrapTitle('更新後のタイトル')
     const now = '2026-03-06T16:00:00.000Z'
 
     const updated = updateArticleContent(article, { title: newTitle }, now)
