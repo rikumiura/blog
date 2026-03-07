@@ -51,15 +51,19 @@ export type Article = DraftArticle | PublishedArticle
 
 const TITLE_MAX_LENGTH = 100
 
-export function createTitle(value: string): Title {
+export type CreateTitleResult =
+  | { ok: true; value: Title }
+  | { ok: false; message: string }
+
+export function createTitle(value: string): CreateTitleResult {
   const trimmed = value.trim()
   if (trimmed.length === 0) {
-    throw new Error('タイトルは空にできません')
+    return { ok: false, message: 'タイトルは空にできません' }
   }
   if (trimmed.length > TITLE_MAX_LENGTH) {
-    throw new Error(`タイトルは${TITLE_MAX_LENGTH}文字以内にしてください`)
+    return { ok: false, message: `タイトルは${TITLE_MAX_LENGTH}文字以内にしてください` }
   }
-  return brand<Title>(trimmed)
+  return { ok: true, value: brand<Title>(trimmed) }
 }
 
 // 日時はバックエンド側で採番し、パラメータとして渡す（テスト容易性の向上）

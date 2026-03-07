@@ -1,12 +1,20 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { createDraftArticle, createTitle } from '../../domain/models/article'
 import {
   ArticleId,
   BodyKey,
   PublicArticleId,
+  createDraftArticle,
+  createTitle,
+  type Title,
 } from '../../domain/models/article'
 import { listArticles } from '../list-articles'
 import { InMemoryArticleRepository } from './in-memory-test-doubles'
+
+function unwrapTitle(value: string): Title {
+  const result = createTitle(value)
+  if (!result.ok) throw new Error(result.message)
+  return result.value
+}
 
 describe('listArticles', () => {
   let repository: InMemoryArticleRepository
@@ -24,14 +32,14 @@ describe('listArticles', () => {
     const article1 = createDraftArticle({
       id: ArticleId('article-1'),
       publicId: PublicArticleId('public-1'),
-      title: createTitle('記事1'),
+      title: unwrapTitle('記事1'),
       bodyKey: BodyKey('body-1'),
       now: '2025-01-01T00:00:00.000Z',
     })
     const article2 = createDraftArticle({
       id: ArticleId('article-2'),
       publicId: PublicArticleId('public-2'),
-      title: createTitle('記事2'),
+      title: unwrapTitle('記事2'),
       bodyKey: BodyKey('body-2'),
       now: '2025-01-02T00:00:00.000Z',
     })

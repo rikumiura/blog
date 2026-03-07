@@ -5,16 +5,23 @@ import {
   PublicArticleId,
   createDraftArticle,
   createTitle,
+  type Title,
   publishArticle as publishDomainArticle,
 } from '../../../domain/models/article'
 import { toArticleDetailDto, toArticleSummaryDto } from '../article-dto'
+
+function unwrapTitle(value: string): Title {
+  const result = createTitle(value)
+  if (!result.ok) throw new Error(result.message)
+  return result.value
+}
 
 describe('toArticleSummaryDto', () => {
   it('id・bodyKeyが含まれない', () => {
     const article = createDraftArticle({
       id: ArticleId('article-1'),
       publicId: PublicArticleId('public-1'),
-      title: createTitle('テスト記事'),
+      title: unwrapTitle('テスト記事'),
       bodyKey: BodyKey('body-key-1'),
       now: '2025-01-01T00:00:00.000Z',
     })
@@ -37,7 +44,7 @@ describe('toArticleSummaryDto', () => {
     const draft = createDraftArticle({
       id: ArticleId('article-1'),
       publicId: PublicArticleId('public-1'),
-      title: createTitle('テスト記事'),
+      title: unwrapTitle('テスト記事'),
       bodyKey: BodyKey('body-key-1'),
       now: '2025-01-01T00:00:00.000Z',
     })
@@ -55,7 +62,7 @@ describe('toArticleDetailDto', () => {
     const article = createDraftArticle({
       id: ArticleId('article-1'),
       publicId: PublicArticleId('public-1'),
-      title: createTitle('テスト記事'),
+      title: unwrapTitle('テスト記事'),
       bodyKey: BodyKey('body-key-1'),
       now: '2025-01-01T00:00:00.000Z',
     })
