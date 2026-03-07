@@ -2,7 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { z } from 'zod'
-import type { PublicArticleId } from './domain/models/article'
+import { PublicArticleId } from './domain/models/article'
 import { createDbClient } from './infrastructure/database'
 import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator-impl'
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
@@ -50,18 +50,20 @@ const routes = app
     return c.json(result)
   })
   .get('/api/articles/:publicId', async (c) => {
-    const publicId = c.req.param('publicId') as PublicArticleId
+    const publicId = PublicArticleId(c.req.param('publicId'))
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
+    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
 
-    try {
-      const article = await getArticle(publicId, repository)
-      return c.json(article)
-    } catch (error) {
-      if (error instanceof Error && error.message === '記事が見つかりません') {
-        return c.json({ error: error.message }, 404)
-      }
-      throw error
+    const result = await getArticle(publicId, { repository, bodyStorage })
+
+    switch (result.status) {
+      case 'found':
+        return c.json(result.article)
+      case 'not_found':
+        return c.json({ error: '記事が見つかりません' }, 404)
+      case 'body_not_found':
+        return c.json({ error: '記事本文が見つかりません' }, 404)
     }
   })
   .post('/api/articles', zValidator('json', createArticleSchema), async (c) => {
@@ -86,21 +88,19 @@ const routes = app
     }
   })
   .patch('/api/articles/:publicId/publish', async (c) => {
-    const publicId = c.req.param('publicId') as PublicArticleId
+    const publicId = PublicArticleId(c.req.param('publicId'))
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
 
-    try {
-      const article = await publishArticle(publicId, repository)
-      return c.json(article)
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === '記事が見つかりません') {
-          return c.json({ error: error.message }, 404)
-        }
-        return c.json({ error: error.message }, 400)
-      }
-      throw error
+    const result = await publishArticle(publicId, { repository })
+
+    switch (result.status) {
+      case 'published':
+        return c.json(result.article)
+      case 'not_found':
+        return c.json({ error: '記事が見つかりません' }, 404)
+      case 'already_published':
+        return c.json({ error: 'すでに公開されています' }, 400)
     }
   })
 
