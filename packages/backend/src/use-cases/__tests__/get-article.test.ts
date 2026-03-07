@@ -32,7 +32,8 @@ describe('getArticle', () => {
 
     expect(result).toEqual({
       status: 'found',
-      article: { ...article, body: '本文です' },
+      article,
+      body: '本文です',
     })
   })
 

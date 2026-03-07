@@ -39,14 +39,17 @@ describe('createArticle', () => {
     )
 
     expect(result).toEqual({
-      id: 'article-1',
-      publicId: 'public-1',
-      title: 'テスト記事',
-      bodyKey: 'body-key-1',
-      status: 'draft',
-      createdAt: FIXED_DATE,
-      updatedAt: FIXED_DATE,
-      publishedAt: null,
+      status: 'created',
+      article: {
+        id: 'article-1',
+        publicId: 'public-1',
+        title: 'テスト記事',
+        bodyKey: 'body-key-1',
+        status: 'draft',
+        createdAt: FIXED_DATE,
+        updatedAt: FIXED_DATE,
+        publishedAt: null,
+      },
     })
   })
 
@@ -72,12 +75,15 @@ describe('createArticle', () => {
     expect(result).toEqual({ found: true, content: '本文です' })
   })
 
-  it('タイトルが空の場合エラー', async () => {
+  it('タイトルが空の場合バリデーションエラーが返る', async () => {
     const deps = setup()
 
-    await expect(
-      createArticle({ title: '', body: '本文' }, deps),
-    ).rejects.toThrow('タイトルは空にできません')
+    const result = await createArticle({ title: '', body: '本文' }, deps)
+
+    expect(result).toEqual({
+      status: 'validation_error',
+      message: 'タイトルは空にできません',
+    })
   })
 
   it('リポジトリ保存失敗時にストレージの本文が削除される', async () => {
