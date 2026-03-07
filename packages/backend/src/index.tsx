@@ -81,6 +81,7 @@ const routes = app
       repository,
       bodyStorage,
       idGenerator,
+      now: () => new Date().toISOString(),
     })
 
     switch (result.status) {
@@ -95,7 +96,10 @@ const routes = app
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
 
-    const result = await publishArticle(publicId, { repository })
+    const result = await publishArticle(publicId, {
+      repository,
+      now: () => new Date().toISOString(),
+    })
 
     switch (result.status) {
       case 'published':

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { BodyKey } from '../../domain/models/article'
 import { createArticle } from '../create-article'
 import {
@@ -10,15 +10,6 @@ import {
 describe('createArticle', () => {
   const FIXED_DATE = '2025-01-15T10:00:00.000Z'
 
-  beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(FIXED_DATE))
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
-  })
-
   const setup = () => {
     const repository = new InMemoryArticleRepository()
     const bodyStorage = new InMemoryBodyStorage()
@@ -27,7 +18,8 @@ describe('createArticle', () => {
       'public-1',
       'body-key-1',
     )
-    return { repository, bodyStorage, idGenerator }
+    const now = () => FIXED_DATE
+    return { repository, bodyStorage, idGenerator, now }
   }
 
   it('下書き記事が作成される', async () => {

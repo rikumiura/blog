@@ -2,31 +2,31 @@ import { HttpResponse, http } from 'msw'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
-/** モック用の記事データ */
+/** モック用の記事データ（APIレスポンスのDTO構造に準拠） */
 const mockArticles = [
   {
-    id: 1,
     publicId: 'abc123',
     title: 'はじめてのブログ記事',
     status: 'published' as const,
     createdAt: '2026-03-01T00:00:00.000Z',
     updatedAt: '2026-03-01T12:00:00.000Z',
+    publishedAt: '2026-03-01T12:00:00.000Z',
   },
   {
-    id: 2,
     publicId: 'def456',
     title: '下書きの記事',
     status: 'draft' as const,
     createdAt: '2026-03-02T00:00:00.000Z',
     updatedAt: '2026-03-02T00:00:00.000Z',
+    publishedAt: null,
   },
   {
-    id: 3,
     publicId: 'ghi789',
     title: 'Markdownで書く技術記事',
     status: 'draft' as const,
     createdAt: '2026-03-03T10:00:00.000Z',
     updatedAt: '2026-03-03T10:00:00.000Z',
+    publishedAt: null,
   },
 ]
 
@@ -70,12 +70,12 @@ export const handlers = [
     const body = (await request.json()) as { title: string; body: string }
     const now = new Date().toISOString()
     const newArticle = {
-      id: mockArticles.length + 1,
       publicId: `mock-${Date.now()}`,
       title: body.title,
       status: 'draft' as const,
       createdAt: now,
       updatedAt: now,
+      publishedAt: null,
     }
     mockArticles.push(newArticle)
     return HttpResponse.json(newArticle, { status: 201 })
@@ -111,8 +111,10 @@ export const handlers = [
         { status: 400 },
       )
     }
+    const now = new Date().toISOString()
     article.status = 'published'
-    article.updatedAt = new Date().toISOString()
+    article.updatedAt = now
+    article.publishedAt = now
     return HttpResponse.json(article)
   }),
 ]

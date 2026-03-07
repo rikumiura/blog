@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   ArticleId,
   BodyKey,
-  PublicArticleId,
   createDraftArticle,
   createTitle,
+  PublicArticleId,
   publishArticle as publishDomainArticle,
 } from '../../domain/models/article'
 import { publishArticle } from '../publish-article'
@@ -15,7 +15,7 @@ describe('publishArticle', () => {
 
   const FIXED_DATE = '2025-01-15T10:00:00.000Z'
 
-  const deps = () => ({ repository })
+  const deps = () => ({ repository, now: () => FIXED_DATE })
 
   const createTestDraft = () =>
     createDraftArticle({
@@ -27,13 +27,7 @@ describe('publishArticle', () => {
     })
 
   beforeEach(() => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(FIXED_DATE))
     repository = new InMemoryArticleRepository()
-  })
-
-  afterEach(() => {
-    vi.useRealTimers()
   })
 
   it('下書き記事を公開でき、statusがpublishedになる', async () => {
@@ -60,10 +54,7 @@ describe('publishArticle', () => {
   })
 
   it('存在しない記事の場合、statusがnot_foundになる', async () => {
-    const result = await publishArticle(
-      PublicArticleId('non-existent'),
-      deps(),
-    )
+    const result = await publishArticle(PublicArticleId('non-existent'), deps())
 
     expect(result).toEqual({ status: 'not_found' })
   })

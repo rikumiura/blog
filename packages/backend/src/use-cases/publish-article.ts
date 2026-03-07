@@ -14,6 +14,7 @@ export async function publishArticle(
   publicId: PublicArticleId,
   deps: {
     repository: ArticleRepository
+    now: () => string
   },
 ): Promise<PublishArticleResult> {
   const article = await deps.repository.findByPublicId(publicId)
@@ -24,7 +25,7 @@ export async function publishArticle(
     return { status: 'already_published' }
   }
 
-  const now = new Date().toISOString()
+  const now = deps.now()
   const published = publishDomainArticle(article, now)
   await deps.repository.save(published)
 

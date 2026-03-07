@@ -76,7 +76,7 @@ export function ArticleList() {
           </TableRow>
         ) : (
           articles.map((article) => (
-            <TableRow key={article.id}>
+            <TableRow key={article.publicId}>
               <TableCell>
                 <span
                   className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${

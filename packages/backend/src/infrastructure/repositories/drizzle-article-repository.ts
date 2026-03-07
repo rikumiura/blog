@@ -5,8 +5,8 @@ import {
   ArticleId,
   BodyKey,
   PublicArticleId,
+  restoreTitle,
 } from '../../domain/models/article'
-import { createTitle } from '../../domain/models/article'
 import type { ArticleRepository } from '../../domain/ports/article-repository'
 import type { DbClient } from '../database'
 
@@ -72,7 +72,7 @@ function toEntity(row: typeof articles.$inferSelect): Article {
   const base = {
     id: ArticleId(row.id),
     publicId: PublicArticleId(row.publicId),
-    title: createTitle(row.title),
+    title: restoreTitle(row.title),
     bodyKey: BodyKey(row.bodyKey),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
