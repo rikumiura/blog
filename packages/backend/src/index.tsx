@@ -8,6 +8,10 @@ import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
 import { DrizzleCompanyRepository } from './infrastructure/repositories/drizzle-company-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
+import {
+  toArticleDetailDto,
+  toArticleSummaryDto,
+} from './presentation/dto/article-dto'
 import { createArticle } from './use-cases/create-article'
 import { getArticle } from './use-cases/get-article'
 import { listArticles } from './use-cases/list-articles'
@@ -47,7 +51,7 @@ const routes = app
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
     const result = await listArticles(repository)
-    return c.json(result)
+    return c.json(result.map(toArticleSummaryDto))
   })
   .get('/api/articles/:publicId', async (c) => {
     const publicId = PublicArticleId(c.req.param('publicId'))
@@ -59,7 +63,7 @@ const routes = app
 
     switch (result.status) {
       case 'found':
-        return c.json(result.article)
+        return c.json(toArticleDetailDto(result.article, result.body))
       case 'not_found':
         return c.json({ error: '記事が見つかりません' }, 404)
       case 'body_not_found':
@@ -73,18 +77,17 @@ const routes = app
     const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
     const idGenerator = new ArticleIdGeneratorImpl()
 
-    try {
-      const article = await createArticle(input, {
-        repository,
-        bodyStorage,
-        idGenerator,
-      })
-      return c.json(article, 201)
-    } catch (error) {
-      if (error instanceof Error) {
-        return c.json({ error: error.message }, 400)
-      }
-      throw error
+    const result = await createArticle(input, {
+      repository,
+      bodyStorage,
+      idGenerator,
+    })
+
+    switch (result.status) {
+      case 'created':
+        return c.json(toArticleSummaryDto(result.article), 201)
+      case 'validation_error':
+        return c.json({ error: result.message }, 400)
     }
   })
   .patch('/api/articles/:publicId/publish', async (c) => {
@@ -96,7 +99,7 @@ const routes = app
 
     switch (result.status) {
       case 'published':
-        return c.json(result.article)
+        return c.json(toArticleSummaryDto(result.article))
       case 'not_found':
         return c.json({ error: '記事が見つかりません' }, 404)
       case 'already_published':

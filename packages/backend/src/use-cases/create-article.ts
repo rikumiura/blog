@@ -7,6 +7,10 @@ import type { ArticleRepository } from '../domain/ports/article-repository'
 import type { BodyStorage } from '../domain/ports/body-storage'
 import type { ArticleIdGenerator } from '../domain/ports/id-generator'
 
+export type CreateArticleResult =
+  | { status: 'created'; article: DraftArticle }
+  | { status: 'validation_error'; message: string }
+
 export async function createArticle(
   input: { title: string; body: string },
   deps: {
@@ -14,8 +18,16 @@ export async function createArticle(
     bodyStorage: BodyStorage
     idGenerator: ArticleIdGenerator
   },
-): Promise<DraftArticle> {
-  const title = createTitle(input.title)
+): Promise<CreateArticleResult> {
+  let title: ReturnType<typeof createTitle>
+  try {
+    title = createTitle(input.title)
+  } catch (error) {
+    if (error instanceof Error) {
+      return { status: 'validation_error', message: error.message }
+    }
+    throw error
+  }
   const id = deps.idGenerator.generateArticleId()
   const publicId = deps.idGenerator.generatePublicArticleId()
   const bodyKey = deps.idGenerator.generateBodyKey()
@@ -34,5 +46,5 @@ export async function createArticle(
     throw error
   }
 
-  return article
+  return { status: 'created', article }
 }

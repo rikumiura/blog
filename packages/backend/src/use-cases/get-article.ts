@@ -2,10 +2,8 @@ import type { Article, PublicArticleId } from '../domain/models/article'
 import type { ArticleRepository } from '../domain/ports/article-repository'
 import type { BodyStorage } from '../domain/ports/body-storage'
 
-export type ArticleWithBody = Article & { body: string }
-
 export type GetArticleResult =
-  | { status: 'found'; article: ArticleWithBody }
+  | { status: 'found'; article: Article; body: string }
   | { status: 'not_found' }
   | { status: 'body_not_found' }
 
@@ -21,5 +19,5 @@ export async function getArticle(
 
   const bodyResult = await deps.bodyStorage.get(article.bodyKey)
   if (!bodyResult.found) return { status: 'body_not_found' }
-  return { status: 'found', article: { ...article, body: bodyResult.content } }
+  return { status: 'found', article, body: bodyResult.content }
 }
