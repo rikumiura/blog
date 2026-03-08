@@ -10,5 +10,11 @@
       "database_id": "placeholder-id",
       "migrations_dir": "../db/migrations"
     }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ARTICLE_BUCKET",
+      "bucket_name": "my-blog-articles"
+    }
   ]
 }

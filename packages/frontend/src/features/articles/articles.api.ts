@@ -55,7 +55,11 @@ export const articleApi: ArticleRepository = {
   async create(input: { title: string; body: string }): Promise<Article> {
     const res = await apiClient.api.articles.$post({ json: input })
     if (!res.ok) {
-      throw new Error(`記事の作成に失敗しました: ${res.status}`)
+      const errorData = await res.json().catch(() => null)
+      const message =
+        (errorData as { error?: string } | null)?.error ??
+        `記事の作成に失敗しました: ${res.status}`
+      throw new Error(message)
     }
     const data = await res.json()
     return toArticle(data)

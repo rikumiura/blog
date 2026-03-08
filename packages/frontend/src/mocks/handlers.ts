@@ -78,7 +78,7 @@ export const handlers = [
   http.post(`${baseUrl}/api/articles`, async ({ request }) => {
     const body = (await request.json()) as { title: string; body: string }
     const now = new Date().toISOString()
-    const newArticle = {
+    const newArticle: MockArticle = {
       publicId: `mock-${Date.now()}`,
       title: body.title,
       status: 'draft',
