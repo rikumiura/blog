@@ -7,7 +7,6 @@ import { PublicArticleId } from './domain/models/article'
 import { createDbClient } from './infrastructure/database'
 import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator-impl'
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
-import { DrizzleCompanyRepository } from './infrastructure/repositories/drizzle-company-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
 import {
   toArticleDetailDto,
@@ -16,7 +15,6 @@ import {
 import { createArticle } from './use-cases/create-article'
 import { getArticle } from './use-cases/get-article'
 import { listArticles } from './use-cases/list-articles'
-import { listCompanies } from './use-cases/list-companies'
 import { publishArticle } from './use-cases/publish-article'
 
 type Bindings = {
@@ -41,12 +39,6 @@ const routes = app
     return c.json({
       message: 'Hello World from Hono & Cloudflare Workers!',
     })
-  })
-  .get('/api/companies', async (c) => {
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleCompanyRepository(db)
-    const result = await listCompanies(repository)
-    return c.json(result)
   })
   .get('/api/articles', async (c) => {
     const db = createDbClient(c.env.DB)
