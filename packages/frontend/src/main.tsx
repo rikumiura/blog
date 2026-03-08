@@ -1,7 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Route, Routes } from 'react-router'
-import App from './app/App.tsx'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { ArticleCreatePage } from './app/articles/ArticleCreatePage.tsx'
 import { ArticlesPage } from './app/articles/ArticlesPage.tsx'
 import { CompaniesTestPage } from './app/test/CompaniesTestPage.tsx'
@@ -12,8 +11,8 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/articles" element={<ArticlesPage />} />
+        <Route path="/" element={<ArticlesPage />} />
+        <Route path="/articles" element={<Navigate to="/" replace />} />
         <Route path="/articles/new" element={<ArticleCreatePage />} />
         <Route path="/test/companies" element={<CompaniesTestPage />} />
       </Routes>

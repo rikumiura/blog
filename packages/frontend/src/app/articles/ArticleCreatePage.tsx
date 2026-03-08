@@ -6,7 +6,7 @@ export function ArticleCreatePage() {
     <div className="mx-auto max-w-4xl p-5 font-sans">
       <div className="mb-6">
         <Link
-          to="/articles"
+          to="/"
           className="text-sm text-muted-foreground hover:underline"
         >
           &larr; 記事一覧に戻る

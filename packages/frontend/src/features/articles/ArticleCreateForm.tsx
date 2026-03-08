@@ -22,7 +22,7 @@ export function ArticleCreateForm() {
     e.preventDefault()
     const result = await createArticle({ title, body })
     if (result.status === 'success') {
-      navigate('/articles')
+      navigate('/')
     }
   }
 
