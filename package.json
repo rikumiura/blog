@@ -15,7 +15,9 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "msw"
+      "esbuild",
+      "msw",
+      "workerd"
     ]
   }
 }
