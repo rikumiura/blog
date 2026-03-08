@@ -35,10 +35,6 @@ vi.mock('../infrastructure/repositories/drizzle-article-repository', () => ({
   DrizzleArticleRepository: vi.fn(),
 }))
 
-vi.mock('../infrastructure/repositories/drizzle-company-repository', () => ({
-  DrizzleCompanyRepository: vi.fn(),
-}))
-
 vi.mock('../infrastructure/storage/r2-body-storage', () => ({
   R2BodyStorage: vi.fn(),
 }))

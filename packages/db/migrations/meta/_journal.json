@@ -15,6 +15,13 @@
       "when": 1772727935059,
       "tag": "0001_fair_black_cat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1772988449570,
+      "tag": "0002_sturdy_thor_girl",
+      "breakpoints": true
     }
   ]
 }
