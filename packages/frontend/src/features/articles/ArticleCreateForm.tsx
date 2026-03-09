@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from 'jotai'
-import { type FormEvent, useState } from 'react'
+import { type ChangeEvent, type FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,6 +17,20 @@ export function ArticleCreateForm() {
   const error = useAtomValue(articlesErrorAtom)
   const createArticle = useSetAtom(createArticleAtom)
   const navigate = useNavigate()
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const content = event.target?.result
+      if (typeof content === 'string') {
+        setBody(content)
+      }
+    }
+    reader.readAsText(file)
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -48,6 +62,13 @@ export function ArticleCreateForm() {
         <label htmlFor="body" className="text-sm font-medium">
           本文（Markdown）
         </label>
+        <Input
+          id="md-file"
+          type="file"
+          accept=".md"
+          onChange={handleFileChange}
+          className="w-auto"
+        />
         <Textarea
           id="body"
           value={body}
