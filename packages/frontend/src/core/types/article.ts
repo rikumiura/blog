@@ -24,6 +24,9 @@ export type PublishedArticle = ArticleBase & {
 /** 記事のドメイン型（判別共用体で status と publishedAt の整合性を型レベルで保証） */
 export type Article = DraftArticle | PublishedArticle
 
+/** 記事詳細（本文を含む） */
+export type ArticleDetail = Article & { body: string }
+
 /** 記事作成の入力型 */
 export type CreateArticleInput = {
   title: string

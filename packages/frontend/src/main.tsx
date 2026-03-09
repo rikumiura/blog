@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { ArticleCreatePage } from './app/articles/ArticleCreatePage.tsx'
+import { ArticleDetailPage } from './app/articles/ArticleDetailPage.tsx'
 import { ArticlesPage } from './app/articles/ArticlesPage.tsx'
 import './index.css'
 
@@ -12,6 +13,7 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/" element={<ArticlesPage />} />
         <Route path="/articles/new" element={<ArticleCreatePage />} />
+        <Route path="/articles/:publicId" element={<ArticleDetailPage />} />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

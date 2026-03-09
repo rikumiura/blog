@@ -1,5 +1,5 @@
 import type { ArticleRepository } from '@/core/ports/article-repository'
-import type { Article } from '@/core/types/article'
+import type { Article, ArticleDetail } from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
 
 function toArticle(data: {
@@ -41,7 +41,7 @@ export const articleApi: ArticleRepository = {
     return data.map(toArticle)
   },
 
-  async findByPublicId(publicId: string): Promise<Article> {
+  async findByPublicId(publicId: string): Promise<ArticleDetail> {
     const res = await apiClient.api.articles[':publicId'].$get({
       param: { publicId },
     })
@@ -49,7 +49,7 @@ export const articleApi: ArticleRepository = {
       throw new Error(`記事の取得に失敗しました: ${res.status}`)
     }
     const data = await res.json()
-    return toArticle(data)
+    return { ...toArticle(data), body: data.body }
   },
 
   async create(input: { title: string; body: string }): Promise<Article> {

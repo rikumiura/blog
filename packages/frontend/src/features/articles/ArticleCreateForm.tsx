@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   articlesErrorAtom,
-  createLoadingAtom,
   createArticleAtom,
+  createLoadingAtom,
 } from './articles.atom'
 
 export function ArticleCreateForm() {
