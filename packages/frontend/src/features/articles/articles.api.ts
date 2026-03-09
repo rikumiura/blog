@@ -1,11 +1,16 @@
 import type { ArticleRepository } from '@/core/ports/article-repository'
-import type { Article, ArticleDetail } from '@/core/types/article'
+import type {
+  Article,
+  ArticleDetail,
+  CreateArticleInput,
+} from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
 
 function toArticle(data: {
   publicId: string
   title: string
   status: string
+  tags: string[]
   createdAt: string
   updatedAt: string
   publishedAt: string | null
@@ -14,6 +19,7 @@ function toArticle(data: {
     return {
       publicId: data.publicId,
       title: data.title,
+      tags: data.tags,
       status: 'published',
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
@@ -23,6 +29,7 @@ function toArticle(data: {
   return {
     publicId: data.publicId,
     title: data.title,
+    tags: data.tags,
     status: 'draft',
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
@@ -52,8 +59,10 @@ export const articleApi: ArticleRepository = {
     return { ...toArticle(data), body: data.body }
   },
 
-  async create(input: { title: string; body: string }): Promise<Article> {
-    const res = await apiClient.api.articles.$post({ json: input })
+  async create(input: CreateArticleInput): Promise<Article> {
+    const res = await apiClient.api.articles.$post({
+      json: { title: input.title, body: input.body, tags: input.tags },
+    })
     if (!res.ok) {
       const errorData = await res.json().catch(() => null)
       const message =
@@ -74,5 +83,17 @@ export const articleApi: ArticleRepository = {
     }
     const data = await res.json()
     return toArticle(data)
+  },
+
+  async updateTags(publicId: string, tags: string[]): Promise<string[]> {
+    const res = await apiClient.api.articles[':publicId'].tags.$patch({
+      param: { publicId },
+      json: { tags },
+    })
+    if (!res.ok) {
+      throw new Error(`タグの更新に失敗しました: ${res.status}`)
+    }
+    const data = await res.json()
+    return data.tags
   },
 }

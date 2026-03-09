@@ -10,4 +10,5 @@ export interface ArticleRepository {
   findByPublicId(publicId: string): Promise<ArticleDetail>
   create(input: CreateArticleInput): Promise<Article>
   publish(publicId: string): Promise<Article>
+  updateTags(publicId: string, tags: string[]): Promise<string[]>
 }

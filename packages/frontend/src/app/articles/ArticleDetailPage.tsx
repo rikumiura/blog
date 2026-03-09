@@ -54,6 +54,18 @@ export function ArticleDetailPage() {
               更新日: {new Date(article.updatedAt).toLocaleDateString('ja-JP')}
             </span>
           </div>
+          {article.tags.length > 0 && (
+            <div className="mb-6 flex flex-wrap gap-2">
+              {article.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-block rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
           <div className="whitespace-pre-wrap leading-relaxed">
             {article.body}
           </div>

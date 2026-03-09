@@ -16,6 +16,8 @@ type Tab = 'edit' | 'preview'
 export function ArticleCreateForm() {
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
+  const [tagInput, setTagInput] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState<Tab>('edit')
   const isLoading = useAtomValue(createLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
@@ -46,9 +48,28 @@ export function ArticleCreateForm() {
     reader.readAsText(file)
   }
 
+  const addTag = () => {
+    const trimmed = tagInput.trim()
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags([...tags, trimmed])
+    }
+    setTagInput('')
+  }
+
+  const removeTag = (tag: string) => {
+    setTags(tags.filter((t) => t !== tag))
+  }
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addTag()
+    }
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const result = await createArticle({ title, body })
+    const result = await createArticle({ title, body, tags })
     if (result.status === 'success') {
       navigate('/')
     }
@@ -70,6 +91,42 @@ export function ArticleCreateForm() {
           required
           placeholder="記事のタイトルを入力"
         />
+      </div>
+
+      <div className="space-y-2">
+        <label htmlFor="tags" className="text-sm font-medium">
+          タグ
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+            >
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="ml-0.5 hover:text-blue-600"
+              >
+                &times;
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            id="tags"
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+            placeholder="タグを入力（Enterで追加）"
+          />
+          <Button type="button" variant="outline" size="sm" onClick={addTag}>
+            追加
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">
