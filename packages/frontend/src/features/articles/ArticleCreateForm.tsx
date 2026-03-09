@@ -22,6 +22,11 @@ export function ArticleCreateForm() {
     const file = e.target.files?.[0]
     if (!file) return
 
+    setTitle((prev) => {
+      if (prev) return prev
+      return file.name.replace(/\.md$/, '')
+    })
+
     const reader = new FileReader()
     reader.onload = (event) => {
       const content = event.target?.result
