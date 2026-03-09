@@ -54,7 +54,7 @@ export function ArticleCreateForm() {
           onChange={(e) => setBody(e.target.value)}
           rows={15}
           required
-          className="font-mono"
+          className="min-h-[60vh] font-mono"
           placeholder="Markdown で本文を入力"
         />
       </div>
