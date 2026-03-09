@@ -39,11 +39,7 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
 /** 記事を作成して一覧に追加するアクション */
 export const createArticleAtom = atom(
   null,
-  async (
-    get,
-    set,
-    input: { title: string; body: string },
-  ): Promise<Result> => {
+  async (get, set, input: { title: string; body: string }): Promise<Result> => {
     set(createLoadingAtom, true)
     set(articlesErrorAtom, null)
     try {

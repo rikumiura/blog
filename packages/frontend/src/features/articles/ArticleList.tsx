@@ -1,5 +1,6 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useEffect } from 'react'
+import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -12,10 +13,10 @@ import {
 import {
   articlesAtom,
   articlesErrorAtom,
-  fetchLoadingAtom,
-  publishLoadingAtom,
   fetchArticlesAtom,
+  fetchLoadingAtom,
   publishArticleAtom,
+  publishLoadingAtom,
 } from './articles.atom'
 
 function formatDateTime(isoString: string): string {
@@ -90,7 +91,14 @@ export function ArticleList() {
                   {article.status === 'published' ? '公開' : '下書き'}
                 </span>
               </TableCell>
-              <TableCell className="font-medium">{article.title}</TableCell>
+              <TableCell className="font-medium">
+                <Link
+                  to={`/articles/${article.publicId}`}
+                  className="hover:underline"
+                >
+                  {article.title}
+                </Link>
+              </TableCell>
               <TableCell>{formatDateTime(article.createdAt)}</TableCell>
               <TableCell>{formatDateTime(article.updatedAt)}</TableCell>
               <TableCell>
