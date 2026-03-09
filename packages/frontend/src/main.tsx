@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
+import { BrowserRouter, Route, Routes } from 'react-router'
 import { ArticleCreatePage } from './app/articles/ArticleCreatePage.tsx'
 import { ArticlesPage } from './app/articles/ArticlesPage.tsx'
 import { CompaniesTestPage } from './app/test/CompaniesTestPage.tsx'
@@ -12,7 +12,6 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<ArticlesPage />} />
-        <Route path="/articles" element={<Navigate to="/" replace />} />
         <Route path="/articles/new" element={<ArticleCreatePage />} />
         <Route path="/test/companies" element={<CompaniesTestPage />} />
       </Routes>
