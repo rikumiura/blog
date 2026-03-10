@@ -65,17 +65,21 @@ export class DrizzleTagRepository implements TagRepository {
     articleId: ArticleId,
     tagIds: Tag['id'][],
   ): Promise<void> {
-    // 既存の紐付けを削除
-    await this.db
+    const deleteOp = this.db
       .delete(articleTags)
       .where(eq(articleTags.articleId, articleId))
 
-    // 新しい紐付けを挿入
-    if (tagIds.length > 0) {
-      await this.db
-        .insert(articleTags)
-        .values(tagIds.map((tagId) => ({ articleId, tagId })))
+    if (tagIds.length === 0) {
+      await deleteOp
+      return
     }
+
+    const insertOp = this.db
+      .insert(articleTags)
+      .values(tagIds.map((tagId) => ({ articleId, tagId })))
+
+    // batch で原子的に実行
+    await this.db.batch([deleteOp, insertOp])
   }
 }
 

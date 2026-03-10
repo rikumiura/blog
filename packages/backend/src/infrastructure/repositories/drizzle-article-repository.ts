@@ -42,6 +42,10 @@ export class DrizzleArticleRepository implements ArticleRepository {
       })
   }
 
+  async delete(id: ArticleId): Promise<void> {
+    await this.db.delete(articles).where(eq(articles.id, id))
+  }
+
   async findById(id: ArticleId): Promise<Article | null> {
     const rows = await this.db
       .select()

@@ -31,11 +31,11 @@ export async function resolveTags(
 
   // 既存タグを検索
   const existingTags = await deps.tagRepository.findByNames(uniqueNames)
-  const existingNameSet = new Set(existingTags.map((t) => t.name as string))
+  const existingNameSet = new Set(existingTags.map((t) => String(t.name)))
 
   // 新規タグを作成
   const newTags: Tag[] = uniqueNames
-    .filter((name) => !existingNameSet.has(name))
+    .filter((name) => !existingNameSet.has(String(name)))
     .map((name) => ({
       id: deps.generateTagId(),
       name,

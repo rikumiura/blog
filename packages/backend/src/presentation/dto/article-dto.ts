@@ -24,7 +24,7 @@ export function toArticleSummaryDto(
     createdAt: article.createdAt,
     updatedAt: article.updatedAt,
     publishedAt: article.publishedAt,
-    tags: tags.map((t) => t.name as string),
+    tags: tags.map((t) => String(t.name)),
   }
 }
 

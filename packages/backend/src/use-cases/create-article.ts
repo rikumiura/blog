@@ -49,19 +49,31 @@ export async function createArticle(
   const article = createDraftArticle({ id, publicId, title, bodyKey, now })
   try {
     await deps.repository.save(article)
-    // 記事とタグの紐付け
-    if (resolveResult.tags.length > 0) {
-      await deps.tagRepository.setArticleTags(
-        article.id,
-        resolveResult.tags.map((t) => t.id),
-      )
-    }
   } catch (error) {
     // DB保存失敗時にR2の孤立ファイルを削除する補償処理
     await deps.bodyStorage.delete(bodyKey).catch(() => {
       console.error(`補償処理失敗: R2ファイル ${bodyKey} の削除に失敗しました`)
     })
     throw error
+  }
+
+  // 記事とタグの紐付け（記事保存成功後に実行）
+  if (resolveResult.tags.length > 0) {
+    try {
+      await deps.tagRepository.setArticleTags(
+        article.id,
+        resolveResult.tags.map((t) => t.id),
+      )
+    } catch (error) {
+      // タグ紐付け失敗時は記事とR2ファイルを削除する補償処理
+      await deps.repository.delete(article.id).catch(() => {
+        console.error(`補償処理失敗: 記事 ${article.id} の削除に失敗しました`)
+      })
+      await deps.bodyStorage.delete(bodyKey).catch(() => {
+        console.error(`補償処理失敗: R2ファイル ${bodyKey} の削除に失敗しました`)
+      })
+      throw error
+    }
   }
 
   return { status: 'created', article, tags: resolveResult.tags }

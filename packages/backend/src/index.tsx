@@ -34,11 +34,11 @@ const createArticleSchema = z.object({
     .min(1, 'タイトルは必須です')
     .max(100, 'タイトルは100文字以内にしてください'),
   body: z.string(),
-  tags: z.array(z.string().max(30, 'タグ名は30文字以内にしてください')).optional().default([]),
+  tags: z.array(z.string().min(1, 'タグ名は空にできません').max(30, 'タグ名は30文字以内にしてください')).optional().default([]),
 })
 
 const updateTagsSchema = z.object({
-  tags: z.array(z.string().max(30, 'タグ名は30文字以内にしてください')),
+  tags: z.array(z.string().min(1, 'タグ名は空にできません').max(30, 'タグ名は30文字以内にしてください')),
 })
 
 const routes = app
@@ -148,7 +148,7 @@ const routes = app
       switch (result.status) {
         case 'updated':
           return c.json({
-            tags: result.tags.map((t) => t.name as string),
+            tags: result.tags.map((t) => String(t.name)),
           })
         case 'not_found':
           return c.json({ error: '記事が見つかりません' }, 404)
