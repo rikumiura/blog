@@ -28,17 +28,22 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('/*', cors())
 
+const tagNameSchema = z
+  .string()
+  .min(1, 'タグ名は空にできません')
+  .max(30, 'タグ名は30文字以内にしてください')
+
 const createArticleSchema = z.object({
   title: z
     .string()
     .min(1, 'タイトルは必須です')
     .max(100, 'タイトルは100文字以内にしてください'),
   body: z.string(),
-  tags: z.array(z.string().min(1, 'タグ名は空にできません').max(30, 'タグ名は30文字以内にしてください')).optional().default([]),
+  tags: z.array(tagNameSchema).optional().default([]),
 })
 
 const updateTagsSchema = z.object({
-  tags: z.array(z.string().min(1, 'タグ名は空にできません').max(30, 'タグ名は30文字以内にしてください')),
+  tags: z.array(tagNameSchema),
 })
 
 const routes = app

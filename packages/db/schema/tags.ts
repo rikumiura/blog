@@ -21,10 +21,10 @@ export const articleTags = sqliteTable(
   {
     articleId: text('article_id')
       .notNull()
-      .references(() => articles.id),
+      .references(() => articles.id, { onDelete: 'cascade' }),
     tagId: text('tag_id')
       .notNull()
-      .references(() => tags.id),
+      .references(() => tags.id, { onDelete: 'cascade' }),
   },
   (table) => [primaryKey({ columns: [table.articleId, table.tagId] })],
 )
