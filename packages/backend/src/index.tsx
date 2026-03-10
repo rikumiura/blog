@@ -39,11 +39,15 @@ const createArticleSchema = z.object({
     .min(1, 'タイトルは必須です')
     .max(100, 'タイトルは100文字以内にしてください'),
   body: z.string(),
-  tags: z.array(tagNameSchema).optional().default([]),
+  tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください').optional().default([]),
 })
 
 const updateTagsSchema = z.object({
-  tags: z.array(tagNameSchema),
+  tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください'),
+})
+
+const publicIdParamSchema = z.object({
+  publicId: z.string().min(1).max(30),
 })
 
 const routes = app
@@ -68,8 +72,8 @@ const routes = app
       ),
     )
   })
-  .get('/api/articles/:publicId', async (c) => {
-    const publicId = PublicArticleId(c.req.param('publicId'))
+  .get('/api/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
+    const publicId = PublicArticleId(c.req.valid('param').publicId)
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
     const tagRepository = new DrizzleTagRepository(db)
@@ -111,8 +115,8 @@ const routes = app
         return c.json({ error: result.message }, 400)
     }
   })
-  .patch('/api/articles/:publicId/publish', async (c) => {
-    const publicId = PublicArticleId(c.req.param('publicId'))
+  .patch('/api/articles/:publicId/publish', zValidator('param', publicIdParamSchema), async (c) => {
+    const publicId = PublicArticleId(c.req.valid('param').publicId)
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
     const tagRepository = new DrizzleTagRepository(db)
@@ -135,9 +139,10 @@ const routes = app
   })
   .patch(
     '/api/articles/:publicId/tags',
+    zValidator('param', publicIdParamSchema),
     zValidator('json', updateTagsSchema),
     async (c) => {
-      const publicId = PublicArticleId(c.req.param('publicId'))
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
       const { tags } = c.req.valid('json')
       const db = createDbClient(c.env.DB)
       const articleRepository = new DrizzleArticleRepository(db)
