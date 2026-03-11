@@ -42,7 +42,7 @@ export const createArticleAtom = atom(
   async (
     get,
     set,
-    input: { title: string; body: string; tags: string[] },
+    input: { title: string; body: string; tags: string[]; publish?: boolean },
   ): Promise<Result> => {
     set(createLoadingAtom, true)
     set(articlesErrorAtom, null)

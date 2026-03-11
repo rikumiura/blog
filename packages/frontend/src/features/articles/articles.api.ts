@@ -61,7 +61,12 @@ export const articleApi: ArticleRepository = {
 
   async create(input: CreateArticleInput): Promise<Article> {
     const res = await apiClient.api.articles.$post({
-      json: { title: input.title, body: input.body, tags: input.tags },
+      json: {
+        title: input.title,
+        body: input.body,
+        tags: input.tags,
+        publish: input.publish ?? false,
+      },
     })
     if (!res.ok) {
       const errorData = await res.json().catch(() => null)

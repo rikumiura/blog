@@ -1,7 +1,8 @@
 import {
+  type Article,
   createDraftArticle,
   createTitle,
-  type DraftArticle,
+  publishArticle as publishDomainArticle,
 } from '../domain/models/article'
 import type { Tag } from '../domain/models/tag'
 import type { ArticleRepository } from '../domain/ports/article-repository'
@@ -11,11 +12,11 @@ import type { TagRepository } from '../domain/ports/tag-repository'
 import { resolveTags } from './resolve-tags'
 
 export type CreateArticleResult =
-  | { status: 'created'; article: DraftArticle; tags: Tag[] }
+  | { status: 'created'; article: Article; tags: Tag[] }
   | { status: 'validation_error'; message: string }
 
 export async function createArticle(
-  input: { title: string; body: string; tags?: string[] },
+  input: { title: string; body: string; tags?: string[]; publish?: boolean },
   deps: {
     repository: ArticleRepository
     bodyStorage: BodyStorage
@@ -74,6 +75,13 @@ export async function createArticle(
       })
       throw error
     }
+  }
+
+  // 公開オプションが指定されている場合は即座に公開する
+  if (input.publish) {
+    const published = publishDomainArticle(article, now)
+    await deps.repository.save(published)
+    return { status: 'created', article: published, tags: resolveResult.tags }
   }
 
   return { status: 'created', article, tags: resolveResult.tags }
