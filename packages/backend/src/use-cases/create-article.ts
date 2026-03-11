@@ -47,7 +47,11 @@ export async function createArticle(
   await deps.bodyStorage.save(bodyKey, input.body)
 
   const now = deps.now()
-  const article = createDraftArticle({ id, publicId, title, bodyKey, now })
+  const draftArticle = createDraftArticle({ id, publicId, title, bodyKey, now })
+  // 公開オプションが指定されている場合は公開状態で保存する
+  const article = input.publish
+    ? publishDomainArticle(draftArticle, now)
+    : draftArticle
   try {
     await deps.repository.save(article)
   } catch (error) {
@@ -75,13 +79,6 @@ export async function createArticle(
       })
       throw error
     }
-  }
-
-  // 公開オプションが指定されている場合は即座に公開する
-  if (input.publish) {
-    const published = publishDomainArticle(article, now)
-    await deps.repository.save(published)
-    return { status: 'created', article: published, tags: resolveResult.tags }
   }
 
   return { status: 'created', article, tags: resolveResult.tags }

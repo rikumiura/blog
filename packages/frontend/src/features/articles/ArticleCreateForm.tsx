@@ -67,9 +67,17 @@ export function ArticleCreateForm() {
     }
   }
 
-  const handleSubmit = async (e: FormEvent, publish = false) => {
+  const [isPublish, setIsPublish] = useState(false)
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const result = await createArticle({ title, body, tags, publish })
+    const result = await createArticle({
+      title,
+      body,
+      tags,
+      publish: isPublish,
+    })
+    setIsPublish(false)
     if (result.status === 'success') {
       navigate('/')
     }
@@ -189,10 +197,9 @@ export function ArticleCreateForm() {
           {isLoading ? '保存中...' : '下書き保存'}
         </Button>
         <Button
-          type="button"
-          variant="default"
+          type="submit"
           disabled={isLoading}
-          onClick={(e) => handleSubmit(e, true)}
+          onClick={() => setIsPublish(true)}
         >
           {isLoading ? '公開中...' : '公開する'}
         </Button>
