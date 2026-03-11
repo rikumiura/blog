@@ -5,6 +5,7 @@ import {
   BodyKey,
   PublicArticleId,
 } from '../../domain/models/article'
+import { TagId } from '../../domain/models/tag'
 import type { ArticleIdGenerator } from '../../domain/ports/id-generator'
 
 export class ArticleIdGeneratorImpl implements ArticleIdGenerator {
@@ -18,5 +19,9 @@ export class ArticleIdGeneratorImpl implements ArticleIdGenerator {
 
   generateBodyKey(): BodyKey {
     return BodyKey(`${uuidv7()}.md`)
+  }
+
+  generateTagId(): TagId {
+    return TagId(uuidv7())
   }
 }

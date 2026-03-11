@@ -47,6 +47,7 @@ export function ArticleList() {
         <TableRow>
           <TableHead>ステータス</TableHead>
           <TableHead>タイトル</TableHead>
+          <TableHead>タグ</TableHead>
           <TableHead>作成日時</TableHead>
           <TableHead>更新日時</TableHead>
           <TableHead>操作</TableHead>
@@ -56,7 +57,7 @@ export function ArticleList() {
         {isFetching ? (
           <TableRow>
             <TableCell
-              colSpan={5}
+              colSpan={6}
               className="text-center text-muted-foreground"
             >
               読み込み中...
@@ -64,14 +65,14 @@ export function ArticleList() {
           </TableRow>
         ) : error ? (
           <TableRow>
-            <TableCell colSpan={5} className="text-center text-destructive">
+            <TableCell colSpan={6} className="text-center text-destructive">
               {error}
             </TableCell>
           </TableRow>
         ) : articles.length === 0 ? (
           <TableRow>
             <TableCell
-              colSpan={5}
+              colSpan={6}
               className="text-center text-muted-foreground"
             >
               記事がありません
@@ -98,6 +99,18 @@ export function ArticleList() {
                 >
                   {article.title}
                 </Link>
+              </TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1">
+                  {article.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="inline-block rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </TableCell>
               <TableCell>{formatDateTime(article.createdAt)}</TableCell>
               <TableCell>{formatDateTime(article.updatedAt)}</TableCell>

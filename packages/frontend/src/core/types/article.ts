@@ -5,6 +5,7 @@ export type ArticleStatus = 'draft' | 'published'
 type ArticleBase = {
   publicId: string
   title: string
+  tags: string[]
   createdAt: string
   updatedAt: string
 }
@@ -31,4 +32,5 @@ export type ArticleDetail = Article & { body: string }
 export type CreateArticleInput = {
   title: string
   body: string
+  tags: string[]
 }
