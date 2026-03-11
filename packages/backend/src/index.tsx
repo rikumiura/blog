@@ -40,6 +40,7 @@ const createArticleSchema = z.object({
     .max(100, 'タイトルは100文字以内にしてください'),
   body: z.string(),
   tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください').optional().default([]),
+  publish: z.boolean().optional().default(false),
 })
 
 const updateTagsSchema = z.object({

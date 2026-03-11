@@ -1,7 +1,8 @@
 import {
+  type Article,
   createDraftArticle,
   createTitle,
-  type DraftArticle,
+  publishArticle as publishDomainArticle,
 } from '../domain/models/article'
 import type { Tag } from '../domain/models/tag'
 import type { ArticleRepository } from '../domain/ports/article-repository'
@@ -11,11 +12,11 @@ import type { TagRepository } from '../domain/ports/tag-repository'
 import { resolveTags } from './resolve-tags'
 
 export type CreateArticleResult =
-  | { status: 'created'; article: DraftArticle; tags: Tag[] }
+  | { status: 'created'; article: Article; tags: Tag[] }
   | { status: 'validation_error'; message: string }
 
 export async function createArticle(
-  input: { title: string; body: string; tags?: string[] },
+  input: { title: string; body: string; tags?: string[]; publish?: boolean },
   deps: {
     repository: ArticleRepository
     bodyStorage: BodyStorage
@@ -46,7 +47,11 @@ export async function createArticle(
   await deps.bodyStorage.save(bodyKey, input.body)
 
   const now = deps.now()
-  const article = createDraftArticle({ id, publicId, title, bodyKey, now })
+  const draftArticle = createDraftArticle({ id, publicId, title, bodyKey, now })
+  // 公開オプションが指定されている場合は公開状態で保存する
+  const article = input.publish
+    ? publishDomainArticle(draftArticle, now)
+    : draftArticle
   try {
     await deps.repository.save(article)
   } catch (error) {

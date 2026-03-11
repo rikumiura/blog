@@ -67,9 +67,17 @@ export function ArticleCreateForm() {
     }
   }
 
+  const [isPublish, setIsPublish] = useState(false)
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const result = await createArticle({ title, body, tags })
+    const result = await createArticle({
+      title,
+      body,
+      tags,
+      publish: isPublish,
+    })
+    setIsPublish(false)
     if (result.status === 'success') {
       navigate('/')
     }
@@ -184,9 +192,18 @@ export function ArticleCreateForm() {
         )}
       </div>
 
-      <Button type="submit" disabled={isLoading}>
-        {isLoading ? '作成中...' : '下書き保存'}
-      </Button>
+      <div className="flex gap-2">
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? '保存中...' : '下書き保存'}
+        </Button>
+        <Button
+          type="submit"
+          disabled={isLoading}
+          onClick={() => setIsPublish(true)}
+        >
+          {isLoading ? '公開中...' : '公開する'}
+        </Button>
+      </div>
     </form>
   )
 }
