@@ -14,6 +14,7 @@ export const articlesAtom = atom<Article[]>([])
 export const fetchLoadingAtom = atom(false)
 export const createLoadingAtom = atom(false)
 export const publishLoadingAtom = atom(false)
+export const updateTagsLoadingAtom = atom(false)
 
 /** エラー状態 */
 export const articlesErrorAtom = atom<string | null>(null)
@@ -58,6 +59,31 @@ export const createArticleAtom = atom(
       return { status: 'error', error: message }
     } finally {
       set(createLoadingAtom, false)
+    }
+  },
+)
+
+/** 記事のタグを更新するアクション */
+export const updateTagsAtom = atom(
+  null,
+  async (
+    get,
+    set,
+    { publicId, tags }: { publicId: string; tags: string[] },
+  ): Promise<Result<string[]>> => {
+    set(updateTagsLoadingAtom, true)
+    set(articlesErrorAtom, null)
+    try {
+      const repository = get(articleRepositoryAtom)
+      const updatedTags = await repository.updateTags(publicId, tags)
+      return { status: 'success', data: updatedTags }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'タグの更新に失敗しました'
+      set(articlesErrorAtom, message)
+      return { status: 'error', error: message }
+    } finally {
+      set(updateTagsLoadingAtom, false)
     }
   },
 )
