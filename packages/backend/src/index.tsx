@@ -44,15 +44,20 @@ const createArticleSchema = z.object({
   publish: z.boolean().optional().default(false),
 })
 
-const updateArticleSchema = z.object({
-  title: z
-    .string()
-    .min(1, 'タイトルは必須です')
-    .max(100, 'タイトルは100文字以内にしてください')
-    .optional(),
-  body: z.string().optional(),
-  tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください').optional(),
-})
+const updateArticleSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'タイトルは必須です')
+      .max(100, 'タイトルは100文字以内にしてください')
+      .optional(),
+    body: z.string().optional(),
+    tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください').optional(),
+  })
+  .refine(
+    (data) => data.title !== undefined || data.body !== undefined || data.tags !== undefined,
+    { message: '更新するフィールドを1つ以上指定してください' },
+  )
 
 const updateTagsSchema = z.object({
   tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください'),

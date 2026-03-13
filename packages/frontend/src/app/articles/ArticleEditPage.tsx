@@ -11,7 +11,11 @@ export function ArticleEditPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (!publicId) return
+    if (!publicId) {
+      setError('記事IDが指定されていません')
+      setIsLoading(false)
+      return
+    }
 
     let cancelled = false
     setIsLoading(true)

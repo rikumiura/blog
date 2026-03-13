@@ -1,7 +1,7 @@
 import DOMPurify from 'dompurify'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { marked } from 'marked'
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import {
   articlesErrorAtom,
   updateArticleAtom,
   updateLoadingAtom,
-} from './articles.atom'
+} from '@/features/articles/articles.atom'
 
 type Tab = 'edit' | 'preview'
 
@@ -27,12 +27,19 @@ export function ArticleEditForm({ article }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('edit')
   const isLoading = useAtomValue(updateLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
+  const setError = useSetAtom(articlesErrorAtom)
   const updateArticle = useSetAtom(updateArticleAtom)
   const navigate = useNavigate()
 
+  // マウント時に前回のエラーをクリアする
+  useEffect(() => {
+    setError(null)
+  }, [setError])
+
   const previewHtml = useMemo(() => {
     if (!body) return ''
-    return DOMPurify.sanitize(marked.parse(body) as string)
+    const parsed = marked.parse(body)
+    return DOMPurify.sanitize(typeof parsed === 'string' ? parsed : '')
   }, [body])
 
   const addTag = () => {

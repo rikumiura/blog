@@ -27,7 +27,8 @@ export function ArticleCreateForm() {
 
   const previewHtml = useMemo(() => {
     if (!body) return ''
-    return DOMPurify.sanitize(marked.parse(body) as string)
+    const parsed = marked.parse(body)
+    return DOMPurify.sanitize(typeof parsed === 'string' ? parsed : '')
   }, [body])
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {

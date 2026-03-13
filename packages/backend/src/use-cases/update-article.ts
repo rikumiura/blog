@@ -42,6 +42,9 @@ export async function updateArticle(
     validatedTitle = titleResult.value
   }
 
+  // NOTE: resolveTags は未知のタグ名を永続化する（upsert）。
+  // バリデーション失敗時に孤立タグが残る可能性があるが、
+  // タグは記事と独立したエンティティであり、孤立しても問題ない設計としている。
   let resolvedTags: Tag[] | undefined
   if (input.tags !== undefined) {
     const resolveResult = await resolveTags(input.tags, {

@@ -1,10 +1,10 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router'
-import { ArticleCreatePage } from './app/articles/ArticleCreatePage.tsx'
-import { ArticleDetailPage } from './app/articles/ArticleDetailPage.tsx'
-import { ArticleEditPage } from './app/articles/ArticleEditPage.tsx'
-import { ArticlesPage } from './app/articles/ArticlesPage.tsx'
+import { ArticleCreatePage } from '@/app/articles/ArticleCreatePage'
+import { ArticleDetailPage } from '@/app/articles/ArticleDetailPage'
+import { ArticleEditPage } from '@/app/articles/ArticleEditPage'
+import { ArticlesPage } from '@/app/articles/ArticlesPage'
 import './index.css'
 
 // biome-ignore lint/style/noNonNullAssertion: root element always exists in index.html
