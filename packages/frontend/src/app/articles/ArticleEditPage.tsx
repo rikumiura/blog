@@ -13,14 +13,26 @@ export function ArticleEditPage() {
   useEffect(() => {
     if (!publicId) return
 
+    let cancelled = false
     setIsLoading(true)
+    setArticle(null)
+    setError(null)
     articleApi
       .findByPublicId(publicId)
-      .then(setArticle)
-      .catch((e: unknown) => {
-        setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
+      .then((data) => {
+        if (!cancelled) setArticle(data)
       })
-      .finally(() => setIsLoading(false))
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [publicId])
 
   return (

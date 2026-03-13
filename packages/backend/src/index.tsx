@@ -153,6 +153,8 @@ const routes = app
           return c.json(toArticleDetailDto(result.article, result.body, result.tags))
         case 'not_found':
           return c.json({ error: '記事が見つかりません' }, 404)
+        case 'body_not_found':
+          return c.json({ error: '記事本文が見つかりません' }, 404)
         case 'validation_error':
           return c.json({ error: result.message }, 400)
       }

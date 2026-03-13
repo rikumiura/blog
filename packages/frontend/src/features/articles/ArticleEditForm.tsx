@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { marked } from 'marked'
 import { type FormEvent, useMemo, useState } from 'react'
@@ -31,7 +32,7 @@ export function ArticleEditForm({ article }: Props) {
 
   const previewHtml = useMemo(() => {
     if (!body) return ''
-    return marked.parse(body) as string
+    return DOMPurify.sanitize(marked.parse(body) as string)
   }, [body])
 
   const addTag = () => {
@@ -47,6 +48,7 @@ export function ArticleEditForm({ article }: Props) {
   }
 
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
       addTag()
@@ -156,7 +158,7 @@ export function ArticleEditForm({ article }: Props) {
           <div className="prose min-h-[60vh] max-w-none rounded-md border p-4">
             {body ? (
               <div
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: marked によるサニタイズ済み HTML を表示
+                // biome-ignore lint/security/noDangerouslySetInnerHtml: DOMPurify でサニタイズ済み HTML を表示
                 dangerouslySetInnerHTML={{ __html: previewHtml }}
               />
             ) : (

@@ -38,6 +38,14 @@ function toArticle(data: {
   }
 }
 
+function extractErrorMessage(data: unknown): string | undefined {
+  if (data !== null && typeof data === 'object' && 'error' in data) {
+    const { error } = data as Record<string, unknown>
+    if (typeof error === 'string') return error
+  }
+  return undefined
+}
+
 /** Hono RPCクライアントによるArticleRepositoryの実装 */
 export const articleApi: ArticleRepository = {
   async findAll(): Promise<Article[]> {
@@ -72,7 +80,7 @@ export const articleApi: ArticleRepository = {
     if (!res.ok) {
       const errorData = await res.json().catch(() => null)
       const message =
-        (errorData as { error?: string } | null)?.error ??
+        extractErrorMessage(errorData) ??
         `記事の作成に失敗しました: ${res.status}`
       throw new Error(message)
     }
@@ -91,7 +99,7 @@ export const articleApi: ArticleRepository = {
     if (!res.ok) {
       const errorData = await res.json().catch(() => null)
       const message =
-        (errorData as { error?: string } | null)?.error ??
+        extractErrorMessage(errorData) ??
         `記事の更新に失敗しました: ${res.status}`
       throw new Error(message)
     }
