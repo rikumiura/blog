@@ -10,6 +10,7 @@ export function ArticleDetailPage() {
   const navigate = useNavigate()
   const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -17,11 +18,14 @@ export function ArticleDetailPage() {
   const handleDelete = useCallback(async () => {
     if (!publicId) return
     setIsDeleting(true)
+    setDeleteError(null)
     try {
       await articleApi.delete(publicId)
       navigate('/')
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : '記事の削除に失敗しました')
+      setDeleteError(
+        e instanceof Error ? e.message : '記事の削除に失敗しました',
+      )
       setIsDeleteDialogOpen(false)
     } finally {
       setIsDeleting(false)
@@ -98,6 +102,9 @@ export function ArticleDetailPage() {
                 </span>
               ))}
             </div>
+          )}
+          {deleteError && (
+            <p className="mb-4 text-destructive">{deleteError}</p>
           )}
           <div className="whitespace-pre-wrap leading-relaxed">
             {article.body}

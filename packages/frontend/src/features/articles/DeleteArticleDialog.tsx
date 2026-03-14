@@ -40,13 +40,11 @@ export function DeleteArticleDialog({
   if (!isOpen) return null
 
   return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: dialog要素はネイティブのEscapeキーハンドリング（onClose）でキーボード操作に対応済み
     <dialog
       ref={dialogRef}
       className="rounded-lg border bg-background p-6 shadow-lg backdrop:bg-black/50"
       onClick={handleBackdropClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') onCancel()
-      }}
       onClose={onCancel}
     >
       <div className="flex flex-col gap-4">
