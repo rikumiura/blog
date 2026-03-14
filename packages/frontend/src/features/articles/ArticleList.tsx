@@ -115,16 +115,21 @@ export function ArticleList() {
               <TableCell>{formatDateTime(article.createdAt)}</TableCell>
               <TableCell>{formatDateTime(article.updatedAt)}</TableCell>
               <TableCell>
-                {article.status === 'draft' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => publishArticle(article.publicId)}
-                    disabled={isPublishing}
-                  >
-                    公開する
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/articles/${article.publicId}/edit`}>編集</Link>
                   </Button>
-                )}
+                  {article.status === 'draft' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => publishArticle(article.publicId)}
+                      disabled={isPublishing}
+                    >
+                      公開する
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))

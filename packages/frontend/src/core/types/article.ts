@@ -35,3 +35,10 @@ export type CreateArticleInput = {
   tags: string[]
   publish?: boolean
 }
+
+/** 記事更新の入力型 */
+export type UpdateArticleInput = {
+  title?: string
+  body?: string
+  tags?: string[]
+}

@@ -3,6 +3,7 @@ import type {
   Article,
   ArticleDetail,
   CreateArticleInput,
+  UpdateArticleInput,
 } from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
 
@@ -35,6 +36,14 @@ function toArticle(data: {
     updatedAt: data.updatedAt,
     publishedAt: null,
   }
+}
+
+function extractErrorMessage(data: unknown): string | undefined {
+  if (data !== null && typeof data === 'object' && 'error' in data) {
+    const { error } = data as Record<string, unknown>
+    if (typeof error === 'string') return error
+  }
+  return undefined
 }
 
 /** Hono RPCクライアントによるArticleRepositoryの実装 */
@@ -71,12 +80,31 @@ export const articleApi: ArticleRepository = {
     if (!res.ok) {
       const errorData = await res.json().catch(() => null)
       const message =
-        (errorData as { error?: string } | null)?.error ??
+        extractErrorMessage(errorData) ??
         `記事の作成に失敗しました: ${res.status}`
       throw new Error(message)
     }
     const data = await res.json()
     return toArticle(data)
+  },
+
+  async update(
+    publicId: string,
+    input: UpdateArticleInput,
+  ): Promise<ArticleDetail> {
+    const res = await apiClient.api.articles[':publicId'].$patch({
+      param: { publicId },
+      json: input,
+    })
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null)
+      const message =
+        extractErrorMessage(errorData) ??
+        `記事の更新に失敗しました: ${res.status}`
+      throw new Error(message)
+    }
+    const data = await res.json()
+    return { ...toArticle(data), body: data.body }
   },
 
   async publish(publicId: string): Promise<Article> {

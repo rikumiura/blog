@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { Button } from '@/components/ui/button'
 import type { ArticleDetail } from '@/core/types/article'
 import { articleApi } from '@/features/articles/articles.api'
 
@@ -36,7 +37,12 @@ export function ArticleDetailPage() {
         <p className="text-destructive">{error}</p>
       ) : article ? (
         <article>
-          <h1 className="mb-4 text-2xl font-bold">{article.title}</h1>
+          <div className="mb-4 flex items-center justify-between">
+            <h1 className="text-2xl font-bold">{article.title}</h1>
+            <Button asChild variant="outline" size="sm">
+              <Link to={`/articles/${article.publicId}/edit`}>編集</Link>
+            </Button>
+          </div>
           <div className="mb-6 flex items-center gap-4 text-sm text-muted-foreground">
             <span
               className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${

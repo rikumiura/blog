@@ -1,54 +1,46 @@
 import DOMPurify from 'dompurify'
 import { useAtomValue, useSetAtom } from 'jotai'
 import { marked } from 'marked'
-import { type ChangeEvent, type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import type { ArticleDetail } from '@/core/types/article'
 import {
   articlesErrorAtom,
-  createArticleAtom,
-  createLoadingAtom,
-} from './articles.atom'
+  updateArticleAtom,
+  updateLoadingAtom,
+} from '@/features/articles/articles.atom'
 
 type Tab = 'edit' | 'preview'
 
-export function ArticleCreateForm() {
-  const [title, setTitle] = useState('')
-  const [body, setBody] = useState('')
+type Props = {
+  article: ArticleDetail
+}
+
+export function ArticleEditForm({ article }: Props) {
+  const [title, setTitle] = useState(article.title)
+  const [body, setBody] = useState(article.body)
   const [tagInput, setTagInput] = useState('')
-  const [tags, setTags] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>(article.tags)
   const [activeTab, setActiveTab] = useState<Tab>('edit')
-  const isLoading = useAtomValue(createLoadingAtom)
+  const isLoading = useAtomValue(updateLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
-  const createArticle = useSetAtom(createArticleAtom)
+  const setError = useSetAtom(articlesErrorAtom)
+  const updateArticle = useSetAtom(updateArticleAtom)
   const navigate = useNavigate()
+
+  // マウント時に前回のエラーをクリアする
+  useEffect(() => {
+    setError(null)
+  }, [setError])
 
   const previewHtml = useMemo(() => {
     if (!body) return ''
     const parsed = marked.parse(body)
     return DOMPurify.sanitize(typeof parsed === 'string' ? parsed : '')
   }, [body])
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setTitle((prev) => {
-      if (prev) return prev
-      return file.name.replace(/\.md$/, '')
-    })
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const content = event.target?.result
-      if (typeof content === 'string') {
-        setBody(content)
-      }
-    }
-    reader.readAsText(file)
-  }
 
   const addTag = () => {
     const trimmed = tagInput.trim()
@@ -70,19 +62,14 @@ export function ArticleCreateForm() {
     }
   }
 
-  const [isPublish, setIsPublish] = useState(false)
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const result = await createArticle({
-      title,
-      body,
-      tags,
-      publish: isPublish,
+    const result = await updateArticle({
+      publicId: article.publicId,
+      input: { title, body, tags },
     })
-    setIsPublish(false)
     if (result.status === 'success') {
-      navigate('/')
+      navigate(`/articles/${article.publicId}`)
     }
   }
 
@@ -164,13 +151,6 @@ export function ArticleCreateForm() {
             </Button>
           </div>
         </div>
-        <Input
-          id="md-file"
-          type="file"
-          accept=".md"
-          onChange={handleFileChange}
-          className="w-auto"
-        />
         {activeTab === 'edit' ? (
           <Textarea
             id="body"
@@ -197,14 +177,15 @@ export function ArticleCreateForm() {
 
       <div className="flex gap-2">
         <Button type="submit" disabled={isLoading}>
-          {isLoading ? '保存中...' : '下書き保存'}
+          {isLoading ? '保存中...' : '更新する'}
         </Button>
         <Button
-          type="submit"
+          type="button"
+          variant="outline"
+          onClick={() => navigate(`/articles/${article.publicId}`)}
           disabled={isLoading}
-          onClick={() => setIsPublish(true)}
         >
-          {isLoading ? '公開中...' : '公開する'}
+          キャンセル
         </Button>
       </div>
     </form>

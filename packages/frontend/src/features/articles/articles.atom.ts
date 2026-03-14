@@ -1,6 +1,6 @@
 import { atom } from 'jotai'
 import type { ArticleRepository } from '@/core/ports/article-repository'
-import type { Article } from '@/core/types/article'
+import type { Article, UpdateArticleInput } from '@/core/types/article'
 import type { Result } from '@/core/types/result'
 import { articleApi } from './articles.api'
 
@@ -13,6 +13,7 @@ export const articlesAtom = atom<Article[]>([])
 /** 操作ごとのローディング状態 */
 export const fetchLoadingAtom = atom(false)
 export const createLoadingAtom = atom(false)
+export const updateLoadingAtom = atom(false)
 export const publishLoadingAtom = atom(false)
 
 /** エラー状態 */
@@ -58,6 +59,31 @@ export const createArticleAtom = atom(
       return { status: 'error', error: message }
     } finally {
       set(createLoadingAtom, false)
+    }
+  },
+)
+
+/** 記事を更新するアクション */
+export const updateArticleAtom = atom(
+  null,
+  async (
+    get,
+    set,
+    { publicId, input }: { publicId: string; input: UpdateArticleInput },
+  ): Promise<Result> => {
+    set(updateLoadingAtom, true)
+    set(articlesErrorAtom, null)
+    try {
+      const repository = get(articleRepositoryAtom)
+      await repository.update(publicId, input)
+      return { status: 'success', data: undefined }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '記事の更新に失敗しました'
+      set(articlesErrorAtom, message)
+      return { status: 'error', error: message }
+    } finally {
+      set(updateLoadingAtom, false)
     }
   },
 )

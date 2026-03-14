@@ -17,6 +17,7 @@ import { createArticle } from './use-cases/create-article'
 import { getArticle } from './use-cases/get-article'
 import { listArticles } from './use-cases/list-articles'
 import { publishArticle } from './use-cases/publish-article'
+import { updateArticle } from './use-cases/update-article'
 import { updateArticleTags } from './use-cases/update-article-tags'
 
 type Bindings = {
@@ -42,6 +43,21 @@ const createArticleSchema = z.object({
   tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください').optional().default([]),
   publish: z.boolean().optional().default(false),
 })
+
+const updateArticleSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1, 'タイトルは必須です')
+      .max(100, 'タイトルは100文字以内にしてください')
+      .optional(),
+    body: z.string().optional(),
+    tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください').optional(),
+  })
+  .refine(
+    (data) => data.title !== undefined || data.body !== undefined || data.tags !== undefined,
+    { message: '更新するフィールドを1つ以上指定してください' },
+  )
 
 const updateTagsSchema = z.object({
   tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください'),
@@ -116,6 +132,39 @@ const routes = app
         return c.json({ error: result.message }, 400)
     }
   })
+  .patch(
+    '/api/articles/:publicId',
+    zValidator('param', publicIdParamSchema),
+    zValidator('json', updateArticleSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const input = c.req.valid('json')
+      const db = createDbClient(c.env.DB)
+      const repository = new DrizzleArticleRepository(db)
+      const tagRepository = new DrizzleTagRepository(db)
+      const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
+      const idGenerator = new ArticleIdGeneratorImpl()
+
+      const result = await updateArticle(publicId, input, {
+        repository,
+        bodyStorage,
+        tagRepository,
+        generateTagId: () => idGenerator.generateTagId(),
+        now: () => new Date().toISOString(),
+      })
+
+      switch (result.status) {
+        case 'updated':
+          return c.json(toArticleDetailDto(result.article, result.body, result.tags))
+        case 'not_found':
+          return c.json({ error: '記事が見つかりません' }, 404)
+        case 'body_not_found':
+          return c.json({ error: '記事本文が見つかりません' }, 404)
+        case 'validation_error':
+          return c.json({ error: result.message }, 400)
+      }
+    },
+  )
   .patch('/api/articles/:publicId/publish', zValidator('param', publicIdParamSchema), async (c) => {
     const publicId = PublicArticleId(c.req.valid('param').publicId)
     const db = createDbClient(c.env.DB)
