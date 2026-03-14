@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from 'jotai'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import {
@@ -13,11 +13,14 @@ import {
 import {
   articlesAtom,
   articlesErrorAtom,
+  deleteArticleAtom,
+  deleteLoadingAtom,
   fetchArticlesAtom,
   fetchLoadingAtom,
   publishArticleAtom,
   publishLoadingAtom,
 } from './articles.atom'
+import { DeleteArticleDialog } from './DeleteArticleDialog'
 
 function formatDateTime(isoString: string): string {
   return new Date(isoString).toLocaleString('ja-JP', {
@@ -33,13 +36,27 @@ export function ArticleList() {
   const articles = useAtomValue(articlesAtom)
   const isFetching = useAtomValue(fetchLoadingAtom)
   const isPublishing = useAtomValue(publishLoadingAtom)
+  const isDeleting = useAtomValue(deleteLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
   const fetchArticles = useSetAtom(fetchArticlesAtom)
   const publishArticle = useSetAtom(publishArticleAtom)
+  const deleteArticle = useSetAtom(deleteArticleAtom)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    publicId: string
+    title: string
+  } | null>(null)
 
   useEffect(() => {
     fetchArticles()
   }, [fetchArticles])
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteTarget) return
+    const result = await deleteArticle(deleteTarget.publicId)
+    if (result.status === 'success') {
+      setDeleteTarget(null)
+    }
+  }, [deleteTarget, deleteArticle])
 
   return (
     <Table>
@@ -129,12 +146,32 @@ export function ArticleList() {
                       公開する
                     </Button>
                   )}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() =>
+                      setDeleteTarget({
+                        publicId: article.publicId,
+                        title: article.title,
+                      })
+                    }
+                    disabled={isDeleting}
+                  >
+                    削除
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
           ))
         )}
       </TableBody>
+      <DeleteArticleDialog
+        articleTitle={deleteTarget?.title ?? ''}
+        isOpen={deleteTarget !== null}
+        isDeleting={isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Table>
   )
 }

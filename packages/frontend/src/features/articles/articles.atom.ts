@@ -15,6 +15,7 @@ export const fetchLoadingAtom = atom(false)
 export const createLoadingAtom = atom(false)
 export const updateLoadingAtom = atom(false)
 export const publishLoadingAtom = atom(false)
+export const deleteLoadingAtom = atom(false)
 
 /** エラー状態 */
 export const articlesErrorAtom = atom<string | null>(null)
@@ -84,6 +85,28 @@ export const updateArticleAtom = atom(
       return { status: 'error', error: message }
     } finally {
       set(updateLoadingAtom, false)
+    }
+  },
+)
+
+/** 記事を削除するアクション */
+export const deleteArticleAtom = atom(
+  null,
+  async (get, set, publicId: string): Promise<Result> => {
+    set(deleteLoadingAtom, true)
+    set(articlesErrorAtom, null)
+    try {
+      const repository = get(articleRepositoryAtom)
+      await repository.delete(publicId)
+      await set(fetchArticlesAtom)
+      return { status: 'success', data: undefined }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '記事の削除に失敗しました'
+      set(articlesErrorAtom, message)
+      return { status: 'error', error: message }
+    } finally {
+      set(deleteLoadingAtom, false)
     }
   },
 )

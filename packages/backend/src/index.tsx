@@ -17,6 +17,7 @@ import { createArticle } from './use-cases/create-article'
 import { getArticle } from './use-cases/get-article'
 import { listArticles } from './use-cases/list-articles'
 import { publishArticle } from './use-cases/publish-article'
+import { deleteArticle } from './use-cases/delete-article'
 import { updateArticle } from './use-cases/update-article'
 import { updateArticleTags } from './use-cases/update-article-tags'
 
@@ -217,6 +218,22 @@ const routes = app
       }
     },
   )
+
+  .delete('/api/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
+    const publicId = PublicArticleId(c.req.valid('param').publicId)
+    const db = createDbClient(c.env.DB)
+    const repository = new DrizzleArticleRepository(db)
+    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
+
+    const result = await deleteArticle(publicId, { repository, bodyStorage })
+
+    switch (result.status) {
+      case 'deleted':
+        return c.body(null, 204)
+      case 'not_found':
+        return c.json({ error: '記事が見つかりません' }, 404)
+    }
+  })
 
 export type AppType = typeof routes
 
