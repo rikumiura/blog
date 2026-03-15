@@ -118,6 +118,15 @@ export const articleApi: ArticleRepository = {
     return toArticle(data)
   },
 
+  async delete(publicId: string): Promise<void> {
+    const res = await apiClient.api.articles[':publicId'].$delete({
+      param: { publicId },
+    })
+    if (!res.ok) {
+      throw new Error(`記事の削除に失敗しました: ${res.status}`)
+    }
+  },
+
   async updateTags(publicId: string, tags: string[]): Promise<string[]> {
     const res = await apiClient.api.articles[':publicId'].tags.$patch({
       param: { publicId },

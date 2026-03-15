@@ -30,6 +30,10 @@ export class InMemoryArticleRepository implements ArticleRepository {
     return null
   }
 
+  async delete(id: ArticleId): Promise<void> {
+    this.articles.delete(id)
+  }
+
   async findAll(): Promise<Article[]> {
     return [...this.articles.values()]
   }

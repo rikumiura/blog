@@ -13,4 +13,5 @@ export interface ArticleRepository {
   update(publicId: string, input: UpdateArticleInput): Promise<ArticleDetail>
   publish(publicId: string): Promise<Article>
   updateTags(publicId: string, tags: string[]): Promise<string[]>
+  delete(publicId: string): Promise<void>
 }

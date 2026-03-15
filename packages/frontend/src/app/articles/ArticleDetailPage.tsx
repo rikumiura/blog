@@ -1,14 +1,36 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import type { ArticleDetail } from '@/core/types/article'
 import { articleApi } from '@/features/articles/articles.api'
+import { DeleteArticleDialog } from '@/features/articles/DeleteArticleDialog'
 
 export function ArticleDetailPage() {
   const { publicId } = useParams<{ publicId: string }>()
+  const navigate = useNavigate()
   const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  const handleDelete = useCallback(async () => {
+    if (!publicId) return
+    setIsDeleting(true)
+    setDeleteError(null)
+    try {
+      await articleApi.delete(publicId)
+      navigate('/')
+    } catch (e: unknown) {
+      setDeleteError(
+        e instanceof Error ? e.message : '記事の削除に失敗しました',
+      )
+      setIsDeleteDialogOpen(false)
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [publicId, navigate])
 
   useEffect(() => {
     if (!publicId) return
@@ -39,9 +61,18 @@ export function ArticleDetailPage() {
         <article>
           <div className="mb-4 flex items-center justify-between">
             <h1 className="text-2xl font-bold">{article.title}</h1>
-            <Button asChild variant="outline" size="sm">
-              <Link to={`/articles/${article.publicId}/edit`}>編集</Link>
-            </Button>
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/articles/${article.publicId}/edit`}>編集</Link>
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                削除
+              </Button>
+            </div>
           </div>
           <div className="mb-6 flex items-center gap-4 text-sm text-muted-foreground">
             <span
@@ -72,11 +103,21 @@ export function ArticleDetailPage() {
               ))}
             </div>
           )}
+          {deleteError && (
+            <p className="mb-4 text-destructive">{deleteError}</p>
+          )}
           <div className="whitespace-pre-wrap leading-relaxed">
             {article.body}
           </div>
         </article>
       ) : null}
+      <DeleteArticleDialog
+        articleTitle={article?.title ?? ''}
+        isOpen={isDeleteDialogOpen}
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setIsDeleteDialogOpen(false)}
+      />
     </div>
   )
 }
