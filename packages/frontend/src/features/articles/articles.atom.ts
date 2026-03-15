@@ -10,6 +10,31 @@ export const articleRepositoryAtom = atom<ArticleRepository>(articleApi)
 /** 記事一覧の状態 */
 export const articlesAtom = atom<Article[]>([])
 
+/** 選択中のタグ（フィルター用） */
+export const selectedTagsAtom = atom<string[]>([])
+
+/** 全記事から重複なしのタグ一覧を派生 */
+export const allTagsAtom = atom((get) => {
+  const articles = get(articlesAtom)
+  const tagSet = new Set<string>()
+  for (const article of articles) {
+    for (const tag of article.tags) {
+      tagSet.add(tag)
+    }
+  }
+  return [...tagSet].sort()
+})
+
+/** 選択タグで絞り込んだ記事一覧（未選択時は全件） */
+export const filteredArticlesAtom = atom((get) => {
+  const articles = get(articlesAtom)
+  const selectedTags = get(selectedTagsAtom)
+  if (selectedTags.length === 0) return articles
+  return articles.filter((article) =>
+    selectedTags.some((tag) => article.tags.includes(tag)),
+  )
+})
+
 /** 操作ごとのローディング状態 */
 export const fetchLoadingAtom = atom(false)
 export const createLoadingAtom = atom(false)

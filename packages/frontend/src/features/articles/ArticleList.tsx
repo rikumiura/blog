@@ -11,16 +11,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  articlesAtom,
   articlesErrorAtom,
   deleteArticleAtom,
   deleteLoadingAtom,
   fetchArticlesAtom,
   fetchLoadingAtom,
+  filteredArticlesAtom,
   publishArticleAtom,
   publishLoadingAtom,
+  selectedTagsAtom,
 } from './articles.atom'
 import { DeleteArticleDialog } from './DeleteArticleDialog'
+import { TagFilter } from './TagFilter'
 
 function formatDateTime(isoString: string): string {
   return new Date(isoString).toLocaleString('ja-JP', {
@@ -33,7 +35,8 @@ function formatDateTime(isoString: string): string {
 }
 
 export function ArticleList() {
-  const articles = useAtomValue(articlesAtom)
+  const articles = useAtomValue(filteredArticlesAtom)
+  const selectedTags = useAtomValue(selectedTagsAtom)
   const isFetching = useAtomValue(fetchLoadingAtom)
   const isPublishing = useAtomValue(publishLoadingAtom)
   const isDeleting = useAtomValue(deleteLoadingAtom)
@@ -60,6 +63,7 @@ export function ArticleList() {
 
   return (
     <>
+      <TagFilter />
       <Table>
         <TableHeader>
           <TableRow>
@@ -93,7 +97,9 @@ export function ArticleList() {
                 colSpan={6}
                 className="text-center text-muted-foreground"
               >
-                記事がありません
+                {selectedTags.length > 0
+                  ? '選択したタグに一致する記事がありません'
+                  : '記事がありません'}
               </TableCell>
             </TableRow>
           ) : (
