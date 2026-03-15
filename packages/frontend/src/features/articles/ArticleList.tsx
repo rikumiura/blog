@@ -11,16 +11,17 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
-  articlesAtom,
   articlesErrorAtom,
   deleteArticleAtom,
   deleteLoadingAtom,
   fetchArticlesAtom,
   fetchLoadingAtom,
+  filteredArticlesAtom,
   publishArticleAtom,
   publishLoadingAtom,
 } from './articles.atom'
 import { DeleteArticleDialog } from './DeleteArticleDialog'
+import { TagFilter } from './TagFilter'
 
 function formatDateTime(isoString: string): string {
   return new Date(isoString).toLocaleString('ja-JP', {
@@ -33,7 +34,7 @@ function formatDateTime(isoString: string): string {
 }
 
 export function ArticleList() {
-  const articles = useAtomValue(articlesAtom)
+  const articles = useAtomValue(filteredArticlesAtom)
   const isFetching = useAtomValue(fetchLoadingAtom)
   const isPublishing = useAtomValue(publishLoadingAtom)
   const isDeleting = useAtomValue(deleteLoadingAtom)
@@ -60,6 +61,7 @@ export function ArticleList() {
 
   return (
     <>
+      <TagFilter />
       <Table>
         <TableHeader>
           <TableRow>
