@@ -51,7 +51,9 @@ export function BlogArticleList() {
                   {article.title}
                 </h2>
                 <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                  <time>{formatDate(article.publishedAt)}</time>
+                  <time dateTime={article.publishedAt}>
+                    {formatDate(article.publishedAt)}
+                  </time>
                   {article.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1">
                       {article.tags.map((tag) => (
