@@ -1,5 +1,5 @@
 import { articles } from '@my-blog/db'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import {
   type Article,
   ArticleId,
@@ -71,6 +71,15 @@ export class DrizzleArticleRepository implements ArticleRepository {
       .select()
       .from(articles)
       .orderBy(desc(articles.updatedAt))
+    return rows.map(toEntity)
+  }
+
+  async findPublished(): Promise<Article[]> {
+    const rows = await this.db
+      .select()
+      .from(articles)
+      .where(eq(articles.status, 'published'))
+      .orderBy(desc(articles.publishedAt))
     return rows.map(toEntity)
   }
 }

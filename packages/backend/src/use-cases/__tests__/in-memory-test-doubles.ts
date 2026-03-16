@@ -38,6 +38,10 @@ export class InMemoryArticleRepository implements ArticleRepository {
     return [...this.articles.values()]
   }
 
+  async findPublished(): Promise<Article[]> {
+    return [...this.articles.values()].filter((a) => a.status === 'published')
+  }
+
   simulateSaveError(): void {
     this.shouldFailOnSave = true
   }
