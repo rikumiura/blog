@@ -243,21 +243,19 @@ const routes = app
     const tagRepository = new DrizzleTagRepository(db)
     const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
 
-    const result = await getArticle(publicId, { repository, bodyStorage })
-
-    switch (result.status) {
-      case 'found': {
-        if (result.article.status !== 'published') {
-          return c.json({ error: '記事が見つかりません' }, 404)
-        }
-        const tags = await tagRepository.findByArticleId(result.article.id)
-        return c.json(toArticleDetailDto(result.article, result.body, tags))
-      }
-      case 'not_found':
-        return c.json({ error: '記事が見つかりません' }, 404)
-      case 'body_not_found':
-        return c.json({ error: '記事本文が見つかりません' }, 404)
+    // 公開状態を先に確認し、下書きへの不要なR2読み込みを防ぐ
+    const article = await repository.findByPublicId(publicId)
+    if (!article || article.status !== 'published') {
+      return c.json({ error: '記事が見つかりません' }, 404)
     }
+
+    const bodyResult = await bodyStorage.get(article.bodyKey)
+    if (!bodyResult.found) {
+      return c.json({ error: '記事本文が見つかりません' }, 404)
+    }
+
+    const tags = await tagRepository.findByArticleId(article.id)
+    return c.json(toArticleDetailDto(article, bodyResult.content, tags))
   })
 
   .delete('/api/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {

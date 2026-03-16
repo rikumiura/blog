@@ -3,14 +3,7 @@ import { Link, useParams } from 'react-router'
 import type { ArticleDetail } from '@/core/types/article'
 import { BlogArticleContent } from '@/features/blog/BlogArticleContent'
 import { blogApi } from '@/features/blog/blog.api'
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
+import { formatDate } from '@/lib/format'
 
 export function BlogArticlePage() {
   const { publicId } = useParams<{ publicId: string }>()
@@ -21,14 +14,26 @@ export function BlogArticlePage() {
   useEffect(() => {
     if (!publicId) return
 
+    let cancelled = false
     setIsLoading(true)
+    setArticle(null)
+    setError(null)
     blogApi
       .findByPublicId(publicId)
-      .then(setArticle)
-      .catch((e: unknown) => {
-        setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
+      .then((data) => {
+        if (!cancelled) setArticle(data)
       })
-      .finally(() => setIsLoading(false))
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [publicId])
 
   return (

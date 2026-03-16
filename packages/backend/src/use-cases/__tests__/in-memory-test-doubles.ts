@@ -2,6 +2,7 @@ import {
   type Article,
   ArticleId,
   BodyKey,
+  type PublishedArticle,
   PublicArticleId,
 } from '../../domain/models/article'
 import type { ArticleRepository } from '../../domain/ports/article-repository'
@@ -38,8 +39,10 @@ export class InMemoryArticleRepository implements ArticleRepository {
     return [...this.articles.values()]
   }
 
-  async findPublished(): Promise<Article[]> {
-    return [...this.articles.values()].filter((a) => a.status === 'published')
+  async findPublished(): Promise<PublishedArticle[]> {
+    return [...this.articles.values()]
+      .filter((a): a is PublishedArticle => a.status === 'published')
+      .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
   }
 
   simulateSaveError(): void {

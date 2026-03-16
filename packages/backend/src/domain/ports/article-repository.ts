@@ -1,4 +1,4 @@
-import type { Article, ArticleId, PublicArticleId } from '../models/article'
+import type { Article, ArticleId, PublicArticleId, PublishedArticle } from '../models/article'
 
 export interface ArticleRepository {
   save(article: Article): Promise<void>
@@ -6,5 +6,5 @@ export interface ArticleRepository {
   findById(id: ArticleId): Promise<Article | null>
   findByPublicId(publicId: PublicArticleId): Promise<Article | null>
   findAll(): Promise<Article[]>
-  findPublished(): Promise<Article[]>
+  findPublished(): Promise<PublishedArticle[]>
 }

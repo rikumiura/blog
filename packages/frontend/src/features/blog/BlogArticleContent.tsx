@@ -1,12 +1,16 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
+import { useMemo } from 'react'
 
 type Props = {
   body: string
 }
 
 export function BlogArticleContent({ body }: Props) {
-  const html = DOMPurify.sanitize(marked.parse(body) as string)
+  const html = useMemo(() => {
+    const parsed = marked.parse(body)
+    return DOMPurify.sanitize(typeof parsed === 'string' ? parsed : '')
+  }, [body])
 
   return (
     <div

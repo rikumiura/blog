@@ -1,6 +1,7 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useEffect } from 'react'
 import { Link } from 'react-router'
+import { formatDate } from '@/lib/format'
 import { BlogTagFilter } from './BlogTagFilter'
 import {
   blogErrorAtom,
@@ -9,14 +10,6 @@ import {
   blogSelectedTagsAtom,
   fetchBlogArticlesAtom,
 } from './blog.atom'
-
-function formatDate(isoString: string): string {
-  return new Date(isoString).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-}
 
 export function BlogArticleList() {
   const articles = useAtomValue(blogFilteredArticlesAtom)

@@ -1,8 +1,8 @@
-import type { Article } from '../domain/models/article'
+import type { PublishedArticle } from '../domain/models/article'
 import type { ArticleRepository } from '../domain/ports/article-repository'
 
 export function listPublishedArticles(
   repository: ArticleRepository,
-): Promise<Article[]> {
+): Promise<PublishedArticle[]> {
   return repository.findPublished()
 }

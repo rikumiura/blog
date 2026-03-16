@@ -14,7 +14,7 @@ function toPublishedArticle(data: {
     title: data.title,
     tags: data.tags,
     status: 'published',
-    publishedAt: data.publishedAt ?? '',
+    publishedAt: data.publishedAt ?? data.updatedAt,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   }
