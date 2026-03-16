@@ -82,7 +82,7 @@ export function ArticleCreateForm() {
     })
     setIsPublish(false)
     if (result.status === 'success') {
-      navigate('/')
+      navigate('/admin')
     }
   }
 

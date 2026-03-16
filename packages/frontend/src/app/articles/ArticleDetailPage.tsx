@@ -21,7 +21,7 @@ export function ArticleDetailPage() {
     setDeleteError(null)
     try {
       await articleApi.delete(publicId)
-      navigate('/')
+      navigate('/admin')
     } catch (e: unknown) {
       setDeleteError(
         e instanceof Error ? e.message : '記事の削除に失敗しました',
@@ -48,7 +48,10 @@ export function ArticleDetailPage() {
   return (
     <div className="mx-auto max-w-4xl p-5 font-sans">
       <div className="mb-6">
-        <Link to="/" className="text-sm text-muted-foreground hover:underline">
+        <Link
+          to="/admin"
+          className="text-sm text-muted-foreground hover:underline"
+        >
           &larr; 記事一覧に戻る
         </Link>
       </div>
@@ -63,7 +66,9 @@ export function ArticleDetailPage() {
             <h1 className="text-2xl font-bold">{article.title}</h1>
             <div className="flex gap-2">
               <Button asChild variant="outline" size="sm">
-                <Link to={`/articles/${article.publicId}/edit`}>編集</Link>
+                <Link to={`/admin/articles/${article.publicId}/edit`}>
+                  編集
+                </Link>
               </Button>
               <Button
                 variant="destructive"

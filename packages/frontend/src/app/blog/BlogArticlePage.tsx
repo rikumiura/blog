@@ -34,10 +34,7 @@ export function BlogArticlePage() {
   return (
     <div className="mx-auto max-w-3xl px-5 py-10 font-sans">
       <nav className="mb-8">
-        <Link
-          to="/blog"
-          className="text-sm text-muted-foreground hover:underline"
-        >
+        <Link to="/" className="text-sm text-muted-foreground hover:underline">
           &larr; 記事一覧に戻る
         </Link>
       </nav>

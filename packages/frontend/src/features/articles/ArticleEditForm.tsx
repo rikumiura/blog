@@ -69,7 +69,7 @@ export function ArticleEditForm({ article }: Props) {
       input: { title, body, tags },
     })
     if (result.status === 'success') {
-      navigate(`/articles/${article.publicId}`)
+      navigate(`/admin/articles/${article.publicId}`)
     }
   }
 
@@ -182,7 +182,7 @@ export function ArticleEditForm({ article }: Props) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => navigate(`/articles/${article.publicId}`)}
+          onClick={() => navigate(`/admin/articles/${article.publicId}`)}
           disabled={isLoading}
         >
           キャンセル

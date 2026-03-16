@@ -14,14 +14,20 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        {/* 管理画面 */}
-        <Route path="/" element={<ArticlesPage />} />
-        <Route path="/articles/new" element={<ArticleCreatePage />} />
-        <Route path="/articles/:publicId" element={<ArticleDetailPage />} />
-        <Route path="/articles/:publicId/edit" element={<ArticleEditPage />} />
         {/* 公開読者向け */}
-        <Route path="/blog" element={<BlogPage />} />
-        <Route path="/blog/:publicId" element={<BlogArticlePage />} />
+        <Route path="/" element={<BlogPage />} />
+        <Route path="/articles/:publicId" element={<BlogArticlePage />} />
+        {/* 管理画面 */}
+        <Route path="/admin" element={<ArticlesPage />} />
+        <Route path="/admin/articles/new" element={<ArticleCreatePage />} />
+        <Route
+          path="/admin/articles/:publicId"
+          element={<ArticleDetailPage />}
+        />
+        <Route
+          path="/admin/articles/:publicId/edit"
+          element={<ArticleEditPage />}
+        />
       </Routes>
     </BrowserRouter>
   </StrictMode>,

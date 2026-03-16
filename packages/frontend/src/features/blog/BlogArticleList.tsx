@@ -53,7 +53,7 @@ export function BlogArticleList() {
               key={article.publicId}
               className="rounded-lg border p-6 transition-colors hover:bg-muted/50"
             >
-              <Link to={`/blog/${article.publicId}`} className="block">
+              <Link to={`/articles/${article.publicId}`} className="block">
                 <h2 className="mb-2 text-xl font-bold hover:underline">
                   {article.title}
                 </h2>

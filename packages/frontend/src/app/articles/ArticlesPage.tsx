@@ -8,7 +8,7 @@ export function ArticlesPage() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">記事一覧</h1>
         <Button asChild>
-          <Link to="/articles/new">新規作成</Link>
+          <Link to="/admin/articles/new">新規作成</Link>
         </Button>
       </div>
       <ArticleList />
