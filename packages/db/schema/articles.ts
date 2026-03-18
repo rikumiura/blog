@@ -5,7 +5,7 @@ export const articles = sqliteTable('articles', {
   publicId: text('public_id').notNull().unique(),
   title: text('title').notNull(),
   bodyKey: text('body_key').notNull(),
-  status: text('status', { enum: ['draft', 'published'] })
+  status: text('status', { enum: ['draft', 'published', 'scheduled'] })
     .notNull()
     .default('draft'),
   createdAt: text('created_at')
@@ -15,4 +15,5 @@ export const articles = sqliteTable('articles', {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
   publishedAt: text('published_at'),
+  scheduledAt: text('scheduled_at'),
 })

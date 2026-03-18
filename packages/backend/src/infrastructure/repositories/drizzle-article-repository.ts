@@ -1,5 +1,5 @@
 import { articles } from '@my-blog/db'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq, lte } from 'drizzle-orm'
 import {
   type Article,
   ArticleId,
@@ -29,6 +29,7 @@ export class DrizzleArticleRepository implements ArticleRepository {
         createdAt: article.createdAt,
         updatedAt: article.updatedAt,
         publishedAt: article.publishedAt,
+        scheduledAt: article.scheduledAt,
       })
       .onConflictDoUpdate({
         target: articles.id,
@@ -38,6 +39,7 @@ export class DrizzleArticleRepository implements ArticleRepository {
           status: article.status,
           updatedAt: article.updatedAt,
           publishedAt: article.publishedAt,
+          scheduledAt: article.scheduledAt,
         },
       })
   }
@@ -73,6 +75,19 @@ export class DrizzleArticleRepository implements ArticleRepository {
       .orderBy(desc(articles.updatedAt))
     return rows.map(toEntity)
   }
+
+  async findScheduledBefore(before: string): Promise<Article[]> {
+    const rows = await this.db
+      .select()
+      .from(articles)
+      .where(
+        and(
+          eq(articles.status, 'scheduled'),
+          lte(articles.scheduledAt, before),
+        ),
+      )
+    return rows.map(toEntity)
+  }
 }
 
 function toEntity(row: typeof articles.$inferSelect): Article {
@@ -86,12 +101,15 @@ function toEntity(row: typeof articles.$inferSelect): Article {
   }
 
   if (row.status === 'draft' && row.publishedAt === null) {
-    return { ...base, status: 'draft', publishedAt: null }
+    return { ...base, status: 'draft', publishedAt: null, scheduledAt: null }
+  }
+  if (row.status === 'scheduled' && row.publishedAt === null && row.scheduledAt !== null) {
+    return { ...base, status: 'scheduled', publishedAt: null, scheduledAt: row.scheduledAt }
   }
   if (row.status === 'published' && row.publishedAt !== null) {
-    return { ...base, status: 'published', publishedAt: row.publishedAt }
+    return { ...base, status: 'published', publishedAt: row.publishedAt, scheduledAt: row.scheduledAt }
   }
   throw new Error(
-    `articles テーブルの status と publishedAt の組み合わせが不正です (id: ${row.id}, status: ${row.status}, publishedAt: ${row.publishedAt})`,
+    `articles テーブルの status と publishedAt/scheduledAt の組み合わせが不正です (id: ${row.id}, status: ${row.status}, publishedAt: ${row.publishedAt}, scheduledAt: ${row.scheduledAt})`,
   )
 }

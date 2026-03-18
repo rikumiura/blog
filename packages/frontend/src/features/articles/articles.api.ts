@@ -15,6 +15,7 @@ function toArticle(data: {
   createdAt: string
   updatedAt: string
   publishedAt: string | null
+  scheduledAt: string | null
 }): Article {
   if (data.status === 'published' && data.publishedAt !== null) {
     return {
@@ -25,6 +26,19 @@ function toArticle(data: {
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       publishedAt: data.publishedAt,
+      scheduledAt: data.scheduledAt,
+    }
+  }
+  if (data.status === 'scheduled' && data.scheduledAt !== null) {
+    return {
+      publicId: data.publicId,
+      title: data.title,
+      tags: data.tags,
+      status: 'scheduled',
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      publishedAt: null,
+      scheduledAt: data.scheduledAt,
     }
   }
   return {
@@ -35,6 +49,7 @@ function toArticle(data: {
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     publishedAt: null,
+    scheduledAt: null,
   }
 }
 
@@ -112,7 +127,44 @@ export const articleApi: ArticleRepository = {
       param: { publicId },
     })
     if (!res.ok) {
-      throw new Error(`記事の公開に失敗しました: ${res.status}`)
+      const errorData = await res.json().catch(() => null)
+      const message =
+        extractErrorMessage(errorData) ??
+        `記事の公開に失敗しました: ${res.status}`
+      throw new Error(message)
+    }
+    const data = await res.json()
+    return toArticle(data)
+  },
+
+  async schedule(publicId: string, scheduledAt: string): Promise<Article> {
+    const res = await apiClient.api.articles[':publicId'].schedule.$patch({
+      param: { publicId },
+      json: { scheduledAt },
+    })
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null)
+      const message =
+        extractErrorMessage(errorData) ??
+        `予約公開の設定に失敗しました: ${res.status}`
+      throw new Error(message)
+    }
+    const data = await res.json()
+    return toArticle(data)
+  },
+
+  async cancelSchedule(publicId: string): Promise<Article> {
+    const res = await apiClient.api.articles[':publicId'][
+      'cancel-schedule'
+    ].$patch({
+      param: { publicId },
+    })
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null)
+      const message =
+        extractErrorMessage(errorData) ??
+        `予約の取消に失敗しました: ${res.status}`
+      throw new Error(message)
     }
     const data = await res.json()
     return toArticle(data)

@@ -79,11 +79,23 @@ export function ArticleDetailPage() {
               className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                 article.status === 'published'
                   ? 'bg-green-100 text-green-800'
-                  : 'bg-gray-100 text-gray-800'
+                  : article.status === 'scheduled'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-gray-100 text-gray-800'
               }`}
             >
-              {article.status === 'published' ? '公開' : '下書き'}
+              {article.status === 'published'
+                ? '公開'
+                : article.status === 'scheduled'
+                  ? '予約'
+                  : '下書き'}
             </span>
+            {article.status === 'scheduled' && article.scheduledAt && (
+              <span>
+                予約日時:{' '}
+                {new Date(article.scheduledAt).toLocaleString('ja-JP')}
+              </span>
+            )}
             <span>
               作成日: {new Date(article.createdAt).toLocaleDateString('ja-JP')}
             </span>

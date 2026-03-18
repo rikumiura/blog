@@ -16,5 +16,8 @@
       "binding": "ARTICLE_BUCKET",
       "bucket_name": "my-blog-articles"
     }
-  ]
+  ],
+  "triggers": {
+    "crons": ["*/5 * * * *"]
+  }
 }
