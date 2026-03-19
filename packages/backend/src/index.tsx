@@ -347,16 +347,20 @@ export default {
     env: Bindings,
     _ctx: ExecutionContext,
   ) {
-    const db = createDbClient(env.DB)
-    const repository = new DrizzleArticleRepository(db)
+    try {
+      const db = createDbClient(env.DB)
+      const repository = new DrizzleArticleRepository(db)
 
-    const result = await publishScheduledArticles({
-      repository,
-      now: () => new Date().toISOString(),
-    })
+      const result = await publishScheduledArticles({
+        repository,
+        now: () => new Date().toISOString(),
+      })
 
-    if (result.publishedCount > 0) {
-      console.log(`予約公開: ${result.publishedCount}件の記事を公開しました`)
+      if (result.publishedCount > 0) {
+        console.log(`予約公開: ${result.publishedCount}件の記事を公開しました`)
+      }
+    } catch (error) {
+      console.error('予約公開処理でエラーが発生しました:', error)
     }
   },
 }

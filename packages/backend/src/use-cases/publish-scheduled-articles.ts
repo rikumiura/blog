@@ -15,9 +15,13 @@ export async function publishScheduledArticles(deps: {
   let publishedCount = 0
   for (const article of scheduledArticles) {
     if (article.status !== 'scheduled') continue
-    const published = publishDomainArticle(article, now)
-    await deps.repository.save(published)
-    publishedCount++
+    try {
+      const published = publishDomainArticle(article, now)
+      await deps.repository.save(published)
+      publishedCount++
+    } catch (error) {
+      console.error(`予約公開に失敗しました (publicId: ${article.publicId}):`, error)
+    }
   }
 
   return { publishedCount }
