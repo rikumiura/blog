@@ -163,7 +163,7 @@ export function ArticleList() {
                 </TableCell>
                 <TableCell className="font-medium">
                   <Link
-                    to={`/articles/${article.publicId}`}
+                    to={`/admin/articles/${article.publicId}`}
                     className="hover:underline"
                   >
                     {article.title}
@@ -186,7 +186,7 @@ export function ArticleList() {
                 <TableCell>
                   <div className="flex gap-2">
                     <Button asChild variant="outline" size="sm">
-                      <Link to={`/articles/${article.publicId}/edit`}>
+                      <Link to={`/admin/articles/${article.publicId}/edit`}>
                         編集
                       </Link>
                     </Button>

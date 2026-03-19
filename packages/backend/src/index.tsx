@@ -17,6 +17,7 @@ import { cancelSchedule } from './use-cases/cancel-schedule'
 import { createArticle } from './use-cases/create-article'
 import { getArticle } from './use-cases/get-article'
 import { listArticles } from './use-cases/list-articles'
+import { listPublishedArticles } from './use-cases/list-published-articles'
 import { publishArticle } from './use-cases/publish-article'
 import { publishScheduledArticles } from './use-cases/publish-scheduled-articles'
 import { scheduleArticle } from './use-cases/schedule-article'
@@ -281,6 +282,44 @@ const routes = app
       }
     },
   )
+
+  // --- 公開読者向け API ---
+  .get('/api/public/articles', async (c) => {
+    const db = createDbClient(c.env.DB)
+    const repository = new DrizzleArticleRepository(db)
+    const tagRepository = new DrizzleTagRepository(db)
+    const articles = await listPublishedArticles(repository)
+
+    const articleIds = articles.map((a) => a.id)
+    const tagsMap = await tagRepository.findByArticleIds(articleIds)
+
+    return c.json(
+      articles.map((article) =>
+        toArticleSummaryDto(article, tagsMap.get(article.id) ?? []),
+      ),
+    )
+  })
+  .get('/api/public/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
+    const publicId = PublicArticleId(c.req.valid('param').publicId)
+    const db = createDbClient(c.env.DB)
+    const repository = new DrizzleArticleRepository(db)
+    const tagRepository = new DrizzleTagRepository(db)
+    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
+
+    // 公開状態を先に確認し、下書きへの不要なR2読み込みを防ぐ
+    const article = await repository.findByPublicId(publicId)
+    if (!article || article.status !== 'published') {
+      return c.json({ error: '記事が見つかりません' }, 404)
+    }
+
+    const bodyResult = await bodyStorage.get(article.bodyKey)
+    if (!bodyResult.found) {
+      return c.json({ error: '記事本文が見つかりません' }, 404)
+    }
+
+    const tags = await tagRepository.findByArticleId(article.id)
+    return c.json(toArticleDetailDto(article, bodyResult.content, tags))
+  })
 
   .delete('/api/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
     const publicId = PublicArticleId(c.req.valid('param').publicId)

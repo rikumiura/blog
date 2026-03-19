@@ -43,7 +43,7 @@ export function ArticleEditPage() {
     <div className="mx-auto max-w-4xl p-5 font-sans">
       <div className="mb-6">
         <Link
-          to={publicId ? `/articles/${publicId}` : '/'}
+          to={publicId ? `/admin/articles/${publicId}` : '/admin'}
           className="text-sm text-muted-foreground hover:underline"
         >
           &larr; 記事に戻る

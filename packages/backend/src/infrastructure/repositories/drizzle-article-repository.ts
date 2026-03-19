@@ -4,6 +4,7 @@ import {
   type Article,
   ArticleId,
   BodyKey,
+  type PublishedArticle,
   PublicArticleId,
   restoreTitle,
 } from '../../domain/models/article'
@@ -87,6 +88,17 @@ export class DrizzleArticleRepository implements ArticleRepository {
         ),
       )
     return rows.map(toEntity)
+  }
+
+  async findPublished(): Promise<PublishedArticle[]> {
+    const rows = await this.db
+      .select()
+      .from(articles)
+      .where(eq(articles.status, 'published'))
+      .orderBy(desc(articles.publishedAt))
+    return rows.map(toEntity).filter(
+      (a): a is PublishedArticle => a.status === 'published',
+    )
   }
 }
 
