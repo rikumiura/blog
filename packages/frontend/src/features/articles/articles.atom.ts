@@ -41,6 +41,7 @@ export const createLoadingAtom = atom(false)
 export const updateLoadingAtom = atom(false)
 export const publishLoadingAtom = atom(false)
 export const deleteLoadingAtom = atom(false)
+export const scheduleLoadingAtom = atom(false)
 
 /** エラー状態 */
 export const articlesErrorAtom = atom<string | null>(null)
@@ -154,6 +155,54 @@ export const publishArticleAtom = atom(
       return { status: 'error', error: message }
     } finally {
       set(publishLoadingAtom, false)
+    }
+  },
+)
+
+/** 記事を予約公開するアクション */
+export const scheduleArticleAtom = atom(
+  null,
+  async (
+    get,
+    set,
+    { publicId, scheduledAt }: { publicId: string; scheduledAt: string },
+  ): Promise<Result> => {
+    set(scheduleLoadingAtom, true)
+    set(articlesErrorAtom, null)
+    try {
+      const repository = get(articleRepositoryAtom)
+      await repository.schedule(publicId, scheduledAt)
+      await set(fetchArticlesAtom)
+      return { status: 'success', data: undefined }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '予約公開の設定に失敗しました'
+      set(articlesErrorAtom, message)
+      return { status: 'error', error: message }
+    } finally {
+      set(scheduleLoadingAtom, false)
+    }
+  },
+)
+
+/** 予約公開を取消するアクション */
+export const cancelScheduleAtom = atom(
+  null,
+  async (get, set, publicId: string): Promise<Result> => {
+    set(scheduleLoadingAtom, true)
+    set(articlesErrorAtom, null)
+    try {
+      const repository = get(articleRepositoryAtom)
+      await repository.cancelSchedule(publicId)
+      await set(fetchArticlesAtom)
+      return { status: 'success', data: undefined }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '予約の取消に失敗しました'
+      set(articlesErrorAtom, message)
+      return { status: 'error', error: message }
+    } finally {
+      set(scheduleLoadingAtom, false)
     }
   },
 )

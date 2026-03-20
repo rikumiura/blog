@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import {
   articlesErrorAtom,
+  cancelScheduleAtom,
   deleteArticleAtom,
   deleteLoadingAtom,
   fetchArticlesAtom,
@@ -19,9 +20,12 @@ import {
   filteredArticlesAtom,
   publishArticleAtom,
   publishLoadingAtom,
+  scheduleArticleAtom,
+  scheduleLoadingAtom,
   selectedTagsAtom,
 } from './articles.atom'
 import { DeleteArticleDialog } from './DeleteArticleDialog'
+import { ScheduleDialog } from './ScheduleDialog'
 import { TagFilter } from './TagFilter'
 
 function formatDateTime(isoString: string): string {
@@ -34,17 +38,45 @@ function formatDateTime(isoString: string): string {
   })
 }
 
+function StatusBadge({ status }: { status: string }) {
+  const styles = {
+    published: 'bg-green-100 text-green-800',
+    draft: 'bg-gray-100 text-gray-800',
+    scheduled: 'bg-yellow-100 text-yellow-800',
+  }
+  const labels = {
+    published: '公開',
+    draft: '下書き',
+    scheduled: '予約',
+  }
+  const key = status as keyof typeof styles
+  return (
+    <span
+      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${styles[key] ?? styles.draft}`}
+    >
+      {labels[key] ?? status}
+    </span>
+  )
+}
+
 export function ArticleList() {
   const articles = useAtomValue(filteredArticlesAtom)
   const selectedTags = useAtomValue(selectedTagsAtom)
   const isFetching = useAtomValue(fetchLoadingAtom)
   const isPublishing = useAtomValue(publishLoadingAtom)
   const isDeleting = useAtomValue(deleteLoadingAtom)
+  const isScheduling = useAtomValue(scheduleLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
   const fetchArticles = useSetAtom(fetchArticlesAtom)
   const publishArticle = useSetAtom(publishArticleAtom)
   const deleteArticle = useSetAtom(deleteArticleAtom)
+  const scheduleArticle = useSetAtom(scheduleArticleAtom)
+  const cancelSchedule = useSetAtom(cancelScheduleAtom)
   const [deleteTarget, setDeleteTarget] = useState<{
+    publicId: string
+    title: string
+  } | null>(null)
+  const [scheduleTarget, setScheduleTarget] = useState<{
     publicId: string
     title: string
   } | null>(null)
@@ -60,6 +92,20 @@ export function ArticleList() {
       setDeleteTarget(null)
     }
   }, [deleteTarget, deleteArticle])
+
+  const handleScheduleConfirm = useCallback(
+    async (scheduledAt: string) => {
+      if (!scheduleTarget) return
+      const result = await scheduleArticle({
+        publicId: scheduleTarget.publicId,
+        scheduledAt,
+      })
+      if (result.status === 'success') {
+        setScheduleTarget(null)
+      }
+    },
+    [scheduleTarget, scheduleArticle],
+  )
 
   return (
     <>
@@ -106,15 +152,14 @@ export function ArticleList() {
             articles.map((article) => (
               <TableRow key={article.publicId}>
                 <TableCell>
-                  <span
-                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                      article.status === 'published'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {article.status === 'published' ? '公開' : '下書き'}
-                  </span>
+                  <div className="space-y-1">
+                    <StatusBadge status={article.status} />
+                    {article.status === 'scheduled' && article.scheduledAt && (
+                      <div className="text-xs text-muted-foreground">
+                        {formatDateTime(article.scheduledAt)}
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="font-medium">
                   <Link
@@ -146,14 +191,49 @@ export function ArticleList() {
                       </Link>
                     </Button>
                     {article.status === 'draft' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => publishArticle(article.publicId)}
-                        disabled={isPublishing}
-                      >
-                        公開する
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => publishArticle(article.publicId)}
+                          disabled={isPublishing}
+                        >
+                          公開する
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setScheduleTarget({
+                              publicId: article.publicId,
+                              title: article.title,
+                            })
+                          }
+                          disabled={isScheduling}
+                        >
+                          予約公開
+                        </Button>
+                      </>
+                    )}
+                    {article.status === 'scheduled' && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => publishArticle(article.publicId)}
+                          disabled={isPublishing}
+                        >
+                          今すぐ公開
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => cancelSchedule(article.publicId)}
+                          disabled={isScheduling}
+                        >
+                          予約取消
+                        </Button>
+                      </>
                     )}
                     <Button
                       variant="destructive"
@@ -181,6 +261,13 @@ export function ArticleList() {
         isDeleting={isDeleting}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleteTarget(null)}
+      />
+      <ScheduleDialog
+        articleTitle={scheduleTarget?.title ?? ''}
+        isOpen={scheduleTarget !== null}
+        isLoading={isScheduling}
+        onConfirm={handleScheduleConfirm}
+        onCancel={() => setScheduleTarget(null)}
       />
     </>
   )

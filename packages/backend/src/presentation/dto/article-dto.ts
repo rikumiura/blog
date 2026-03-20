@@ -4,10 +4,11 @@ import type { Tag } from '../../domain/models/tag'
 export type ArticleSummaryDto = {
   publicId: string
   title: string
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'scheduled'
   createdAt: string
   updatedAt: string
   publishedAt: string | null
+  scheduledAt: string | null
   tags: string[]
 }
 
@@ -24,6 +25,7 @@ export function toArticleSummaryDto(
     createdAt: article.createdAt,
     updatedAt: article.updatedAt,
     publishedAt: article.publishedAt,
+    scheduledAt: article.scheduledAt,
     tags: tags.map((t) => String(t.name)),
   }
 }

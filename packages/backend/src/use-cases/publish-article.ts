@@ -21,7 +21,7 @@ export async function publishArticle(
   if (!article) {
     return { status: 'not_found' }
   }
-  if (article.status !== 'draft') {
+  if (article.status === 'published') {
     return { status: 'already_published' }
   }
 

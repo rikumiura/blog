@@ -13,11 +13,14 @@ import {
   toArticleDetailDto,
   toArticleSummaryDto,
 } from './presentation/dto/article-dto'
+import { cancelSchedule } from './use-cases/cancel-schedule'
 import { createArticle } from './use-cases/create-article'
 import { getArticle } from './use-cases/get-article'
 import { listArticles } from './use-cases/list-articles'
 import { listPublishedArticles } from './use-cases/list-published-articles'
 import { publishArticle } from './use-cases/publish-article'
+import { publishScheduledArticles } from './use-cases/publish-scheduled-articles'
+import { scheduleArticle } from './use-cases/schedule-article'
 import { deleteArticle } from './use-cases/delete-article'
 import { updateArticle } from './use-cases/update-article'
 import { updateArticleTags } from './use-cases/update-article-tags'
@@ -67,6 +70,10 @@ const updateTagsSchema = z.object({
 
 const publicIdParamSchema = z.object({
   publicId: z.string().min(1).max(30),
+})
+
+const scheduleSchema = z.object({
+  scheduledAt: z.string().datetime({ message: '予約日時はISO 8601形式で指定してください' }),
 })
 
 const routes = app
@@ -190,6 +197,62 @@ const routes = app
     }
   })
   .patch(
+    '/api/articles/:publicId/schedule',
+    zValidator('param', publicIdParamSchema),
+    zValidator('json', scheduleSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const { scheduledAt } = c.req.valid('json')
+      const db = createDbClient(c.env.DB)
+      const repository = new DrizzleArticleRepository(db)
+      const tagRepository = new DrizzleTagRepository(db)
+
+      const result = await scheduleArticle(publicId, scheduledAt, {
+        repository,
+        now: () => new Date().toISOString(),
+      })
+
+      switch (result.status) {
+        case 'scheduled': {
+          const tags = await tagRepository.findByArticleId(result.article.id)
+          return c.json(toArticleSummaryDto(result.article, tags))
+        }
+        case 'not_found':
+          return c.json({ error: '記事が見つかりません' }, 404)
+        case 'not_draft':
+          return c.json({ error: '下書き記事のみ予約公開を設定できます' }, 400)
+        case 'validation_error':
+          return c.json({ error: result.message }, 400)
+      }
+    },
+  )
+  .patch(
+    '/api/articles/:publicId/cancel-schedule',
+    zValidator('param', publicIdParamSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const db = createDbClient(c.env.DB)
+      const repository = new DrizzleArticleRepository(db)
+      const tagRepository = new DrizzleTagRepository(db)
+
+      const result = await cancelSchedule(publicId, {
+        repository,
+        now: () => new Date().toISOString(),
+      })
+
+      switch (result.status) {
+        case 'cancelled': {
+          const tags = await tagRepository.findByArticleId(result.article.id)
+          return c.json(toArticleSummaryDto(result.article, tags))
+        }
+        case 'not_found':
+          return c.json({ error: '記事が見つかりません' }, 404)
+        case 'not_scheduled':
+          return c.json({ error: '予約公開されていません' }, 400)
+      }
+    },
+  )
+  .patch(
     '/api/articles/:publicId/tags',
     zValidator('param', publicIdParamSchema),
     zValidator('json', updateTagsSchema),
@@ -276,4 +339,28 @@ const routes = app
 
 export type AppType = typeof routes
 
-export default app
+// Scheduled handler: 予約公開日時を過ぎた記事を自動公開する
+export default {
+  fetch: app.fetch,
+  async scheduled(
+    _event: ScheduledEvent,
+    env: Bindings,
+    _ctx: ExecutionContext,
+  ) {
+    try {
+      const db = createDbClient(env.DB)
+      const repository = new DrizzleArticleRepository(db)
+
+      const result = await publishScheduledArticles({
+        repository,
+        now: () => new Date().toISOString(),
+      })
+
+      if (result.publishedCount > 0) {
+        console.log(`予約公開: ${result.publishedCount}件の記事を公開しました`)
+      }
+    } catch (error) {
+      console.error('予約公開処理でエラーが発生しました:', error)
+    }
+  },
+}

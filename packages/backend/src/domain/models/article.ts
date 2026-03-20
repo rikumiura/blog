@@ -22,7 +22,7 @@ export const restoreTitle = (value: string): Title => brand(value)
 
 // --- 値オブジェクト ---
 
-export type ArticleStatus = 'draft' | 'published'
+export type ArticleStatus = 'draft' | 'published' | 'scheduled'
 
 // --- エンティティ（判別共用体パターン） ---
 
@@ -38,14 +38,22 @@ type ArticleBase = {
 export type DraftArticle = ArticleBase & {
   status: 'draft'
   publishedAt: null
+  scheduledAt: null
+}
+
+export type ScheduledArticle = ArticleBase & {
+  status: 'scheduled'
+  publishedAt: null
+  scheduledAt: string
 }
 
 export type PublishedArticle = ArticleBase & {
   status: 'published'
   publishedAt: string
+  scheduledAt: string | null
 }
 
-export type Article = DraftArticle | PublishedArticle
+export type Article = DraftArticle | ScheduledArticle | PublishedArticle
 
 // --- ファクトリ・ドメインロジック ---
 
@@ -83,15 +91,37 @@ export function createDraftArticle(params: {
     createdAt: params.now,
     updatedAt: params.now,
     publishedAt: null,
+    scheduledAt: null,
   }
 }
 
-export function publishArticle(article: DraftArticle, now: string): PublishedArticle {
+export function publishArticle(article: DraftArticle | ScheduledArticle, now: string): PublishedArticle {
   return {
     ...article,
     status: 'published',
     updatedAt: now,
     publishedAt: now,
+    scheduledAt: article.status === 'scheduled' ? article.scheduledAt : null,
+  }
+}
+
+export function scheduleArticle(article: DraftArticle, scheduledAt: string, now: string): ScheduledArticle {
+  return {
+    ...article,
+    status: 'scheduled',
+    updatedAt: now,
+    publishedAt: null,
+    scheduledAt,
+  }
+}
+
+export function cancelSchedule(article: ScheduledArticle, now: string): DraftArticle {
+  return {
+    ...article,
+    status: 'draft',
+    updatedAt: now,
+    publishedAt: null,
+    scheduledAt: null,
   }
 }
 

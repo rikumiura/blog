@@ -89,7 +89,7 @@ export const handlers = [
         { status: 404 },
       )
     }
-    if (article.status !== 'draft') {
+    if (article.status === 'published') {
       return HttpResponse.json(
         { message: 'この記事は既に公開されています' },
         { status: 400 },

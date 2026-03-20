@@ -1,5 +1,5 @@
 /** 記事のステータス */
-export type ArticleStatus = 'draft' | 'published'
+export type ArticleStatus = 'draft' | 'published' | 'scheduled'
 
 /** 記事の共通フィールド */
 type ArticleBase = {
@@ -14,16 +14,25 @@ type ArticleBase = {
 export type DraftArticle = ArticleBase & {
   status: 'draft'
   publishedAt: null
+  scheduledAt: null
+}
+
+/** 予約公開記事 */
+export type ScheduledArticle = ArticleBase & {
+  status: 'scheduled'
+  publishedAt: null
+  scheduledAt: string
 }
 
 /** 公開済み記事 */
 export type PublishedArticle = ArticleBase & {
   status: 'published'
   publishedAt: string
+  scheduledAt: string | null
 }
 
-/** 記事のドメイン型（判別共用体で status と publishedAt の整合性を型レベルで保証） */
-export type Article = DraftArticle | PublishedArticle
+/** 記事のドメイン型（判別共用体で status と publishedAt/scheduledAt の整合性を型レベルで保証） */
+export type Article = DraftArticle | ScheduledArticle | PublishedArticle
 
 /** 記事詳細（本文を含む） */
 export type ArticleDetail = Article & { body: string }
