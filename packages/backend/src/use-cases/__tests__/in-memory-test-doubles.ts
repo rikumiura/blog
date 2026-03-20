@@ -5,7 +5,11 @@ import {
   type PublishedArticle,
   PublicArticleId,
 } from '../../domain/models/article'
-import type { ArticleRepository } from '../../domain/ports/article-repository'
+import type {
+  ArticleRepository,
+  PaginatedResult,
+  PaginationParams,
+} from '../../domain/ports/article-repository'
 import type { BodyGetResult, BodyStorage } from '../../domain/ports/body-storage'
 import type { ArticleIdGenerator } from '../../domain/ports/id-generator'
 
@@ -39,10 +43,28 @@ export class InMemoryArticleRepository implements ArticleRepository {
     return [...this.articles.values()]
   }
 
+  async findAllPaginated(params: PaginationParams): Promise<PaginatedResult<Article>> {
+    const all = [...this.articles.values()]
+    const offset = (params.page - 1) * params.limit
+    return {
+      items: all.slice(offset, offset + params.limit),
+      totalCount: all.length,
+    }
+  }
+
   async findPublished(): Promise<PublishedArticle[]> {
     return [...this.articles.values()]
       .filter((a): a is PublishedArticle => a.status === 'published')
       .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+  }
+
+  async findPublishedPaginated(params: PaginationParams): Promise<PaginatedResult<PublishedArticle>> {
+    const published = await this.findPublished()
+    const offset = (params.page - 1) * params.limit
+    return {
+      items: published.slice(offset, offset + params.limit),
+      totalCount: published.length,
+    }
   }
 
   simulateSaveError(): void {

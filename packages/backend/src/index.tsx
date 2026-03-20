@@ -16,8 +16,8 @@ import {
 import { cancelSchedule } from './use-cases/cancel-schedule'
 import { createArticle } from './use-cases/create-article'
 import { getArticle } from './use-cases/get-article'
-import { listArticles } from './use-cases/list-articles'
-import { listPublishedArticles } from './use-cases/list-published-articles'
+import { listArticlesPaginated } from './use-cases/list-articles'
+import { listPublishedArticlesPaginated } from './use-cases/list-published-articles'
 import { publishArticle } from './use-cases/publish-article'
 import { publishScheduledArticles } from './use-cases/publish-scheduled-articles'
 import { scheduleArticle } from './use-cases/schedule-article'
@@ -76,27 +76,39 @@ const scheduleSchema = z.object({
   scheduledAt: z.string().datetime({ message: '予約日時はISO 8601形式で指定してください' }),
 })
 
+const paginationSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+})
+
 const routes = app
   .get('/api/hello', (c) => {
     return c.json({
       message: 'Hello World from Hono & Cloudflare Workers!',
     })
   })
-  .get('/api/articles', async (c) => {
+  .get('/api/articles', zValidator('query', paginationSchema), async (c) => {
+    const { page, limit } = c.req.valid('query')
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
     const tagRepository = new DrizzleTagRepository(db)
-    const articles = await listArticles(repository)
+    const { items, totalCount } = await listArticlesPaginated(repository, { page, limit })
 
     // 全記事のタグを一括取得
-    const articleIds = articles.map((a) => a.id)
-    const tagsMap = await tagRepository.findByArticleIds(articleIds)
+    const articleIds = items.map((a) => a.id)
+    const tagsMap = articleIds.length > 0
+      ? await tagRepository.findByArticleIds(articleIds)
+      : new Map()
 
-    return c.json(
-      articles.map((article) =>
+    return c.json({
+      items: items.map((article) =>
         toArticleSummaryDto(article, tagsMap.get(article.id) ?? []),
       ),
-    )
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    })
   })
   .get('/api/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
     const publicId = PublicArticleId(c.req.valid('param').publicId)
@@ -284,20 +296,27 @@ const routes = app
   )
 
   // --- 公開読者向け API ---
-  .get('/api/public/articles', async (c) => {
+  .get('/api/public/articles', zValidator('query', paginationSchema), async (c) => {
+    const { page, limit } = c.req.valid('query')
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
     const tagRepository = new DrizzleTagRepository(db)
-    const articles = await listPublishedArticles(repository)
+    const { items, totalCount } = await listPublishedArticlesPaginated(repository, { page, limit })
 
-    const articleIds = articles.map((a) => a.id)
-    const tagsMap = await tagRepository.findByArticleIds(articleIds)
+    const articleIds = items.map((a) => a.id)
+    const tagsMap = articleIds.length > 0
+      ? await tagRepository.findByArticleIds(articleIds)
+      : new Map()
 
-    return c.json(
-      articles.map((article) =>
+    return c.json({
+      items: items.map((article) =>
         toArticleSummaryDto(article, tagsMap.get(article.id) ?? []),
       ),
-    )
+      totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    })
   })
   .get('/api/public/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
     const publicId = PublicArticleId(c.req.valid('param').publicId)
@@ -337,6 +356,7 @@ const routes = app
     }
   })
 
+export { app }
 export type AppType = typeof routes
 
 // Scheduled handler: 予約公開日時を過ぎた記事を自動公開する

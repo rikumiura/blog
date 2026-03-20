@@ -1,22 +1,29 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useEffect } from 'react'
 import { Link } from 'react-router'
+import { Pagination } from '@/components/ui/pagination'
 import { formatDate } from '@/lib/format'
 import { BlogTagFilter } from './BlogTagFilter'
 import {
+  blogCurrentPageAtom,
   blogErrorAtom,
   blogFetchLoadingAtom,
   blogFilteredArticlesAtom,
   blogSelectedTagsAtom,
+  blogTotalPagesAtom,
+  changeBlogPageAtom,
   fetchBlogArticlesAtom,
 } from './blog.atom'
 
 export function BlogArticleList() {
   const articles = useAtomValue(blogFilteredArticlesAtom)
   const selectedTags = useAtomValue(blogSelectedTagsAtom)
+  const currentPage = useAtomValue(blogCurrentPageAtom)
+  const totalPages = useAtomValue(blogTotalPagesAtom)
   const isLoading = useAtomValue(blogFetchLoadingAtom)
   const error = useAtomValue(blogErrorAtom)
   const fetchArticles = useSetAtom(fetchBlogArticlesAtom)
+  const changePage = useSetAtom(changeBlogPageAtom)
 
   useEffect(() => {
     fetchArticles()
@@ -70,6 +77,11 @@ export function BlogArticleList() {
               </Link>
             </article>
           ))}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={changePage}
+          />
         </div>
       )}
     </>

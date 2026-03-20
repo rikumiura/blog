@@ -41,7 +41,9 @@ describe('createArticle', () => {
         createdAt: FIXED_DATE,
         updatedAt: FIXED_DATE,
         publishedAt: null,
+        scheduledAt: null,
       },
+      tags: [],
     })
   })
 

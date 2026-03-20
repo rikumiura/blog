@@ -3,6 +3,7 @@ import type {
   Article,
   ArticleDetail,
   CreateArticleInput,
+  PaginatedResponse,
   UpdateArticleInput,
 } from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
@@ -63,13 +64,28 @@ function extractErrorMessage(data: unknown): string | undefined {
 
 /** Hono RPCクライアントによるArticleRepositoryの実装 */
 export const articleApi: ArticleRepository = {
-  async findAll(): Promise<Article[]> {
-    const res = await apiClient.api.articles.$get()
+  async findAll(params?: {
+    page: number
+    limit: number
+  }): Promise<PaginatedResponse<Article>> {
+    const query = params ?? { page: 1, limit: 20 }
+    const res = await apiClient.api.articles.$get({
+      query: {
+        page: String(query.page),
+        limit: String(query.limit),
+      },
+    })
     if (!res.ok) {
       throw new Error(`記事一覧の取得に失敗しました: ${res.status}`)
     }
     const data = await res.json()
-    return data.map(toArticle)
+    return {
+      items: data.items.map(toArticle),
+      totalCount: data.totalCount,
+      page: data.page,
+      limit: data.limit,
+      totalPages: data.totalPages,
+    }
   },
 
   async findByPublicId(publicId: string): Promise<ArticleDetail> {

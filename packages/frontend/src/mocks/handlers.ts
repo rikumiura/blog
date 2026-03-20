@@ -6,9 +6,11 @@ type MockArticle = {
   publicId: string
   title: string
   status: 'draft' | 'published'
+  tags: string[]
   createdAt: string
   updatedAt: string
   publishedAt: string | null
+  scheduledAt: string | null
 }
 
 /** モック用の記事データ（APIレスポンスのDTO構造に準拠） */
@@ -17,25 +19,31 @@ const mockArticles: MockArticle[] = [
     publicId: 'abc123',
     title: 'はじめてのブログ記事',
     status: 'published',
+    tags: [],
     createdAt: '2026-03-01T00:00:00.000Z',
     updatedAt: '2026-03-01T12:00:00.000Z',
     publishedAt: '2026-03-01T12:00:00.000Z',
+    scheduledAt: null,
   },
   {
     publicId: 'def456',
     title: '下書きの記事',
     status: 'draft',
+    tags: [],
     createdAt: '2026-03-02T00:00:00.000Z',
     updatedAt: '2026-03-02T00:00:00.000Z',
     publishedAt: null,
+    scheduledAt: null,
   },
   {
     publicId: 'ghi789',
     title: 'Markdownで書く技術記事',
     status: 'draft',
+    tags: [],
     createdAt: '2026-03-03T10:00:00.000Z',
     updatedAt: '2026-03-03T10:00:00.000Z',
     publishedAt: null,
+    scheduledAt: null,
   },
 ]
 
@@ -44,9 +52,20 @@ export const handlers = [
     return HttpResponse.json({ message: 'Hello from MSW!' })
   }),
 
-  /** 記事一覧の取得 */
-  http.get(`${baseUrl}/api/articles`, () => {
-    return HttpResponse.json(mockArticles)
+  /** 記事一覧の取得（ページネーション付き） */
+  http.get(`${baseUrl}/api/articles`, ({ request }) => {
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? '1')
+    const limit = Number(url.searchParams.get('limit') ?? '20')
+    const start = (page - 1) * limit
+    const items = mockArticles.slice(start, start + limit)
+    return HttpResponse.json({
+      items,
+      totalCount: mockArticles.length,
+      page,
+      limit,
+      totalPages: Math.ceil(mockArticles.length / limit),
+    })
   }),
 
   /** 記事の作成（下書き） */
@@ -57,9 +76,11 @@ export const handlers = [
       publicId: `mock-${Date.now()}`,
       title: body.title,
       status: 'draft',
+      tags: [],
       createdAt: now,
       updatedAt: now,
       publishedAt: null,
+      scheduledAt: null,
     }
     mockArticles.push(newArticle)
     return HttpResponse.json(newArticle, { status: 201 })

@@ -14,6 +14,14 @@ export type ArticleSummaryDto = {
 
 export type ArticleDetailDto = ArticleSummaryDto & { body: string }
 
+export type PaginatedArticlesDto = {
+  items: ArticleSummaryDto[]
+  totalCount: number
+  page: number
+  limit: number
+  totalPages: number
+}
+
 export function toArticleSummaryDto(
   article: Article,
   tags: Tag[] = [],

@@ -32,9 +32,11 @@ describe('toArticleSummaryDto', () => {
       publicId: 'public-1',
       title: 'テスト記事',
       status: 'draft',
+      tags: [],
       createdAt: '2025-01-01T00:00:00.000Z',
       updatedAt: '2025-01-01T00:00:00.000Z',
       publishedAt: null,
+      scheduledAt: null,
     })
     expect('id' in dto).toBe(false)
     expect('bodyKey' in dto).toBe(false)
@@ -73,9 +75,11 @@ describe('toArticleDetailDto', () => {
       publicId: 'public-1',
       title: 'テスト記事',
       status: 'draft',
+      tags: [],
       createdAt: '2025-01-01T00:00:00.000Z',
       updatedAt: '2025-01-01T00:00:00.000Z',
       publishedAt: null,
+      scheduledAt: null,
       body: '本文です',
     })
     expect('id' in dto).toBe(false)
