@@ -55,8 +55,13 @@ export const handlers = [
   /** 記事一覧の取得（ページネーション付き） */
   http.get(`${baseUrl}/api/articles`, ({ request }) => {
     const url = new URL(request.url)
-    const page = Number(url.searchParams.get('page') ?? '1')
-    const limit = Number(url.searchParams.get('limit') ?? '20')
+    const rawPage = Number(url.searchParams.get('page') ?? '1')
+    const rawLimit = Number(url.searchParams.get('limit') ?? '20')
+    const page = Number.isInteger(rawPage) && rawPage >= 1 ? rawPage : 1
+    const limit =
+      Number.isInteger(rawLimit) && rawLimit >= 1 && rawLimit <= 100
+        ? rawLimit
+        : 20
     const start = (page - 1) * limit
     const items = mockArticles.slice(start, start + limit)
     return HttpResponse.json({

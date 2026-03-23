@@ -4,8 +4,8 @@ import {
   type Article,
   ArticleId,
   BodyKey,
-  type PublishedArticle,
   PublicArticleId,
+  type PublishedArticle,
   restoreTitle,
 } from '../../domain/models/article'
 import type {
@@ -81,7 +81,9 @@ export class DrizzleArticleRepository implements ArticleRepository {
     return rows.map(toEntity)
   }
 
-  async findAllPaginated(params: PaginationParams): Promise<PaginatedResult<Article>> {
+  async findAllPaginated(
+    params: PaginationParams,
+  ): Promise<PaginatedResult<Article>> {
     const offset = (params.page - 1) * params.limit
     const [rows, countResult] = await Promise.all([
       this.db
@@ -90,9 +92,7 @@ export class DrizzleArticleRepository implements ArticleRepository {
         .orderBy(desc(articles.updatedAt))
         .limit(params.limit)
         .offset(offset),
-      this.db
-        .select({ count: count() })
-        .from(articles),
+      this.db.select({ count: count() }).from(articles),
     ])
     return {
       items: rows.map(toEntity),
@@ -119,12 +119,13 @@ export class DrizzleArticleRepository implements ArticleRepository {
       .from(articles)
       .where(eq(articles.status, 'published'))
       .orderBy(desc(articles.publishedAt))
-    return rows.map(toEntity).filter(
-      (a): a is PublishedArticle => a.status === 'published',
-    )
+    // WHERE句で published のみに絞っているため、toEntity の結果は必ず PublishedArticle
+    return rows.map(toEntity) as PublishedArticle[]
   }
 
-  async findPublishedPaginated(params: PaginationParams): Promise<PaginatedResult<PublishedArticle>> {
+  async findPublishedPaginated(
+    params: PaginationParams,
+  ): Promise<PaginatedResult<PublishedArticle>> {
     const offset = (params.page - 1) * params.limit
     const [rows, countResult] = await Promise.all([
       this.db
@@ -139,10 +140,9 @@ export class DrizzleArticleRepository implements ArticleRepository {
         .from(articles)
         .where(eq(articles.status, 'published')),
     ])
+    // WHERE句で published のみに絞っているため、toEntity の結果は必ず PublishedArticle
     return {
-      items: rows.map(toEntity).filter(
-        (a): a is PublishedArticle => a.status === 'published',
-      ),
+      items: rows.map(toEntity) as PublishedArticle[],
       totalCount: countResult[0]?.count ?? 0,
     }
   }
@@ -161,11 +161,25 @@ function toEntity(row: typeof articles.$inferSelect): Article {
   if (row.status === 'draft' && row.publishedAt === null) {
     return { ...base, status: 'draft', publishedAt: null, scheduledAt: null }
   }
-  if (row.status === 'scheduled' && row.publishedAt === null && row.scheduledAt !== null) {
-    return { ...base, status: 'scheduled', publishedAt: null, scheduledAt: row.scheduledAt }
+  if (
+    row.status === 'scheduled' &&
+    row.publishedAt === null &&
+    row.scheduledAt !== null
+  ) {
+    return {
+      ...base,
+      status: 'scheduled',
+      publishedAt: null,
+      scheduledAt: row.scheduledAt,
+    }
   }
   if (row.status === 'published' && row.publishedAt !== null) {
-    return { ...base, status: 'published', publishedAt: row.publishedAt, scheduledAt: row.scheduledAt }
+    return {
+      ...base,
+      status: 'published',
+      publishedAt: row.publishedAt,
+      scheduledAt: row.scheduledAt,
+    }
   }
   throw new Error(
     `articles テーブルの status と publishedAt/scheduledAt の組み合わせが不正です (id: ${row.id}, status: ${row.status}, publishedAt: ${row.publishedAt}, scheduledAt: ${row.scheduledAt})`,
