@@ -5,7 +5,7 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 type MockArticle = {
   publicId: string
   title: string
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'scheduled'
   tags: string[]
   createdAt: string
   updatedAt: string
@@ -75,11 +75,25 @@ export const handlers = [
 
   /** 記事の作成（下書き） */
   http.post(`${baseUrl}/api/articles`, async ({ request }) => {
-    const body = (await request.json()) as { title: string; body: string }
+    const parsed: unknown = await request.json()
+    const isValidBody = (v: unknown): v is { title: string; body: string } =>
+      typeof v === 'object' &&
+      v !== null &&
+      'title' in v &&
+      'body' in v &&
+      typeof (v as Record<string, unknown>).title === 'string' &&
+      typeof (v as Record<string, unknown>).body === 'string'
+    if (!isValidBody(parsed)) {
+      return HttpResponse.json(
+        { message: 'title と body は必須です' },
+        { status: 400 },
+      )
+    }
+    const { title } = parsed
     const now = new Date().toISOString()
     const newArticle: MockArticle = {
       publicId: `mock-${Date.now()}`,
-      title: body.title,
+      title,
       status: 'draft',
       tags: [],
       createdAt: now,
