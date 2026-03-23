@@ -76,13 +76,10 @@ export const handlers = [
   /** 記事の作成（下書き） */
   http.post(`${baseUrl}/api/articles`, async ({ request }) => {
     const parsed: unknown = await request.json()
+    const isRecord = (v: unknown): v is Record<string, unknown> =>
+      typeof v === 'object' && v !== null
     const isValidBody = (v: unknown): v is { title: string; body: string } =>
-      typeof v === 'object' &&
-      v !== null &&
-      'title' in v &&
-      'body' in v &&
-      typeof (v as Record<string, unknown>).title === 'string' &&
-      typeof (v as Record<string, unknown>).body === 'string'
+      isRecord(v) && typeof v.title === 'string' && typeof v.body === 'string'
     if (!isValidBody(parsed)) {
       return HttpResponse.json(
         { message: 'title と body は必須です' },
