@@ -5,6 +5,12 @@ import { blogApi } from './blog.api'
 /** 公開記事一覧の状態 */
 export const blogArticlesAtom = atom<PublishedArticle[]>([])
 
+/** ページネーション状態 */
+export const blogCurrentPageAtom = atom(1)
+export const blogTotalPagesAtom = atom(1)
+export const blogTotalCountAtom = atom(0)
+export const blogPageLimitAtom = atom(20)
+
 /** 選択中のタグ（フィルター用） */
 export const blogSelectedTagsAtom = atom<string[]>([])
 
@@ -37,12 +43,16 @@ export const blogFetchLoadingAtom = atom(false)
 export const blogErrorAtom = atom<string | null>(null)
 
 /** 公開記事一覧を取得するアクション */
-export const fetchBlogArticlesAtom = atom(null, async (_get, set) => {
+export const fetchBlogArticlesAtom = atom(null, async (get, set) => {
   set(blogFetchLoadingAtom, true)
   set(blogErrorAtom, null)
   try {
-    const articles = await blogApi.findAll()
-    set(blogArticlesAtom, articles)
+    const page = get(blogCurrentPageAtom)
+    const limit = get(blogPageLimitAtom)
+    const result = await blogApi.findAll({ page, limit })
+    set(blogArticlesAtom, result.items)
+    set(blogTotalPagesAtom, result.totalPages)
+    set(blogTotalCountAtom, result.totalCount)
   } catch (error) {
     set(
       blogErrorAtom,
@@ -52,3 +62,12 @@ export const fetchBlogArticlesAtom = atom(null, async (_get, set) => {
     set(blogFetchLoadingAtom, false)
   }
 })
+
+/** ページを変更するアクション */
+export const changeBlogPageAtom = atom(
+  null,
+  async (_get, set, page: number) => {
+    set(blogCurrentPageAtom, page)
+    await set(fetchBlogArticlesAtom)
+  },
+)

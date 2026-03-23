@@ -51,3 +51,12 @@ export type UpdateArticleInput = {
   body?: string
   tags?: string[]
 }
+
+/** ページネーション付きレスポンス */
+export type PaginatedResponse<T> = {
+  items: T[]
+  totalCount: number
+  page: number
+  limit: number
+  totalPages: number
+}

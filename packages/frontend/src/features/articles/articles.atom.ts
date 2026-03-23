@@ -10,6 +10,12 @@ export const articleRepositoryAtom = atom<ArticleRepository>(articleApi)
 /** 記事一覧の状態 */
 export const articlesAtom = atom<Article[]>([])
 
+/** ページネーション状態 */
+export const currentPageAtom = atom(1)
+export const totalPagesAtom = atom(1)
+export const totalCountAtom = atom(0)
+export const pageLimitAtom = atom(20)
+
 /** 選択中のタグ（フィルター用） */
 export const selectedTagsAtom = atom<string[]>([])
 
@@ -52,8 +58,12 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
   set(articlesErrorAtom, null)
   try {
     const repository = get(articleRepositoryAtom)
-    const articles = await repository.findAll()
-    set(articlesAtom, articles)
+    const page = get(currentPageAtom)
+    const limit = get(pageLimitAtom)
+    const result = await repository.findAll({ page, limit })
+    set(articlesAtom, result.items)
+    set(totalPagesAtom, result.totalPages)
+    set(totalCountAtom, result.totalCount)
   } catch (error) {
     set(
       articlesErrorAtom,
@@ -62,6 +72,12 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
   } finally {
     set(fetchLoadingAtom, false)
   }
+})
+
+/** ページを変更するアクション */
+export const changePageAtom = atom(null, async (_get, set, page: number) => {
+  set(currentPageAtom, page)
+  await set(fetchArticlesAtom)
 })
 
 /** 記事を作成して一覧に追加するアクション */

@@ -1,4 +1,8 @@
-import type { ArticleDetail, PublishedArticle } from '@/core/types/article'
+import type {
+  ArticleDetail,
+  PaginatedResponse,
+  PublishedArticle,
+} from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
 
 function toPublishedArticle(data: {
@@ -21,13 +25,28 @@ function toPublishedArticle(data: {
 }
 
 export const blogApi = {
-  async findAll(): Promise<PublishedArticle[]> {
-    const res = await apiClient.api.public.articles.$get()
+  async findAll(params?: {
+    page: number
+    limit: number
+  }): Promise<PaginatedResponse<PublishedArticle>> {
+    const query = params ?? { page: 1, limit: 20 }
+    const res = await apiClient.api.public.articles.$get({
+      query: {
+        page: String(query.page),
+        limit: String(query.limit),
+      },
+    })
     if (!res.ok) {
       throw new Error(`記事一覧の取得に失敗しました: ${res.status}`)
     }
     const data = await res.json()
-    return data.map(toPublishedArticle)
+    return {
+      items: data.items.map(toPublishedArticle),
+      totalCount: data.totalCount,
+      page: data.page,
+      limit: data.limit,
+      totalPages: data.totalPages,
+    }
   },
 
   async findByPublicId(publicId: string): Promise<ArticleDetail> {

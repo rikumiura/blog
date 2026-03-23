@@ -12,16 +12,17 @@ import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
 import {
   toArticleDetailDto,
   toArticleSummaryDto,
+  toPaginatedArticlesDto,
 } from './presentation/dto/article-dto'
 import { cancelSchedule } from './use-cases/cancel-schedule'
 import { createArticle } from './use-cases/create-article'
+import { deleteArticle } from './use-cases/delete-article'
 import { getArticle } from './use-cases/get-article'
-import { listArticles } from './use-cases/list-articles'
-import { listPublishedArticles } from './use-cases/list-published-articles'
+import { listArticlesPaginated } from './use-cases/list-articles'
+import { listPublishedArticlesPaginated } from './use-cases/list-published-articles'
 import { publishArticle } from './use-cases/publish-article'
 import { publishScheduledArticles } from './use-cases/publish-scheduled-articles'
 import { scheduleArticle } from './use-cases/schedule-article'
-import { deleteArticle } from './use-cases/delete-article'
 import { updateArticle } from './use-cases/update-article'
 import { updateArticleTags } from './use-cases/update-article-tags'
 
@@ -45,7 +46,11 @@ const createArticleSchema = z.object({
     .min(1, 'タイトルは必須です')
     .max(100, 'タイトルは100文字以内にしてください'),
   body: z.string(),
-  tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください').optional().default([]),
+  tags: z
+    .array(tagNameSchema)
+    .max(10, 'タグは10個以内にしてください')
+    .optional()
+    .default([]),
   publish: z.boolean().optional().default(false),
 })
 
@@ -57,10 +62,16 @@ const updateArticleSchema = z
       .max(100, 'タイトルは100文字以内にしてください')
       .optional(),
     body: z.string().optional(),
-    tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください').optional(),
+    tags: z
+      .array(tagNameSchema)
+      .max(10, 'タグは10個以内にしてください')
+      .optional(),
   })
   .refine(
-    (data) => data.title !== undefined || data.body !== undefined || data.tags !== undefined,
+    (data) =>
+      data.title !== undefined ||
+      data.body !== undefined ||
+      data.tags !== undefined,
     { message: '更新するフィールドを1つ以上指定してください' },
   )
 
@@ -73,7 +84,14 @@ const publicIdParamSchema = z.object({
 })
 
 const scheduleSchema = z.object({
-  scheduledAt: z.string().datetime({ message: '予約日時はISO 8601形式で指定してください' }),
+  scheduledAt: z
+    .string()
+    .datetime({ message: '予約日時はISO 8601形式で指定してください' }),
+})
+
+const paginationSchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 })
 
 const routes = app
@@ -82,42 +100,44 @@ const routes = app
       message: 'Hello World from Hono & Cloudflare Workers!',
     })
   })
-  .get('/api/articles', async (c) => {
+  .get('/api/articles', zValidator('query', paginationSchema), async (c) => {
+    const { page, limit } = c.req.valid('query')
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
     const tagRepository = new DrizzleTagRepository(db)
-    const articles = await listArticles(repository)
-
-    // 全記事のタグを一括取得
-    const articleIds = articles.map((a) => a.id)
-    const tagsMap = await tagRepository.findByArticleIds(articleIds)
+    const paginatedResult = await listArticlesPaginated(repository, {
+      page,
+      limit,
+    })
 
     return c.json(
-      articles.map((article) =>
-        toArticleSummaryDto(article, tagsMap.get(article.id) ?? []),
-      ),
+      await toPaginatedArticlesDto(paginatedResult, page, limit, tagRepository),
     )
   })
-  .get('/api/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
-    const publicId = PublicArticleId(c.req.valid('param').publicId)
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const tagRepository = new DrizzleTagRepository(db)
-    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
+  .get(
+    '/api/articles/:publicId',
+    zValidator('param', publicIdParamSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const db = createDbClient(c.env.DB)
+      const repository = new DrizzleArticleRepository(db)
+      const tagRepository = new DrizzleTagRepository(db)
+      const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
 
-    const result = await getArticle(publicId, { repository, bodyStorage })
+      const result = await getArticle(publicId, { repository, bodyStorage })
 
-    switch (result.status) {
-      case 'found': {
-        const tags = await tagRepository.findByArticleId(result.article.id)
-        return c.json(toArticleDetailDto(result.article, result.body, tags))
+      switch (result.status) {
+        case 'found': {
+          const tags = await tagRepository.findByArticleId(result.article.id)
+          return c.json(toArticleDetailDto(result.article, result.body, tags))
+        }
+        case 'not_found':
+          return c.json({ error: '記事が見つかりません' }, 404)
+        case 'body_not_found':
+          return c.json({ error: '記事本文が見つかりません' }, 404)
       }
-      case 'not_found':
-        return c.json({ error: '記事が見つかりません' }, 404)
-      case 'body_not_found':
-        return c.json({ error: '記事本文が見つかりません' }, 404)
-    }
-  })
+    },
+  )
   .post('/api/articles', zValidator('json', createArticleSchema), async (c) => {
     const input = c.req.valid('json')
     const db = createDbClient(c.env.DB)
@@ -164,7 +184,9 @@ const routes = app
 
       switch (result.status) {
         case 'updated':
-          return c.json(toArticleDetailDto(result.article, result.body, result.tags))
+          return c.json(
+            toArticleDetailDto(result.article, result.body, result.tags),
+          )
         case 'not_found':
           return c.json({ error: '記事が見つかりません' }, 404)
         case 'body_not_found':
@@ -174,28 +196,32 @@ const routes = app
       }
     },
   )
-  .patch('/api/articles/:publicId/publish', zValidator('param', publicIdParamSchema), async (c) => {
-    const publicId = PublicArticleId(c.req.valid('param').publicId)
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const tagRepository = new DrizzleTagRepository(db)
+  .patch(
+    '/api/articles/:publicId/publish',
+    zValidator('param', publicIdParamSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const db = createDbClient(c.env.DB)
+      const repository = new DrizzleArticleRepository(db)
+      const tagRepository = new DrizzleTagRepository(db)
 
-    const result = await publishArticle(publicId, {
-      repository,
-      now: () => new Date().toISOString(),
-    })
+      const result = await publishArticle(publicId, {
+        repository,
+        now: () => new Date().toISOString(),
+      })
 
-    switch (result.status) {
-      case 'published': {
-        const tags = await tagRepository.findByArticleId(result.article.id)
-        return c.json(toArticleSummaryDto(result.article, tags))
+      switch (result.status) {
+        case 'published': {
+          const tags = await tagRepository.findByArticleId(result.article.id)
+          return c.json(toArticleSummaryDto(result.article, tags))
+        }
+        case 'not_found':
+          return c.json({ error: '記事が見つかりません' }, 404)
+        case 'already_published':
+          return c.json({ error: 'すでに公開されています' }, 400)
       }
-      case 'not_found':
-        return c.json({ error: '記事が見つかりません' }, 404)
-      case 'already_published':
-        return c.json({ error: 'すでに公開されています' }, 400)
-    }
-  })
+    },
+  )
   .patch(
     '/api/articles/:publicId/schedule',
     zValidator('param', publicIdParamSchema),
@@ -284,59 +310,76 @@ const routes = app
   )
 
   // --- 公開読者向け API ---
-  .get('/api/public/articles', async (c) => {
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const tagRepository = new DrizzleTagRepository(db)
-    const articles = await listPublishedArticles(repository)
+  .get(
+    '/api/public/articles',
+    zValidator('query', paginationSchema),
+    async (c) => {
+      const { page, limit } = c.req.valid('query')
+      const db = createDbClient(c.env.DB)
+      const repository = new DrizzleArticleRepository(db)
+      const tagRepository = new DrizzleTagRepository(db)
+      const paginatedResult = await listPublishedArticlesPaginated(repository, {
+        page,
+        limit,
+      })
 
-    const articleIds = articles.map((a) => a.id)
-    const tagsMap = await tagRepository.findByArticleIds(articleIds)
+      return c.json(
+        await toPaginatedArticlesDto(
+          paginatedResult,
+          page,
+          limit,
+          tagRepository,
+        ),
+      )
+    },
+  )
+  .get(
+    '/api/public/articles/:publicId',
+    zValidator('param', publicIdParamSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const db = createDbClient(c.env.DB)
+      const repository = new DrizzleArticleRepository(db)
+      const tagRepository = new DrizzleTagRepository(db)
+      const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
 
-    return c.json(
-      articles.map((article) =>
-        toArticleSummaryDto(article, tagsMap.get(article.id) ?? []),
-      ),
-    )
-  })
-  .get('/api/public/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
-    const publicId = PublicArticleId(c.req.valid('param').publicId)
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const tagRepository = new DrizzleTagRepository(db)
-    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
-
-    // 公開状態を先に確認し、下書きへの不要なR2読み込みを防ぐ
-    const article = await repository.findByPublicId(publicId)
-    if (!article || article.status !== 'published') {
-      return c.json({ error: '記事が見つかりません' }, 404)
-    }
-
-    const bodyResult = await bodyStorage.get(article.bodyKey)
-    if (!bodyResult.found) {
-      return c.json({ error: '記事本文が見つかりません' }, 404)
-    }
-
-    const tags = await tagRepository.findByArticleId(article.id)
-    return c.json(toArticleDetailDto(article, bodyResult.content, tags))
-  })
-
-  .delete('/api/articles/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
-    const publicId = PublicArticleId(c.req.valid('param').publicId)
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
-
-    const result = await deleteArticle(publicId, { repository, bodyStorage })
-
-    switch (result.status) {
-      case 'deleted':
-        return c.body(null, 204)
-      case 'not_found':
+      // 公開状態を先に確認し、下書きへの不要なR2読み込みを防ぐ
+      const article = await repository.findByPublicId(publicId)
+      if (!article || article.status !== 'published') {
         return c.json({ error: '記事が見つかりません' }, 404)
-    }
-  })
+      }
 
+      const bodyResult = await bodyStorage.get(article.bodyKey)
+      if (!bodyResult.found) {
+        return c.json({ error: '記事本文が見つかりません' }, 404)
+      }
+
+      const tags = await tagRepository.findByArticleId(article.id)
+      return c.json(toArticleDetailDto(article, bodyResult.content, tags))
+    },
+  )
+
+  .delete(
+    '/api/articles/:publicId',
+    zValidator('param', publicIdParamSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const db = createDbClient(c.env.DB)
+      const repository = new DrizzleArticleRepository(db)
+      const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
+
+      const result = await deleteArticle(publicId, { repository, bodyStorage })
+
+      switch (result.status) {
+        case 'deleted':
+          return c.body(null, 204)
+        case 'not_found':
+          return c.json({ error: '記事が見つかりません' }, 404)
+      }
+    },
+  )
+
+export { app }
 export type AppType = typeof routes
 
 // Scheduled handler: 予約公開日時を過ぎた記事を自動公開する

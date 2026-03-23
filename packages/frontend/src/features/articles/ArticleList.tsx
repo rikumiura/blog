@@ -2,6 +2,7 @@ import { useAtomValue, useSetAtom } from 'jotai'
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
+import { Pagination } from '@/components/ui/pagination'
 import {
   Table,
   TableBody,
@@ -13,6 +14,8 @@ import {
 import {
   articlesErrorAtom,
   cancelScheduleAtom,
+  changePageAtom,
+  currentPageAtom,
   deleteArticleAtom,
   deleteLoadingAtom,
   fetchArticlesAtom,
@@ -23,6 +26,7 @@ import {
   scheduleArticleAtom,
   scheduleLoadingAtom,
   selectedTagsAtom,
+  totalPagesAtom,
 } from './articles.atom'
 import { DeleteArticleDialog } from './DeleteArticleDialog'
 import { ScheduleDialog } from './ScheduleDialog'
@@ -62,12 +66,15 @@ function StatusBadge({ status }: { status: string }) {
 export function ArticleList() {
   const articles = useAtomValue(filteredArticlesAtom)
   const selectedTags = useAtomValue(selectedTagsAtom)
+  const currentPage = useAtomValue(currentPageAtom)
+  const totalPages = useAtomValue(totalPagesAtom)
   const isFetching = useAtomValue(fetchLoadingAtom)
   const isPublishing = useAtomValue(publishLoadingAtom)
   const isDeleting = useAtomValue(deleteLoadingAtom)
   const isScheduling = useAtomValue(scheduleLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
   const fetchArticles = useSetAtom(fetchArticlesAtom)
+  const changePage = useSetAtom(changePageAtom)
   const publishArticle = useSetAtom(publishArticleAtom)
   const deleteArticle = useSetAtom(deleteArticleAtom)
   const scheduleArticle = useSetAtom(scheduleArticleAtom)
@@ -255,6 +262,11 @@ export function ArticleList() {
           )}
         </TableBody>
       </Table>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={changePage}
+      />
       <DeleteArticleDialog
         articleTitle={deleteTarget?.title ?? ''}
         isOpen={deleteTarget !== null}

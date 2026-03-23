@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { DraftArticle, PublishedArticle } from '../domain/models/article'
+import type { PaginatedResult } from '../domain/ports/article-repository'
 import type { CreateArticleResult } from '../use-cases/create-article'
 import type { GetArticleResult } from '../use-cases/get-article'
 import type { PublishArticleResult } from '../use-cases/publish-article'
@@ -8,7 +9,8 @@ import type { PublishArticleResult } from '../use-cases/publish-article'
 
 const mockCreateArticle = vi.fn<() => Promise<CreateArticleResult>>()
 const mockGetArticle = vi.fn<() => Promise<GetArticleResult>>()
-const mockListArticles = vi.fn<() => Promise<(DraftArticle | PublishedArticle)[]>>()
+const mockListArticlesPaginated = vi.fn<() => Promise<PaginatedResult<DraftArticle | PublishedArticle>>>()
+const mockListPublishedArticlesPaginated = vi.fn<() => Promise<PaginatedResult<PublishedArticle>>>()
 const mockPublishArticle = vi.fn<() => Promise<PublishArticleResult>>()
 
 vi.mock('../use-cases/create-article', () => ({
@@ -20,11 +22,39 @@ vi.mock('../use-cases/get-article', () => ({
 }))
 
 vi.mock('../use-cases/list-articles', () => ({
-  listArticles: (...args: unknown[]) => mockListArticles(...args),
+  listArticlesPaginated: (...args: unknown[]) => mockListArticlesPaginated(...args),
+}))
+
+vi.mock('../use-cases/list-published-articles', () => ({
+  listPublishedArticlesPaginated: (...args: unknown[]) => mockListPublishedArticlesPaginated(...args),
 }))
 
 vi.mock('../use-cases/publish-article', () => ({
   publishArticle: (...args: unknown[]) => mockPublishArticle(...args),
+}))
+
+vi.mock('../use-cases/cancel-schedule', () => ({
+  cancelSchedule: vi.fn(),
+}))
+
+vi.mock('../use-cases/schedule-article', () => ({
+  scheduleArticle: vi.fn(),
+}))
+
+vi.mock('../use-cases/delete-article', () => ({
+  deleteArticle: vi.fn(),
+}))
+
+vi.mock('../use-cases/update-article', () => ({
+  updateArticle: vi.fn(),
+}))
+
+vi.mock('../use-cases/update-article-tags', () => ({
+  updateArticleTags: vi.fn(),
+}))
+
+vi.mock('../use-cases/publish-scheduled-articles', () => ({
+  publishScheduledArticles: vi.fn(),
 }))
 
 vi.mock('../infrastructure/database', () => ({
@@ -43,8 +73,15 @@ vi.mock('../infrastructure/id/article-id-generator-impl', () => ({
   ArticleIdGeneratorImpl: vi.fn(),
 }))
 
+vi.mock('../infrastructure/repositories/drizzle-tag-repository', () => ({
+  DrizzleTagRepository: class {
+    async findByArticleIds() { return new Map() }
+    async findByArticleId() { return [] }
+  },
+}))
+
 // app をモック後にインポート
-const { default: app } = await import('../index')
+const { app } = await import('../index')
 
 // --- テストデータ ---
 
@@ -57,6 +94,7 @@ const draftArticle: DraftArticle = {
   createdAt: '2026-03-01T00:00:00.000Z',
   updatedAt: '2026-03-01T00:00:00.000Z',
   publishedAt: null,
+  scheduledAt: null,
 }
 
 const publishedArticle: PublishedArticle = {
@@ -69,8 +107,11 @@ const publishedArticle: PublishedArticle = {
 // --- テスト ---
 
 describe('GET /api/articles', () => {
-  it('200: 記事一覧をDTO配列で返す', async () => {
-    mockListArticles.mockResolvedValue([draftArticle, publishedArticle])
+  it('200: ページネーション付きで記事一覧をDTO配列で返す', async () => {
+    mockListArticlesPaginated.mockResolvedValue({
+      items: [draftArticle, publishedArticle],
+      totalCount: 2,
+    })
 
     const res = await app.request('/api/articles', undefined, {
       DB: {},
@@ -79,14 +120,20 @@ describe('GET /api/articles', () => {
 
     expect(res.status).toBe(200)
     const data = await res.json()
-    expect(data).toHaveLength(2)
-    expect(data[0]).toEqual({
+    expect(data.items).toHaveLength(2)
+    expect(data.totalCount).toBe(2)
+    expect(data.page).toBe(1)
+    expect(data.limit).toBe(20)
+    expect(data.totalPages).toBe(1)
+    expect(data.items[0]).toEqual({
       publicId: 'pub-1',
       title: 'テスト記事',
       status: 'draft',
+      tags: [],
       createdAt: '2026-03-01T00:00:00.000Z',
       updatedAt: '2026-03-01T00:00:00.000Z',
       publishedAt: null,
+      scheduledAt: null,
     })
   })
 })
@@ -110,9 +157,11 @@ describe('GET /api/articles/:publicId', () => {
       publicId: 'pub-1',
       title: 'テスト記事',
       status: 'draft',
+      tags: [],
       createdAt: '2026-03-01T00:00:00.000Z',
       updatedAt: '2026-03-01T00:00:00.000Z',
       publishedAt: null,
+      scheduledAt: null,
       body: '# 本文',
     })
   })
