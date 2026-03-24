@@ -2,6 +2,14 @@ import { HttpResponse, http } from 'msw'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null
+}
+
+function toStringArray(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((item): item is string => typeof item === 'string') : []
+}
+
 type MockArticle = {
   publicId: string
   title: string
@@ -98,25 +106,24 @@ export const handlers = [
   /** 記事の作成 */
   http.post(`${baseUrl}/api/articles`, async ({ request }) => {
     const parsed: unknown = await request.json()
-    const isRecord = (v: unknown): v is Record<string, unknown> =>
-      typeof v === 'object' && v !== null
-    const isValidBody = (v: unknown): v is { title: string; body: string } =>
-      isRecord(v) && typeof v.title === 'string' && typeof v.body === 'string'
-    if (!isValidBody(parsed)) {
+    if (
+      !isRecord(parsed) ||
+      typeof parsed.title !== 'string' ||
+      typeof parsed.body !== 'string'
+    ) {
       return HttpResponse.json(
         { message: 'title と body は必須です' },
         { status: 400 },
       )
     }
-    const body = parsed as Record<string, unknown>
     const now = new Date().toISOString()
-    const publish = body.publish === true
+    const publish = parsed.publish === true
     const newArticle: MockArticle = {
       publicId: `mock-${Date.now()}`,
-      title: body.title as string,
-      body: body.body as string,
+      title: parsed.title,
+      body: parsed.body,
       status: publish ? 'published' : 'draft',
-      tags: Array.isArray(body.tags) ? (body.tags as string[]) : [],
+      tags: toStringArray(parsed.tags),
       createdAt: now,
       updatedAt: now,
       publishedAt: publish ? now : null,
@@ -147,10 +154,16 @@ export const handlers = [
         { status: 404 },
       )
     }
-    const body = (await request.json()) as Record<string, unknown>
-    if (typeof body.title === 'string') article.title = body.title
-    if (typeof body.body === 'string') article.body = body.body
-    if (Array.isArray(body.tags)) article.tags = body.tags as string[]
+    const parsed: unknown = await request.json()
+    if (!isRecord(parsed)) {
+      return HttpResponse.json(
+        { message: '不正なリクエストです' },
+        { status: 400 },
+      )
+    }
+    if (typeof parsed.title === 'string') article.title = parsed.title
+    if (typeof parsed.body === 'string') article.body = parsed.body
+    if (Array.isArray(parsed.tags)) article.tags = toStringArray(parsed.tags)
     article.updatedAt = new Date().toISOString()
     return HttpResponse.json(article)
   }),
@@ -189,11 +202,13 @@ export const handlers = [
           { status: 404 },
         )
       }
-      const body = (await request.json()) as Record<string, unknown>
+      const parsed: unknown = await request.json()
       article.status = 'scheduled'
       article.updatedAt = new Date().toISOString()
       article.scheduledAt =
-        typeof body.scheduledAt === 'string' ? body.scheduledAt : null
+        isRecord(parsed) && typeof parsed.scheduledAt === 'string'
+          ? parsed.scheduledAt
+          : null
       return HttpResponse.json(omitBody(article))
     },
   ),
@@ -240,8 +255,10 @@ export const handlers = [
           { status: 404 },
         )
       }
-      const body = (await request.json()) as Record<string, unknown>
-      if (Array.isArray(body.tags)) article.tags = body.tags as string[]
+      const parsed: unknown = await request.json()
+      if (isRecord(parsed) && Array.isArray(parsed.tags)) {
+        article.tags = toStringArray(parsed.tags)
+      }
       return HttpResponse.json({ tags: article.tags })
     },
   ),
