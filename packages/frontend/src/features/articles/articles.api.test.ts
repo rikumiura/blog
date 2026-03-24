@@ -25,6 +25,8 @@ describe('articleApi.findAll', () => {
     const result = await articleApi.findAll()
 
     expect(result.items).toBeInstanceOf(Array)
+    expect(result.page).toBe(1)
+    expect(result.limit).toBe(20)
   })
 
   it('エラー時にthrowする', async () => {

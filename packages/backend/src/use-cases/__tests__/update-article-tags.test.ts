@@ -50,6 +50,9 @@ describe('updateArticleTags', () => {
     expect(result.status).toBe('updated')
     if (result.status === 'updated') {
       expect(result.tags).toHaveLength(2)
+      expect(result.tags.map((t) => String(t.name))).toEqual(
+        expect.arrayContaining(['TypeScript', 'React']),
+      )
     }
   })
 
@@ -75,6 +78,9 @@ describe('updateArticleTags', () => {
       deps,
     )
 
-    expect(result.status).toBe('validation_error')
+    expect(result).toEqual({
+      status: 'validation_error',
+      message: 'タグ名は空にできません',
+    })
   })
 })

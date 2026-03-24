@@ -148,6 +148,9 @@ describe('updateArticle', () => {
       deps,
     )
 
-    expect(result.status).toBe('validation_error')
+    expect(result).toEqual({
+      status: 'validation_error',
+      message: 'タグ名は空にできません',
+    })
   })
 })

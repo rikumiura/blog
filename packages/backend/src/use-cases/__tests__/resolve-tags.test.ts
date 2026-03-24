@@ -60,6 +60,12 @@ describe('resolveTags', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.tags).toHaveLength(2)
+      const tagNames = result.tags.map((t) => String(t.name))
+      expect(tagNames).toContain('TypeScript')
+      expect(tagNames).toContain('React')
+      // 既存タグはIDが再利用される
+      const tsTag = result.tags.find((t) => String(t.name) === 'TypeScript')
+      expect(tsTag?.id).toBe('existing-1')
     }
   })
 
@@ -71,6 +77,7 @@ describe('resolveTags', () => {
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.tags).toHaveLength(1)
+      expect(String(result.tags[0].name)).toBe('TypeScript')
     }
   })
 
