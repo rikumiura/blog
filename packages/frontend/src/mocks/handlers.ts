@@ -258,6 +258,7 @@ export const handlers = [
       const parsed: unknown = await request.json()
       if (isRecord(parsed) && Array.isArray(parsed.tags)) {
         article.tags = toStringArray(parsed.tags)
+        article.updatedAt = new Date().toISOString()
       }
       return HttpResponse.json({ tags: article.tags })
     },
