@@ -5,6 +5,8 @@ import {
   type PublishedArticle,
   PublicArticleId,
 } from '../../domain/models/article'
+import type { Tag, TagName } from '../../domain/models/tag'
+import { TagId } from '../../domain/models/tag'
 import type {
   ArticleRepository,
   PaginatedResult,
@@ -12,6 +14,7 @@ import type {
 } from '../../domain/ports/article-repository'
 import type { BodyGetResult, BodyStorage } from '../../domain/ports/body-storage'
 import type { ArticleIdGenerator } from '../../domain/ports/id-generator'
+import type { TagRepository } from '../../domain/ports/tag-repository'
 
 export class InMemoryArticleRepository implements ArticleRepository {
   private articles = new Map<string, Article>()
@@ -67,6 +70,12 @@ export class InMemoryArticleRepository implements ArticleRepository {
     }
   }
 
+  async findScheduledBefore(before: string): Promise<Article[]> {
+    return [...this.articles.values()].filter(
+      (a) => a.status === 'scheduled' && a.scheduledAt <= before,
+    )
+  }
+
   simulateSaveError(): void {
     this.shouldFailOnSave = true
   }
@@ -102,6 +111,44 @@ export class InMemoryBodyStorage implements BodyStorage {
   }
 }
 
+export class InMemoryTagRepository implements TagRepository {
+  private tags = new Map<string, Tag>()
+  private articleTags = new Map<string, string[]>()
+
+  async findByNames(names: TagName[]): Promise<Tag[]> {
+    return [...this.tags.values()].filter((t) =>
+      names.some((n) => String(n) === String(t.name)),
+    )
+  }
+
+  async saveMany(tags: Tag[]): Promise<void> {
+    for (const tag of tags) {
+      this.tags.set(tag.id, tag)
+    }
+  }
+
+  async findByArticleId(articleId: ArticleId): Promise<Tag[]> {
+    const tagIds = this.articleTags.get(articleId) ?? []
+    return tagIds
+      .map((id) => this.tags.get(id))
+      .filter((t): t is Tag => t !== undefined)
+  }
+
+  async findByArticleIds(
+    articleIds: ArticleId[],
+  ): Promise<Map<string, Tag[]>> {
+    const result = new Map<string, Tag[]>()
+    for (const articleId of articleIds) {
+      result.set(articleId, await this.findByArticleId(articleId))
+    }
+    return result
+  }
+
+  async setArticleTags(articleId: ArticleId, tagIds: Tag['id'][]): Promise<void> {
+    this.articleTags.set(articleId, tagIds)
+  }
+}
+
 export class FakeArticleIdGenerator implements ArticleIdGenerator {
   private _articleId: string
   private _publicArticleId: string
@@ -123,5 +170,11 @@ export class FakeArticleIdGenerator implements ArticleIdGenerator {
 
   generateBodyKey(): BodyKey {
     return BodyKey(this._bodyKey)
+  }
+
+  private _tagIdCounter = 0
+  generateTagId(): TagId {
+    this._tagIdCounter++
+    return TagId(`tag-${this._tagIdCounter}`)
   }
 }
