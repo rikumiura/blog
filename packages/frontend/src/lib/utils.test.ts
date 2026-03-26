@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cn } from './utils'
+import { cn } from '@/lib/utils'
 
 describe('cn', () => {
   it('単一のクラス名をそのまま返す', () => {
@@ -26,7 +26,7 @@ describe('cn', () => {
   })
 
   it('異なるプロパティの Tailwind クラスはマージする', () => {
-    expect(cn('p-4', 'mt-2')).toBe('p-4 mt-2')
+    expect(cn('bg-red-500', 'text-white')).toBe('bg-red-500 text-white')
   })
 
   it('引数なしで空文字列を返す', () => {

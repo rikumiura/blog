@@ -1,9 +1,9 @@
 import { HttpResponse, http } from 'msw'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { server } from '@/mocks/server'
-import { blogApi } from './blog.api'
+import { blogApi } from '@/features/blog/blog.api'
 
-const baseUrl = 'http://localhost:8787'
+const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 
 beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())

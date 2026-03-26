@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate } from './format'
+import { formatDate } from '@/lib/format'
 
 describe('formatDate', () => {
   it('ISO文字列を「年月日」形式にフォーマットする', () => {

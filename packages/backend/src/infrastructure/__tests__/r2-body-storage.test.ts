@@ -58,6 +58,21 @@ describe('R2BodyStorage', () => {
     })
   })
 
+  describe('save → get ラウンドトリップ', () => {
+    it('save したコンテンツを get で取得できる', async () => {
+      const storage = new R2BodyStorage(createMockR2Bucket())
+      const key = BodyKey('round-trip.md')
+
+      await storage.save(key, '# ラウンドトリップテスト')
+      const result = await storage.get(key)
+
+      expect(result).toEqual({
+        found: true,
+        content: '# ラウンドトリップテスト',
+      })
+    })
+  })
+
   describe('delete', () => {
     it('指定したキーで delete が呼ばれる', async () => {
       const bucket = createMockR2Bucket()
