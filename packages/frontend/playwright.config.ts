@@ -39,7 +39,11 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         ...(process.env.PLAYWRIGHT_CHROMIUM_PATH
-          ? { launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH } }
+          ? {
+              launchOptions: {
+                executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH,
+              },
+            }
           : {}),
       },
     },

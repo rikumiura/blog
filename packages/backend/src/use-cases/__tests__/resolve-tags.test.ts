@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TagId, restoreTagName } from '../../domain/models/tag'
+import { restoreTagName, TagId } from '../../domain/models/tag'
 import { resolveTags } from '../resolve-tags'
 import { InMemoryTagRepository } from './in-memory-test-doubles'
 
@@ -38,7 +38,10 @@ describe('resolveTags', () => {
 
   it('既存タグが再利用される', async () => {
     const deps = setup()
-    const existingTag = { id: TagId('existing-1'), name: restoreTagName('TypeScript') }
+    const existingTag = {
+      id: TagId('existing-1'),
+      name: restoreTagName('TypeScript'),
+    }
     await deps.tagRepository.saveMany([existingTag])
 
     const result = await resolveTags(['TypeScript'], deps)
@@ -52,7 +55,10 @@ describe('resolveTags', () => {
 
   it('既存タグと新規タグが混在する場合', async () => {
     const deps = setup()
-    const existingTag = { id: TagId('existing-1'), name: restoreTagName('TypeScript') }
+    const existingTag = {
+      id: TagId('existing-1'),
+      name: restoreTagName('TypeScript'),
+    }
     await deps.tagRepository.saveMany([existingTag])
 
     const result = await resolveTags(['TypeScript', 'React'], deps)

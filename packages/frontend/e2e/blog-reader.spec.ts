@@ -22,22 +22,18 @@ test.describe('ブログ読者の記事閲覧ストーリー', () => {
     await expect(page.getByText('予約公開テスト記事')).not.toBeVisible()
 
     // タグが表示されていること
-    await expect(
-      page.getByRole('button', { name: '日記' }),
-    ).toBeVisible()
-    await expect(
-      page.getByRole('button', { name: 'TypeScript' }),
-    ).toBeVisible()
+    await expect(page.getByRole('button', { name: '日記' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'TypeScript' })).toBeVisible()
 
     // 記事をクリックして詳細ページへ遷移
-    await page
-      .getByRole('heading', { name: 'はじめてのブログ記事' })
-      .click()
+    await page.getByRole('heading', { name: 'はじめてのブログ記事' }).click()
     await page.waitForURL('**/articles/pub-001')
 
     // 記事の詳細が表示されること
     await expect(
-      page.locator('header').getByRole('heading', { name: 'はじめてのブログ記事' }),
+      page
+        .locator('header')
+        .getByRole('heading', { name: 'はじめてのブログ記事' }),
     ).toBeVisible()
 
     // 一覧に戻る

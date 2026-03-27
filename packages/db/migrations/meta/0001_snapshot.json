@@ -68,9 +68,7 @@
       "indexes": {
         "articles_public_id_unique": {
           "name": "articles_public_id_unique",
-          "columns": [
-            "public_id"
-          ],
+          "columns": ["public_id"],
           "isUnique": true
         }
       },

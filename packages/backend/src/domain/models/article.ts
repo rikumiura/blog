@@ -69,7 +69,10 @@ export function createTitle(value: string): CreateTitleResult {
     return { ok: false, message: 'タイトルは空にできません' }
   }
   if (trimmed.length > TITLE_MAX_LENGTH) {
-    return { ok: false, message: `タイトルは${TITLE_MAX_LENGTH}文字以内にしてください` }
+    return {
+      ok: false,
+      message: `タイトルは${TITLE_MAX_LENGTH}文字以内にしてください`,
+    }
   }
   return { ok: true, value: brand<Title>(trimmed) }
 }
@@ -95,7 +98,10 @@ export function createDraftArticle(params: {
   }
 }
 
-export function publishArticle(article: DraftArticle | ScheduledArticle, now: string): PublishedArticle {
+export function publishArticle(
+  article: DraftArticle | ScheduledArticle,
+  now: string,
+): PublishedArticle {
   return {
     ...article,
     status: 'published',
@@ -105,7 +111,11 @@ export function publishArticle(article: DraftArticle | ScheduledArticle, now: st
   }
 }
 
-export function scheduleArticle(article: DraftArticle, scheduledAt: string, now: string): ScheduledArticle {
+export function scheduleArticle(
+  article: DraftArticle,
+  scheduledAt: string,
+  now: string,
+): ScheduledArticle {
   return {
     ...article,
     status: 'scheduled',
@@ -115,7 +125,10 @@ export function scheduleArticle(article: DraftArticle, scheduledAt: string, now:
   }
 }
 
-export function cancelSchedule(article: ScheduledArticle, now: string): DraftArticle {
+export function cancelSchedule(
+  article: ScheduledArticle,
+  now: string,
+): DraftArticle {
   return {
     ...article,
     status: 'draft',

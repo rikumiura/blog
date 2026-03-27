@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   ArticleId,
   BodyKey,
-  type PublishedArticle,
   PublicArticleId,
+  type PublishedArticle,
   restoreTitle,
 } from '../../domain/models/article'
 import {

@@ -75,7 +75,9 @@ export async function createArticle(
         console.error(`補償処理失敗: 記事 ${article.id} の削除に失敗しました`)
       })
       await deps.bodyStorage.delete(bodyKey).catch(() => {
-        console.error(`補償処理失敗: R2ファイル ${bodyKey} の削除に失敗しました`)
+        console.error(
+          `補償処理失敗: R2ファイル ${bodyKey} の削除に失敗しました`,
+        )
       })
       throw error
     }

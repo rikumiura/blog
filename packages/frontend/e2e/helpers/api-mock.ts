@@ -285,7 +285,9 @@ export async function setupApiMock(
 
   /** 単一記事の取得・更新・削除 */
   await page.route(
-    new RegExp(`${API_BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/api/articles/[^/]+$`),
+    new RegExp(
+      `${API_BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/api/articles/[^/]+$`,
+    ),
     async (route, request) => {
       const method = request.method()
       const url = new URL(request.url())
@@ -383,7 +385,9 @@ export async function setupApiMock(
 
   /** 公開記事詳細 */
   await page.route(
-    new RegExp(`${API_BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/api/public/articles/[^/]+$`),
+    new RegExp(
+      `${API_BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/api/public/articles/[^/]+$`,
+    ),
     async (route) => {
       const url = new URL(route.request().url())
       const publicId = url.pathname.split('/')[4]

@@ -1,8 +1,6 @@
 import type { BodyKey } from '../models/article'
 
-export type BodyGetResult =
-  | { found: true; content: string }
-  | { found: false }
+export type BodyGetResult = { found: true; content: string } | { found: false }
 
 export interface BodyStorage {
   save(key: BodyKey, content: string): Promise<void>

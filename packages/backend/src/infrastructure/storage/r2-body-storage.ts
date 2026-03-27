@@ -1,5 +1,8 @@
 import type { BodyKey } from '../../domain/models/article'
-import type { BodyGetResult, BodyStorage } from '../../domain/ports/body-storage'
+import type {
+  BodyGetResult,
+  BodyStorage,
+} from '../../domain/ports/body-storage'
 
 export class R2BodyStorage implements BodyStorage {
   private bucket: R2Bucket

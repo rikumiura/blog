@@ -3,9 +3,9 @@ import type { DraftArticle, PublishedArticle } from '../article'
 import {
   ArticleId,
   BodyKey,
-  PublicArticleId,
   createDraftArticle,
   createTitle,
+  PublicArticleId,
   publishArticle,
   updateArticleContent,
 } from '../article'
@@ -17,7 +17,9 @@ function unwrapTitle(value: string) {
   return result.value
 }
 
-function createTestDraftArticle(overrides: Partial<DraftArticle> = {}): DraftArticle {
+function createTestDraftArticle(
+  overrides: Partial<DraftArticle> = {},
+): DraftArticle {
   return {
     id: ArticleId('test-id'),
     publicId: PublicArticleId('test-public-id'),
@@ -31,7 +33,9 @@ function createTestDraftArticle(overrides: Partial<DraftArticle> = {}): DraftArt
   }
 }
 
-function createTestPublishedArticle(overrides: Partial<PublishedArticle> = {}): PublishedArticle {
+function createTestPublishedArticle(
+  overrides: Partial<PublishedArticle> = {},
+): PublishedArticle {
   return {
     id: ArticleId('test-id'),
     publicId: PublicArticleId('test-public-id'),

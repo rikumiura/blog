@@ -2,8 +2,8 @@ import {
   type Article,
   ArticleId,
   BodyKey,
-  type PublishedArticle,
   PublicArticleId,
+  type PublishedArticle,
 } from '../../domain/models/article'
 import type { Tag, TagName } from '../../domain/models/tag'
 import { TagId } from '../../domain/models/tag'
@@ -12,7 +12,10 @@ import type {
   PaginatedResult,
   PaginationParams,
 } from '../../domain/ports/article-repository'
-import type { BodyGetResult, BodyStorage } from '../../domain/ports/body-storage'
+import type {
+  BodyGetResult,
+  BodyStorage,
+} from '../../domain/ports/body-storage'
 import type { ArticleIdGenerator } from '../../domain/ports/id-generator'
 import type { TagRepository } from '../../domain/ports/tag-repository'
 
@@ -46,7 +49,9 @@ export class InMemoryArticleRepository implements ArticleRepository {
     return [...this.articles.values()]
   }
 
-  async findAllPaginated(params: PaginationParams): Promise<PaginatedResult<Article>> {
+  async findAllPaginated(
+    params: PaginationParams,
+  ): Promise<PaginatedResult<Article>> {
     const all = [...this.articles.values()]
     const offset = (params.page - 1) * params.limit
     return {
@@ -61,7 +66,9 @@ export class InMemoryArticleRepository implements ArticleRepository {
       .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
   }
 
-  async findPublishedPaginated(params: PaginationParams): Promise<PaginatedResult<PublishedArticle>> {
+  async findPublishedPaginated(
+    params: PaginationParams,
+  ): Promise<PaginatedResult<PublishedArticle>> {
     const published = await this.findPublished()
     const offset = (params.page - 1) * params.limit
     return {
@@ -134,9 +141,7 @@ export class InMemoryTagRepository implements TagRepository {
       .filter((t): t is Tag => t !== undefined)
   }
 
-  async findByArticleIds(
-    articleIds: ArticleId[],
-  ): Promise<Map<string, Tag[]>> {
+  async findByArticleIds(articleIds: ArticleId[]): Promise<Map<string, Tag[]>> {
     const result = new Map<string, Tag[]>()
     for (const articleId of articleIds) {
       result.set(articleId, await this.findByArticleId(articleId))
@@ -144,7 +149,10 @@ export class InMemoryTagRepository implements TagRepository {
     return result
   }
 
-  async setArticleTags(articleId: ArticleId, tagIds: Tag['id'][]): Promise<void> {
+  async setArticleTags(
+    articleId: ArticleId,
+    tagIds: Tag['id'][],
+  ): Promise<void> {
     this.articleTags.set(articleId, tagIds)
   }
 }

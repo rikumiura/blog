@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   ArticleId,
   BodyKey,
-  PublicArticleId,
   createDraftArticle,
   createTitle,
+  PublicArticleId,
   type Title,
 } from '../../domain/models/article'
 import { listArticles } from '../list-articles'

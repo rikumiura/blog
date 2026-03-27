@@ -1,5 +1,5 @@
-import { check, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
+import { check, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { articles } from './articles'
 
 export const tags = sqliteTable(

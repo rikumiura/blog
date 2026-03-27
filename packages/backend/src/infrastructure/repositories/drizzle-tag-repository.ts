@@ -1,7 +1,7 @@
 import { articleTags, tags } from '@my-blog/db'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { ArticleId } from '../../domain/models/article'
-import { type Tag, TagId, restoreTagName } from '../../domain/models/tag'
+import { restoreTagName, type Tag, TagId } from '../../domain/models/tag'
 import type { TagRepository } from '../../domain/ports/tag-repository'
 import type { DbClient } from '../database'
 
@@ -38,9 +38,7 @@ export class DrizzleTagRepository implements TagRepository {
     return rows.map(toEntity)
   }
 
-  async findByArticleIds(
-    articleIds: ArticleId[],
-  ): Promise<Map<string, Tag[]>> {
+  async findByArticleIds(articleIds: ArticleId[]): Promise<Map<string, Tag[]>> {
     if (articleIds.length === 0) return new Map()
     const rows = await this.db
       .select({

@@ -1,7 +1,7 @@
 import { HttpResponse, http } from 'msw'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { server } from '@/mocks/server'
 import { blogApi } from '@/features/blog/blog.api'
+import { server } from '@/mocks/server'
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8787'
 

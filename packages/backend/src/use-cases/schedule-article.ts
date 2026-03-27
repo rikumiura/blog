@@ -29,7 +29,10 @@ export async function scheduleArticle(
 
   const now = deps.now()
   if (scheduledAt <= now) {
-    return { status: 'validation_error', message: '予約日時は現在より未来を指定してください' }
+    return {
+      status: 'validation_error',
+      message: '予約日時は現在より未来を指定してください',
+    }
   }
 
   const scheduled = scheduleDomainArticle(article, scheduledAt, now)

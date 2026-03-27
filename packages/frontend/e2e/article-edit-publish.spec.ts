@@ -7,9 +7,7 @@ test.describe('管理者の記事編集・公開ストーリー', () => {
 
     // 管理画面を開く
     await page.goto('/admin')
-    await expect(
-      page.getByRole('heading', { name: '記事一覧' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: '記事一覧' })).toBeVisible()
 
     // 下書き記事のタイトルをクリックして詳細ページへ
     await page.getByRole('link', { name: '下書きの記事' }).click()
@@ -71,22 +69,16 @@ test.describe('管理者の記事編集・公開ストーリー', () => {
     await setupApiMock(page)
 
     await page.goto('/admin')
-    await expect(
-      page.getByRole('heading', { name: '記事一覧' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: '記事一覧' })).toBeVisible()
 
     // 下書き記事の行に「公開する」ボタンがあること
     const row = page.getByRole('row').filter({ hasText: '下書きの記事' })
-    await expect(
-      row.getByText('下書き', { exact: true }),
-    ).toBeVisible()
+    await expect(row.getByText('下書き', { exact: true })).toBeVisible()
 
     // 「公開する」をクリック
     await row.getByRole('button', { name: '公開する' }).click()
 
     // ステータスが「公開」に変わること
-    await expect(
-      row.getByText('公開', { exact: true }),
-    ).toBeVisible()
+    await expect(row.getByText('公開', { exact: true })).toBeVisible()
   })
 })

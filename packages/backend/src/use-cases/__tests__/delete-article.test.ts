@@ -2,12 +2,15 @@ import { describe, expect, it } from 'vitest'
 import {
   ArticleId,
   BodyKey,
-  PublicArticleId,
   type DraftArticle,
+  PublicArticleId,
   restoreTitle,
 } from '../../domain/models/article'
 import { deleteArticle } from '../delete-article'
-import { InMemoryArticleRepository, InMemoryBodyStorage } from './in-memory-test-doubles'
+import {
+  InMemoryArticleRepository,
+  InMemoryBodyStorage,
+} from './in-memory-test-doubles'
 
 function createTestDraft(overrides?: Partial<DraftArticle>): DraftArticle {
   return {
