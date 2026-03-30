@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { PublicArticleId } from './domain/models/article'
 import { createAuthMiddleware } from './infrastructure/auth/auth-middleware'
 import { JwtTokenGenerator } from './infrastructure/auth/jwt-token-generator'
-import { Sha256PasswordHasher } from './infrastructure/auth/sha256-password-hasher'
+import { Pbkdf2PasswordHasher } from './infrastructure/auth/pbkdf2-password-hasher'
 import { createDbClient } from './infrastructure/database'
 import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator-impl'
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
@@ -112,6 +112,7 @@ const authMiddleware = createAuthMiddleware(
 )
 app.use('/api/articles/*', authMiddleware)
 app.use('/api/articles', authMiddleware)
+app.use('/api/auth/me', authMiddleware)
 
 const routes = app
   .get('/api/hello', (c) => {
@@ -122,7 +123,7 @@ const routes = app
   // --- 認証 API ---
   .post('/api/auth/login', zValidator('json', loginSchema), async (c) => {
     const input = c.req.valid('json')
-    const passwordHasher = new Sha256PasswordHasher()
+    const passwordHasher = new Pbkdf2PasswordHasher()
     const tokenGenerator = new JwtTokenGenerator(c.env.JWT_SECRET)
 
     const result = await authenticateAdmin(input, {
@@ -142,18 +143,9 @@ const routes = app
         )
     }
   })
-  .get('/api/auth/me', async (c) => {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return c.json({ error: '認証が必要です' }, 401)
-    }
-    const token = authHeader.slice(7)
-    const tokenGenerator = new JwtTokenGenerator(c.env.JWT_SECRET)
-    const payload = await tokenGenerator.verify(token)
-    if (!payload) {
-      return c.json({ error: 'トークンが無効です' }, 401)
-    }
-    return c.json({ username: payload.sub })
+  .get('/api/auth/me', (c) => {
+    const user = c.get('user') as { sub: string }
+    return c.json({ username: user.sub })
   })
   // --- 管理者用 API ---
   .get('/api/articles', zValidator('query', paginationSchema), async (c) => {

@@ -20,6 +20,7 @@ export function createAuthMiddleware(
       return c.json({ error: 'トークンが無効です' }, 401)
     }
 
+    c.set('user', payload)
     await next()
   }
 }

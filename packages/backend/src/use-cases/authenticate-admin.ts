@@ -25,16 +25,14 @@ export async function authenticateAdmin(
     return { status: 'invalid_credentials' }
   }
 
-  if (input.username !== deps.adminUsername) {
-    return { status: 'invalid_credentials' }
-  }
-
-  const isValid = await deps.passwordHasher.verify(
+  // タイミング攻撃対策: ユーザー名が一致しなくても常にパスワード検証を実行する
+  const isUsernameValid = input.username === deps.adminUsername
+  const isPasswordValid = await deps.passwordHasher.verify(
     input.password,
     deps.adminPasswordHash,
   )
 
-  if (!isValid) {
+  if (!isUsernameValid || !isPasswordValid) {
     return { status: 'invalid_credentials' }
   }
 

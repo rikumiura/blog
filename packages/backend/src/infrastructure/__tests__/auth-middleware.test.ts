@@ -21,6 +21,8 @@ function createTestApp() {
   const authMiddleware = createAuthMiddleware(() => tokenGenerator)
 
   app.use('/api/articles/*', authMiddleware)
+  app.use('/api/articles', authMiddleware)
+  app.get('/api/articles', (c) => c.json({ message: 'list ok' }))
   app.get('/api/articles/test', (c) => c.json({ message: 'ok' }))
   app.get('/api/public/test', (c) => c.json({ message: 'public ok' }))
 
@@ -68,6 +70,43 @@ describe('認証ミドルウェア', () => {
 
     expect(res.status).toBe(401)
     expect(await res.json()).toEqual({ error: 'トークンが無効です' })
+  })
+
+  it('/api/articles（サブパスなし）も認証が必要', async () => {
+    const app = createTestApp()
+
+    const res = await app.request('/api/articles')
+
+    expect(res.status).toBe(401)
+  })
+
+  it('/api/articles に有効なトークンでアクセスできる', async () => {
+    const app = createTestApp()
+
+    const res = await app.request('/api/articles', {
+      headers: { Authorization: 'Bearer valid-token:admin' },
+    })
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ message: 'list ok' })
+  })
+
+  it('認証成功時にユーザー情報がコンテキストに設定される', async () => {
+    const tokenGenerator = new FakeTokenGenerator()
+    const app = new Hono()
+    const authMiddleware = createAuthMiddleware(() => tokenGenerator)
+    app.use('/api/test', authMiddleware)
+    app.get('/api/test', (c) => {
+      const user = c.get('user')
+      return c.json({ user })
+    })
+
+    const res = await app.request('/api/test', {
+      headers: { Authorization: 'Bearer valid-token:admin' },
+    })
+
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ user: { sub: 'admin' } })
   })
 
   it('公開APIはミドルウェアの影響を受けない', async () => {

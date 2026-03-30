@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { PasswordHasher } from '../../domain/ports/password-hasher'
 import type { TokenGenerator } from '../../domain/ports/token-generator'
 import { authenticateAdmin } from '../authenticate-admin'
@@ -97,5 +97,45 @@ describe('authenticateAdmin', () => {
     expect(result).toEqual({
       status: 'invalid_credentials',
     })
+  })
+
+  it('ユーザー名が異なる場合もパスワード検証が実行される（タイミング攻撃対策）', async () => {
+    const deps = setup()
+    const verifySpy = vi.spyOn(deps.passwordHasher, 'verify')
+
+    await authenticateAdmin(
+      { username: 'wrong-user', password: 'some-password' },
+      deps,
+    )
+
+    expect(verifySpy).toHaveBeenCalledOnce()
+  })
+
+  it('PasswordHasher.verify がエラーをスローした場合は伝播する', async () => {
+    const deps = setup()
+    vi.spyOn(deps.passwordHasher, 'verify').mockRejectedValue(
+      new Error('ハッシュ処理エラー'),
+    )
+
+    await expect(
+      authenticateAdmin(
+        { username: 'admin', password: 'correct-password' },
+        deps,
+      ),
+    ).rejects.toThrow('ハッシュ処理エラー')
+  })
+
+  it('TokenGenerator.generate がエラーをスローした場合は伝播する', async () => {
+    const deps = setup()
+    vi.spyOn(deps.tokenGenerator, 'generate').mockRejectedValue(
+      new Error('トークン生成エラー'),
+    )
+
+    await expect(
+      authenticateAdmin(
+        { username: 'admin', password: 'correct-password' },
+        deps,
+      ),
+    ).rejects.toThrow('トークン生成エラー')
   })
 })

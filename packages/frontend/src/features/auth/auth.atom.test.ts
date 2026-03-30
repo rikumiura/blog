@@ -7,6 +7,8 @@ import {
   loginLoadingAtom,
   logoutAtom,
   tokenAtom,
+  verifyingTokenAtom,
+  verifyTokenAtom,
 } from './auth.atom'
 
 vi.mock('./auth.api', () => ({
@@ -107,6 +109,69 @@ describe('auth.atom', () => {
     await loginPromise
 
     expect(store.get(loginLoadingAtom)).toBe(false)
+  })
+
+  it('想定外エラーはエラーメッセージを設定後に再スローされる', async () => {
+    mockedAuthApi.login.mockRejectedValue(new Error('ネットワークエラー'))
+
+    await expect(
+      store.set(loginAtom, {
+        username: 'admin',
+        password: 'password',
+      }),
+    ).rejects.toThrow('ネットワークエラー')
+
+    expect(store.get(loginErrorAtom)).toBe('ネットワークエラー')
+    expect(store.get(loginLoadingAtom)).toBe(false)
+  })
+
+  it('トークン検証で無効なトークンがクリアされる', async () => {
+    mockedAuthApi.login.mockResolvedValue({
+      status: 'success',
+      token: 'test-token',
+    })
+    await store.set(loginAtom, {
+      username: 'admin',
+      password: 'password',
+    })
+
+    mockedAuthApi.me.mockResolvedValue({ status: 'unauthenticated' })
+    await store.set(verifyTokenAtom)
+
+    expect(store.get(tokenAtom)).toBeNull()
+    expect(store.get(isAuthenticatedAtom)).toBe(false)
+    expect(store.get(verifyingTokenAtom)).toBe(false)
+  })
+
+  it('トークン検証中はverifyingTokenAtomがtrueになる', async () => {
+    mockedAuthApi.login.mockResolvedValue({
+      status: 'success',
+      token: 'test-token',
+    })
+    await store.set(loginAtom, {
+      username: 'admin',
+      password: 'password',
+    })
+
+    let resolveMeFn: (value: {
+      status: 'authenticated'
+      username: string
+    }) => void
+    mockedAuthApi.me.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveMeFn = resolve
+        }),
+    )
+
+    const verifyPromise = store.set(verifyTokenAtom)
+
+    expect(store.get(verifyingTokenAtom)).toBe(true)
+
+    resolveMeFn!({ status: 'authenticated', username: 'admin' })
+    await verifyPromise
+
+    expect(store.get(verifyingTokenAtom)).toBe(false)
   })
 
   it('ログアウトでトークンがクリアされ未認証になる', async () => {

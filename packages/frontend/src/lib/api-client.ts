@@ -1,7 +1,6 @@
 import type { AppType } from '@my-blog/backend/src/index'
 import { hc } from 'hono/client'
-
-const TOKEN_STORAGE_KEY = 'auth_token'
+import { TOKEN_STORAGE_KEY } from '@/features/auth/constants'
 
 function getAuthHeaders(): Record<string, string> {
   try {

@@ -1,7 +1,6 @@
 import { atom } from 'jotai'
-import { authApi } from './auth.api'
-
-const TOKEN_STORAGE_KEY = 'auth_token'
+import { authApi } from '@/features/auth/auth.api'
+import { TOKEN_STORAGE_KEY } from '@/features/auth/constants'
 
 function getStoredToken(): string | null {
   try {
@@ -35,6 +34,9 @@ export const loginLoadingAtom = atom(false)
 /** ログインエラーメッセージ */
 export const loginErrorAtom = atom<string | null>(null)
 
+/** トークン検証のローディング状態 */
+export const verifyingTokenAtom = atom(false)
+
 /** ログインアクション */
 export const loginAtom = atom(
   null,
@@ -59,7 +61,7 @@ export const loginAtom = atom(
         loginErrorAtom,
         error instanceof Error ? error.message : 'ログインに失敗しました',
       )
-      return false
+      throw error
     } finally {
       set(loginLoadingAtom, false)
     }
@@ -77,9 +79,14 @@ export const verifyTokenAtom = atom(null, async (get, set) => {
   const token = get(tokenAtom)
   if (!token) return
 
-  const result = await authApi.me(token)
-  if (result.status === 'unauthenticated') {
-    set(tokenAtom, null)
-    setStoredToken(null)
+  set(verifyingTokenAtom, true)
+  try {
+    const result = await authApi.me(token)
+    if (result.status === 'unauthenticated') {
+      set(tokenAtom, null)
+      setStoredToken(null)
+    }
+  } finally {
+    set(verifyingTokenAtom, false)
   }
 })

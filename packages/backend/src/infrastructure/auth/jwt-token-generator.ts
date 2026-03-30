@@ -3,7 +3,11 @@ import type { TokenGenerator } from '../../domain/ports/token-generator'
 
 /** Hono JWT を使ったトークンジェネレーター */
 export class JwtTokenGenerator implements TokenGenerator {
-  constructor(private readonly secret: string) {}
+  constructor(private readonly secret: string) {
+    if (!secret) {
+      throw new Error('JWT_SECRET が設定されていません')
+    }
+  }
 
   async generate(payload: { sub: string }): Promise<string> {
     return await sign(
@@ -23,7 +27,8 @@ export class JwtTokenGenerator implements TokenGenerator {
         return { sub: payload.sub }
       }
       return null
-    } catch {
+    } catch (error) {
+      console.debug('JWT検証失敗:', error)
       return null
     }
   }

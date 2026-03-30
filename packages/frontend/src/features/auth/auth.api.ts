@@ -13,6 +13,15 @@ export type MeResult =
   | { status: 'authenticated'; username: string }
   | { status: 'unauthenticated' }
 
+function isErrorResponse(data: unknown): data is { error: string } {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'error' in data &&
+    typeof (data as { error: unknown }).error === 'string'
+  )
+}
+
 export const authApi = {
   async login(input: LoginInput): Promise<LoginResult> {
     const res = await apiClient.api.auth.login.$post({
@@ -20,12 +29,14 @@ export const authApi = {
     })
 
     if (!res.ok) {
-      const data = await res.json().catch(() => null)
-      const message =
-        data !== null && typeof data === 'object' && 'error' in data
-          ? String((data as Record<string, unknown>).error)
+      if (res.status === 400 || res.status === 401 || res.status === 422) {
+        const data = await res.json().catch(() => null)
+        const message = isErrorResponse(data)
+          ? data.error
           : 'ログインに失敗しました'
-      return { status: 'error', message }
+        return { status: 'error', message }
+      }
+      throw new Error(`ログインリクエストに失敗しました (HTTP ${res.status})`)
     }
 
     const data = await res.json()
@@ -39,7 +50,10 @@ export const authApi = {
     )
 
     if (!res.ok) {
-      return { status: 'unauthenticated' }
+      if (res.status === 401 || res.status === 403) {
+        return { status: 'unauthenticated' }
+      }
+      throw new Error(`認証確認リクエストに失敗しました (HTTP ${res.status})`)
     }
 
     const data = await res.json()

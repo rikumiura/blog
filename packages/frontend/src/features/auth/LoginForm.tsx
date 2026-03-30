@@ -22,7 +22,7 @@ export function LoginForm() {
       return
     }
 
-    const success = await login({ username, password })
+    const success = await login({ username: username.trim(), password })
     if (success) {
       navigate('/admin')
     }
