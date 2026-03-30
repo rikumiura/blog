@@ -40,6 +40,9 @@ export const authApi = {
     }
 
     const data = await res.json()
+    if (!data || typeof data.token !== 'string' || data.token.length === 0) {
+      throw new Error('不正なレスポンス: トークンが含まれていません')
+    }
     return { status: 'success', token: data.token }
   },
 
@@ -57,6 +60,13 @@ export const authApi = {
     }
 
     const data = await res.json()
+    if (
+      !data ||
+      typeof data.username !== 'string' ||
+      data.username.length === 0
+    ) {
+      throw new Error('不正なレスポンス: ユーザー名が含まれていません')
+    }
     return { status: 'authenticated', username: data.username }
   },
 }
