@@ -6,7 +6,7 @@ type AuthenticateInput = {
   password: string
 }
 
-type AuthenticateResult =
+export type AuthenticateResult =
   | { status: 'authenticated'; token: string }
   | { status: 'invalid_credentials' }
 

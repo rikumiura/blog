@@ -22,7 +22,7 @@ export class JwtTokenGenerator implements TokenGenerator {
 
   async verify(token: string): Promise<{ sub: string } | null> {
     try {
-      const payload = await verify(token, this.secret)
+      const payload = await verify(token, this.secret, 'HS256')
       if (typeof payload.sub === 'string') {
         return { sub: payload.sub }
       }
