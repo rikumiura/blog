@@ -262,11 +262,13 @@ export function ArticleList() {
           )}
         </TableBody>
       </Table>
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={changePage}
-      />
+      {selectedTags.length === 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={changePage}
+        />
+      )}
       <DeleteArticleDialog
         articleTitle={deleteTarget?.title ?? ''}
         isOpen={deleteTarget !== null}

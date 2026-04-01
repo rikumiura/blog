@@ -12,6 +12,7 @@ function toPublishedArticle(data: {
   createdAt: string
   updatedAt: string
   publishedAt: string | null
+  scheduledAt?: string | null
 }): PublishedArticle {
   return {
     publicId: data.publicId,
@@ -19,6 +20,7 @@ function toPublishedArticle(data: {
     tags: data.tags,
     status: 'published',
     publishedAt: data.publishedAt ?? data.updatedAt,
+    scheduledAt: data.scheduledAt ?? null,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
   }
