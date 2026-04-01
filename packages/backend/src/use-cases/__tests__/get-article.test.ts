@@ -2,13 +2,16 @@ import { describe, expect, it } from 'vitest'
 import {
   ArticleId,
   BodyKey,
-  PublicArticleId,
   createDraftArticle,
   createTitle,
+  PublicArticleId,
   type Title,
 } from '../../domain/models/article'
 import { getArticle } from '../get-article'
-import { InMemoryArticleRepository, InMemoryBodyStorage } from './in-memory-test-doubles'
+import {
+  InMemoryArticleRepository,
+  InMemoryBodyStorage,
+} from './in-memory-test-doubles'
 
 function unwrapTitle(value: string): Title {
   const result = createTitle(value)
@@ -63,10 +66,7 @@ describe('getArticle', () => {
   it('存在しないpublicIdの場合、statusがnot_foundになる', async () => {
     const deps = setup()
 
-    const result = await getArticle(
-      PublicArticleId('non-existent'),
-      deps,
-    )
+    const result = await getArticle(PublicArticleId('non-existent'), deps)
 
     expect(result).toEqual({ status: 'not_found' })
   })

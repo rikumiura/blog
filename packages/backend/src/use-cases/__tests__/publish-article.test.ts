@@ -4,9 +4,9 @@ import {
   BodyKey,
   createDraftArticle,
   createTitle,
-  type Title,
   PublicArticleId,
   publishArticle as publishDomainArticle,
+  type Title,
 } from '../../domain/models/article'
 import { publishArticle } from '../publish-article'
 import { InMemoryArticleRepository } from './in-memory-test-doubles'

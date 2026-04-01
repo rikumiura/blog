@@ -7,9 +7,7 @@ test.describe('管理者の記事作成ストーリー', () => {
 
     // 管理画面へアクセス
     await page.goto('/admin')
-    await expect(
-      page.getByRole('heading', { name: '記事一覧' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: '記事一覧' })).toBeVisible()
 
     // 新規作成ページへ遷移
     await page.getByRole('link', { name: '新規作成' }).click()
@@ -41,18 +39,13 @@ test.describe('管理者の記事作成ストーリー', () => {
     await expect(page.getByText('テスト記事')).toBeVisible()
 
     // 編集タブに戻る
-    await page
-      .locator('form')
-      .getByRole('button', { name: '編集' })
-      .click()
+    await page.locator('form').getByRole('button', { name: '編集' }).click()
 
     // 下書き保存
     await page.getByRole('button', { name: '下書き保存' }).click()
 
     // 記事一覧に戻り、作成した記事が表示されること
-    await expect(
-      page.getByRole('heading', { name: '記事一覧' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: '記事一覧' })).toBeVisible()
     await expect(page.getByText('テスト記事のタイトル')).toBeVisible()
   })
 
@@ -74,9 +67,7 @@ test.describe('管理者の記事作成ストーリー', () => {
     await page.getByRole('button', { name: '公開する' }).click()
 
     // 記事一覧に戻ること
-    await expect(
-      page.getByRole('heading', { name: '記事一覧' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: '記事一覧' })).toBeVisible()
     await expect(page.getByText('即時公開する記事')).toBeVisible()
   })
 })

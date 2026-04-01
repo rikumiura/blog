@@ -8,7 +8,10 @@ import {
 } from '../../domain/models/article'
 import { TagId } from '../../domain/models/tag'
 import { updateArticleTags } from '../update-article-tags'
-import { InMemoryArticleRepository, InMemoryTagRepository } from './in-memory-test-doubles'
+import {
+  InMemoryArticleRepository,
+  InMemoryTagRepository,
+} from './in-memory-test-doubles'
 
 function createTestDraft(): DraftArticle {
   return {

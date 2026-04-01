@@ -3,8 +3,8 @@ import {
   ArticleId,
   BodyKey,
   PublicArticleId,
-  type ScheduledArticle,
   restoreTitle,
+  type ScheduledArticle,
 } from '../../domain/models/article'
 import { publishScheduledArticles } from '../publish-scheduled-articles'
 import { InMemoryArticleRepository } from './in-memory-test-doubles'

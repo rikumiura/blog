@@ -1,4 +1,9 @@
-import type { Article, ArticleId, PublicArticleId, PublishedArticle } from '../models/article'
+import type {
+  Article,
+  ArticleId,
+  PublicArticleId,
+  PublishedArticle,
+} from '../models/article'
 
 export type PaginatedResult<T> = {
   items: T[]
@@ -19,5 +24,7 @@ export interface ArticleRepository {
   findAllPaginated(params: PaginationParams): Promise<PaginatedResult<Article>>
   findScheduledBefore(before: string): Promise<Article[]>
   findPublished(): Promise<PublishedArticle[]>
-  findPublishedPaginated(params: PaginationParams): Promise<PaginatedResult<PublishedArticle>>
+  findPublishedPaginated(
+    params: PaginationParams,
+  ): Promise<PaginatedResult<PublishedArticle>>
 }

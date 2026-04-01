@@ -1,8 +1,8 @@
 import {
   type Article,
+  createTitle,
   type PublicArticleId,
   type Title,
-  createTitle,
   updateArticleContent,
 } from '../domain/models/article'
 import type { Tag } from '../domain/models/tag'
@@ -61,7 +61,8 @@ export async function updateArticle(
 
   let updated: Article = article
   const now = deps.now()
-  const hasContentChange = validatedTitle !== undefined || input.body !== undefined
+  const hasContentChange =
+    validatedTitle !== undefined || input.body !== undefined
 
   if (validatedTitle !== undefined) {
     updated = updateArticleContent(updated, { title: validatedTitle }, now)

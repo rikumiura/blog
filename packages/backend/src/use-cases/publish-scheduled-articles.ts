@@ -20,7 +20,10 @@ export async function publishScheduledArticles(deps: {
       await deps.repository.save(published)
       publishedCount++
     } catch (error) {
-      console.error(`予約公開に失敗しました (publicId: ${article.publicId}):`, error)
+      console.error(
+        `予約公開に失敗しました (publicId: ${article.publicId}):`,
+        error,
+      )
     }
   }
 

@@ -4,8 +4,8 @@ import {
   BodyKey,
   type DraftArticle,
   PublicArticleId,
-  type ScheduledArticle,
   restoreTitle,
+  type ScheduledArticle,
 } from '../../domain/models/article'
 import { cancelSchedule } from '../cancel-schedule'
 import { InMemoryArticleRepository } from './in-memory-test-doubles'
@@ -52,7 +52,9 @@ describe('cancelSchedule', () => {
 
     await cancelSchedule(PublicArticleId('public-1'), deps)
 
-    const saved = await deps.repository.findByPublicId(PublicArticleId('public-1'))
+    const saved = await deps.repository.findByPublicId(
+      PublicArticleId('public-1'),
+    )
     expect(saved?.status).toBe('draft')
   })
 

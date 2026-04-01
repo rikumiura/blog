@@ -99,6 +99,13 @@ vi.mock('../infrastructure/repositories/drizzle-tag-repository', () => ({
   },
 }))
 
+vi.mock('../infrastructure/auth/auth-middleware', () => ({
+  createAuthMiddleware:
+    () => async (_c: unknown, next: () => Promise<void>) => {
+      await next()
+    },
+}))
+
 const { app } = await import('../index')
 
 // --- テストデータ ---

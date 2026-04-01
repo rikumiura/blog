@@ -1,4 +1,4 @@
-import { type Tag, TagId, createTagName } from '../domain/models/tag'
+import { createTagName, type Tag, type TagId } from '../domain/models/tag'
 import type { TagRepository } from '../domain/ports/tag-repository'
 
 export type ResolveTagsResult =

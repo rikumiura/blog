@@ -1,7 +1,7 @@
 import {
+  cancelSchedule as cancelScheduleDomain,
   type DraftArticle,
   type PublicArticleId,
-  cancelSchedule as cancelScheduleDomain,
 } from '../domain/models/article'
 import type { ArticleRepository } from '../domain/ports/article-repository'
 

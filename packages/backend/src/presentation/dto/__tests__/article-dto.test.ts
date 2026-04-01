@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 import {
   ArticleId,
   BodyKey,
-  PublicArticleId,
   createDraftArticle,
   createTitle,
-  type Title,
+  PublicArticleId,
   publishArticle as publishDomainArticle,
+  type Title,
 } from '../../../domain/models/article'
 import { toArticleDetailDto, toArticleSummaryDto } from '../article-dto'
 

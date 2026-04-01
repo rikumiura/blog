@@ -9,8 +9,10 @@ import type { PublishArticleResult } from '../use-cases/publish-article'
 
 const mockCreateArticle = vi.fn<() => Promise<CreateArticleResult>>()
 const mockGetArticle = vi.fn<() => Promise<GetArticleResult>>()
-const mockListArticlesPaginated = vi.fn<() => Promise<PaginatedResult<DraftArticle | PublishedArticle>>>()
-const mockListPublishedArticlesPaginated = vi.fn<() => Promise<PaginatedResult<PublishedArticle>>>()
+const mockListArticlesPaginated =
+  vi.fn<() => Promise<PaginatedResult<DraftArticle | PublishedArticle>>>()
+const mockListPublishedArticlesPaginated =
+  vi.fn<() => Promise<PaginatedResult<PublishedArticle>>>()
 const mockPublishArticle = vi.fn<() => Promise<PublishArticleResult>>()
 
 vi.mock('../use-cases/create-article', () => ({
@@ -22,11 +24,13 @@ vi.mock('../use-cases/get-article', () => ({
 }))
 
 vi.mock('../use-cases/list-articles', () => ({
-  listArticlesPaginated: (...args: unknown[]) => mockListArticlesPaginated(...args),
+  listArticlesPaginated: (...args: unknown[]) =>
+    mockListArticlesPaginated(...args),
 }))
 
 vi.mock('../use-cases/list-published-articles', () => ({
-  listPublishedArticlesPaginated: (...args: unknown[]) => mockListPublishedArticlesPaginated(...args),
+  listPublishedArticlesPaginated: (...args: unknown[]) =>
+    mockListPublishedArticlesPaginated(...args),
 }))
 
 vi.mock('../use-cases/publish-article', () => ({
@@ -75,9 +79,20 @@ vi.mock('../infrastructure/id/article-id-generator-impl', () => ({
 
 vi.mock('../infrastructure/repositories/drizzle-tag-repository', () => ({
   DrizzleTagRepository: class {
-    async findByArticleIds() { return new Map() }
-    async findByArticleId() { return [] }
+    async findByArticleIds() {
+      return new Map()
+    }
+    async findByArticleId() {
+      return []
+    }
   },
+}))
+
+vi.mock('../infrastructure/auth/auth-middleware', () => ({
+  createAuthMiddleware:
+    () => async (_c: unknown, next: () => Promise<void>) => {
+      await next()
+    },
 }))
 
 // app をモック後にインポート

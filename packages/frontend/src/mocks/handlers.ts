@@ -7,7 +7,9 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 function toStringArray(v: unknown): string[] {
-  return Array.isArray(v) ? v.filter((item): item is string => typeof item === 'string') : []
+  return Array.isArray(v)
+    ? v.filter((item): item is string => typeof item === 'string')
+    : []
 }
 
 type MockArticle = {
@@ -87,9 +89,38 @@ function omitBody({ body: _, ...rest }: MockArticle) {
   return rest
 }
 
+const MOCK_ADMIN_USERNAME = 'admin'
+const MOCK_ADMIN_PASSWORD = 'password'
+const MOCK_TOKEN = 'mock-jwt-token'
+
 export const handlers = [
   http.get(`${baseUrl}/api/hello`, () => {
     return HttpResponse.json({ message: 'Hello from MSW!' })
+  }),
+
+  /** ログイン */
+  http.post(`${baseUrl}/api/auth/login`, async ({ request }) => {
+    const parsed: unknown = await request.json()
+    if (
+      !isRecord(parsed) ||
+      parsed.username !== MOCK_ADMIN_USERNAME ||
+      parsed.password !== MOCK_ADMIN_PASSWORD
+    ) {
+      return HttpResponse.json(
+        { error: 'ユーザー名またはパスワードが正しくありません' },
+        { status: 401 },
+      )
+    }
+    return HttpResponse.json({ token: MOCK_TOKEN })
+  }),
+
+  /** 認証状態の確認 */
+  http.get(`${baseUrl}/api/auth/me`, ({ request }) => {
+    const authHeader = request.headers.get('Authorization')
+    if (authHeader !== `Bearer ${MOCK_TOKEN}`) {
+      return HttpResponse.json({ error: '認証が必要です' }, { status: 401 })
+    }
+    return HttpResponse.json({ username: MOCK_ADMIN_USERNAME })
   }),
 
   /** 記事一覧の取得（ページネーション付き） */
@@ -146,27 +177,30 @@ export const handlers = [
   }),
 
   /** 記事の更新 */
-  http.patch(`${baseUrl}/api/articles/:publicId`, async ({ params, request }) => {
-    const article = mockArticles.find((a) => a.publicId === params.publicId)
-    if (!article) {
-      return HttpResponse.json(
-        { message: '記事が見つかりません' },
-        { status: 404 },
-      )
-    }
-    const parsed: unknown = await request.json()
-    if (!isRecord(parsed)) {
-      return HttpResponse.json(
-        { message: '不正なリクエストです' },
-        { status: 400 },
-      )
-    }
-    if (typeof parsed.title === 'string') article.title = parsed.title
-    if (typeof parsed.body === 'string') article.body = parsed.body
-    if (Array.isArray(parsed.tags)) article.tags = toStringArray(parsed.tags)
-    article.updatedAt = new Date().toISOString()
-    return HttpResponse.json(article)
-  }),
+  http.patch(
+    `${baseUrl}/api/articles/:publicId`,
+    async ({ params, request }) => {
+      const article = mockArticles.find((a) => a.publicId === params.publicId)
+      if (!article) {
+        return HttpResponse.json(
+          { message: '記事が見つかりません' },
+          { status: 404 },
+        )
+      }
+      const parsed: unknown = await request.json()
+      if (!isRecord(parsed)) {
+        return HttpResponse.json(
+          { message: '不正なリクエストです' },
+          { status: 400 },
+        )
+      }
+      if (typeof parsed.title === 'string') article.title = parsed.title
+      if (typeof parsed.body === 'string') article.body = parsed.body
+      if (Array.isArray(parsed.tags)) article.tags = toStringArray(parsed.tags)
+      article.updatedAt = new Date().toISOString()
+      return HttpResponse.json(article)
+    },
+  ),
 
   /** 記事の公開 */
   http.patch(`${baseUrl}/api/articles/:publicId/publish`, ({ params }) => {

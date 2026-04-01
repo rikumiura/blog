@@ -57,7 +57,9 @@ describe('scheduleArticle', () => {
 
     await scheduleArticle(PublicArticleId('public-1'), FUTURE_DATE, deps)
 
-    const saved = await deps.repository.findByPublicId(PublicArticleId('public-1'))
+    const saved = await deps.repository.findByPublicId(
+      PublicArticleId('public-1'),
+    )
     expect(saved?.status).toBe('scheduled')
   })
 

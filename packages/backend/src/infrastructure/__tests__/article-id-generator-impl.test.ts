@@ -14,7 +14,9 @@ describe('ArticleIdGeneratorImpl', () => {
     })
 
     it('呼び出すたびにユニークな値を返す', () => {
-      const ids = new Set(Array.from({ length: 10 }, () => generator.generateArticleId()))
+      const ids = new Set(
+        Array.from({ length: 10 }, () => generator.generateArticleId()),
+      )
       expect(ids.size).toBe(10)
     })
   })
@@ -32,7 +34,9 @@ describe('ArticleIdGeneratorImpl', () => {
     })
 
     it('呼び出すたびにユニークな値を返す', () => {
-      const ids = new Set(Array.from({ length: 10 }, () => generator.generatePublicArticleId()))
+      const ids = new Set(
+        Array.from({ length: 10 }, () => generator.generatePublicArticleId()),
+      )
       expect(ids.size).toBe(10)
     })
   })
@@ -52,7 +56,9 @@ describe('ArticleIdGeneratorImpl', () => {
     })
 
     it('呼び出すたびにユニークな値を返す', () => {
-      const keys = new Set(Array.from({ length: 10 }, () => generator.generateBodyKey()))
+      const keys = new Set(
+        Array.from({ length: 10 }, () => generator.generateBodyKey()),
+      )
       expect(keys.size).toBe(10)
     })
   })
@@ -66,7 +72,9 @@ describe('ArticleIdGeneratorImpl', () => {
     })
 
     it('呼び出すたびにユニークな値を返す', () => {
-      const ids = new Set(Array.from({ length: 10 }, () => generator.generateTagId()))
+      const ids = new Set(
+        Array.from({ length: 10 }, () => generator.generateTagId()),
+      )
       expect(ids.size).toBe(10)
     })
   })

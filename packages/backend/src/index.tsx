@@ -4,6 +4,9 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { z } from 'zod'
 import { PublicArticleId } from './domain/models/article'
+import { createAuthMiddleware } from './infrastructure/auth/auth-middleware'
+import { JwtTokenGenerator } from './infrastructure/auth/jwt-token-generator'
+import { Pbkdf2PasswordHasher } from './infrastructure/auth/pbkdf2-password-hasher'
 import { createDbClient } from './infrastructure/database'
 import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator-impl'
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
@@ -14,6 +17,7 @@ import {
   toArticleSummaryDto,
   toPaginatedArticlesDto,
 } from './presentation/dto/article-dto'
+import { authenticateAdmin } from './use-cases/authenticate-admin'
 import { cancelSchedule } from './use-cases/cancel-schedule'
 import { createArticle } from './use-cases/create-article'
 import { deleteArticle } from './use-cases/delete-article'
@@ -29,9 +33,16 @@ import { updateArticleTags } from './use-cases/update-article-tags'
 type Bindings = {
   DB: D1Database
   ARTICLE_BUCKET: R2Bucket
+  ADMIN_USERNAME: string
+  ADMIN_PASSWORD_HASH: string
+  JWT_SECRET: string
 }
 
-const app = new Hono<{ Bindings: Bindings }>()
+type Variables = {
+  user: { sub: string }
+}
+
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
 app.use('/*', cors())
 
@@ -94,12 +105,53 @@ const paginationSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 })
 
+const loginSchema = z.object({
+  username: z.string().min(1, 'ユーザー名は必須です').max(64, 'ユーザー名が長すぎます'),
+  password: z.string().min(1, 'パスワードは必須です').max(256, 'パスワードが長すぎます'),
+})
+
+// 管理者用APIに認証ミドルウェアを適用
+const authMiddleware = createAuthMiddleware(
+  (c) => new JwtTokenGenerator(c.env.JWT_SECRET),
+)
+app.use('/api/articles/*', authMiddleware)
+app.use('/api/articles', authMiddleware)
+app.use('/api/auth/me', authMiddleware)
+
 const routes = app
   .get('/api/hello', (c) => {
     return c.json({
       message: 'Hello World from Hono & Cloudflare Workers!',
     })
   })
+  // --- 認証 API ---
+  .post('/api/auth/login', zValidator('json', loginSchema), async (c) => {
+    const input = c.req.valid('json')
+    const passwordHasher = new Pbkdf2PasswordHasher()
+    const tokenGenerator = new JwtTokenGenerator(c.env.JWT_SECRET)
+
+    const result = await authenticateAdmin(input, {
+      passwordHasher,
+      tokenGenerator,
+      adminUsername: c.env.ADMIN_USERNAME,
+      adminPasswordHash: c.env.ADMIN_PASSWORD_HASH,
+    })
+
+    switch (result.status) {
+      case 'authenticated':
+        return c.json({ token: result.token })
+      case 'invalid_credentials':
+        return c.json(
+          { error: 'ユーザー名またはパスワードが正しくありません' },
+          401,
+        )
+    }
+  })
+  .get('/api/auth/me', (c) => {
+    const user = c.get('user')
+    return c.json({ username: user.sub })
+  })
+  // --- 管理者用 API ---
   .get('/api/articles', zValidator('query', paginationSchema), async (c) => {
     const { page, limit } = c.req.valid('query')
     const db = createDbClient(c.env.DB)

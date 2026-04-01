@@ -47,9 +47,7 @@ test.describe('管理者の記事削除ストーリー', () => {
 
     // 記事一覧に戻ること
     await expect(page.url()).toContain('/admin')
-    await expect(
-      page.getByRole('heading', { name: '記事一覧' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: '記事一覧' })).toBeVisible()
 
     // 削除した記事が一覧に表示されないこと
     await expect(page.getByText('下書きの記事')).not.toBeVisible()
@@ -59,9 +57,7 @@ test.describe('管理者の記事削除ストーリー', () => {
     await setupApiMock(page)
 
     await page.goto('/admin')
-    await expect(
-      page.getByRole('heading', { name: '記事一覧' }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: '記事一覧' })).toBeVisible()
 
     // 下書き記事の行の「削除」ボタンをクリック
     const row = page
