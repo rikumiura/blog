@@ -38,7 +38,11 @@ type Bindings = {
   JWT_SECRET: string
 }
 
-const app = new Hono<{ Bindings: Bindings }>()
+type Variables = {
+  user: { sub: string }
+}
+
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
 app.use('/*', cors())
 
@@ -144,7 +148,7 @@ const routes = app
     }
   })
   .get('/api/auth/me', (c) => {
-    const user = c.get('user') as { sub: string }
+    const user = c.get('user')
     return c.json({ username: user.sub })
   })
   // --- 管理者用 API ---

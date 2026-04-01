@@ -109,6 +109,10 @@ describe('authenticateAdmin', () => {
     )
 
     expect(verifySpy).toHaveBeenCalledOnce()
+    expect(verifySpy).toHaveBeenCalledWith(
+      'some-password',
+      deps.adminPasswordHash,
+    )
   })
 
   it('PasswordHasher.verify がエラーをスローした場合は伝播する', async () => {
