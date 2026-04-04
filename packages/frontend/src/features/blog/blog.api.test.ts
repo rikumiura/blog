@@ -56,7 +56,9 @@ describe('blogApi.findAll', () => {
 
     const result = await blogApi.findAll()
 
-    expect(result.items[0].publishedAt).toBe('2026-03-01T12:00:00.000Z')
+    const firstItem = result.items[0]
+    expect(firstItem).toBeDefined()
+    expect(firstItem?.publishedAt).toBe('2026-03-01T12:00:00.000Z')
   })
 
   it('エラー時にthrowする', async () => {

@@ -63,6 +63,7 @@ describe('articleApi.create', () => {
     const article = await articleApi.create({
       title: 'テスト記事',
       body: '本文',
+      tags: [],
     })
 
     expect(article).toMatchObject({
@@ -84,7 +85,7 @@ describe('articleApi.create', () => {
     )
 
     await expect(
-      articleApi.create({ title: '', body: '本文' }),
+      articleApi.create({ title: '', body: '本文', tags: [] }),
     ).rejects.toThrow('タイトルは空にできません')
   })
 
@@ -99,7 +100,7 @@ describe('articleApi.create', () => {
     )
 
     await expect(
-      articleApi.create({ title: 'テスト', body: '本文' }),
+      articleApi.create({ title: 'テスト', body: '本文', tags: [] }),
     ).rejects.toThrow('記事の作成に失敗しました: 400')
   })
 
@@ -114,7 +115,7 @@ describe('articleApi.create', () => {
     )
 
     await expect(
-      articleApi.create({ title: 'テスト', body: '本文' }),
+      articleApi.create({ title: 'テスト', body: '本文', tags: [] }),
     ).rejects.toThrow('記事の作成に失敗しました: 500')
   })
 })
