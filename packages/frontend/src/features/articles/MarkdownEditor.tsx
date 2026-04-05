@@ -1,8 +1,9 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { useMemo, useState } from 'react'
+import { useRef, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { toAbsoluteImageUrl, uploadImage } from './image.api'
 
 type Tab = 'edit' | 'preview' | 'split'
 
@@ -13,6 +14,27 @@ type Props = {
 
 export function MarkdownEditor({ value, onChange }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('edit')
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadError(null)
+    setIsUploading(true)
+    try {
+      const result = await uploadImage(file)
+      const absoluteUrl = toAbsoluteImageUrl(result.url)
+      onChange(`${value}![${file.name}](${absoluteUrl})`)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : '画像のアップロードに失敗しました')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const previewHtml = useMemo(() => {
     if (!value) return ''
@@ -43,6 +65,22 @@ export function MarkdownEditor({ value, onChange }: Props) {
           本文（Markdown）
         </label>
         <div className="flex gap-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            画像挿入
+          </Button>
           <Button
             type="button"
             variant={activeTab === 'edit' ? 'default' : 'ghost'}
@@ -69,6 +107,9 @@ export function MarkdownEditor({ value, onChange }: Props) {
           </Button>
         </div>
       </div>
+      {uploadError && (
+        <p className="text-sm text-destructive">{uploadError}</p>
+      )}
 
       {activeTab === 'edit' && (
         <Textarea
