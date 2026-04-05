@@ -1,19 +1,15 @@
-import DOMPurify from 'dompurify'
 import { useAtomValue, useSetAtom } from 'jotai'
-import { marked } from 'marked'
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import type { ArticleDetail } from '@/core/types/article'
 import {
   articlesErrorAtom,
   updateArticleAtom,
   updateLoadingAtom,
 } from '@/features/articles/articles.atom'
-
-type Tab = 'edit' | 'preview'
+import { MarkdownEditor } from './MarkdownEditor'
 
 type Props = {
   article: ArticleDetail
@@ -24,7 +20,6 @@ export function ArticleEditForm({ article }: Props) {
   const [body, setBody] = useState(article.body)
   const [tagInput, setTagInput] = useState('')
   const [tags, setTags] = useState<string[]>(article.tags)
-  const [activeTab, setActiveTab] = useState<Tab>('edit')
   const isLoading = useAtomValue(updateLoadingAtom)
   const error = useAtomValue(articlesErrorAtom)
   const setError = useSetAtom(articlesErrorAtom)
@@ -35,12 +30,6 @@ export function ArticleEditForm({ article }: Props) {
   useEffect(() => {
     setError(null)
   }, [setError])
-
-  const previewHtml = useMemo(() => {
-    if (!body) return ''
-    const parsed = marked.parse(body)
-    return DOMPurify.sanitize(typeof parsed === 'string' ? parsed : '')
-  }, [body])
 
   const addTag = () => {
     const trimmed = tagInput.trim()
@@ -127,53 +116,7 @@ export function ArticleEditForm({ article }: Props) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <label htmlFor="body" className="text-sm font-medium">
-            本文（Markdown）
-          </label>
-          <div className="flex gap-1">
-            <Button
-              type="button"
-              variant={activeTab === 'edit' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('edit')}
-            >
-              編集
-            </Button>
-            <Button
-              type="button"
-              variant={activeTab === 'preview' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('preview')}
-            >
-              プレビュー
-            </Button>
-          </div>
-        </div>
-        {activeTab === 'edit' ? (
-          <Textarea
-            id="body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            rows={15}
-            required
-            className="min-h-[60vh] font-mono"
-            placeholder="Markdown で本文を入力"
-          />
-        ) : (
-          <div className="prose min-h-[60vh] max-w-none rounded-md border p-4">
-            {body ? (
-              <div
-                // biome-ignore lint/security/noDangerouslySetInnerHtml: DOMPurify でサニタイズ済み HTML を表示
-                dangerouslySetInnerHTML={{ __html: previewHtml }}
-              />
-            ) : (
-              <p className="text-muted-foreground">本文がありません</p>
-            )}
-          </div>
-        )}
-      </div>
+      <MarkdownEditor value={body} onChange={setBody} />
 
       <div className="flex gap-2">
         <Button type="submit" disabled={isLoading}>
