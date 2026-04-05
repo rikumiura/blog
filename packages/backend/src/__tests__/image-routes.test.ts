@@ -5,16 +5,23 @@ import { describe, expect, it, vi } from 'vitest'
 const mockPut = vi.fn()
 const mockGet = vi.fn()
 
-vi.mock('../infrastructure/storage/r2-image-storage', () => ({
-  R2ImageStorage: class {
-    async save(_key: string, _data: ArrayBuffer, _contentType: string) {
-      return mockPut(_key, _data, _contentType)
-    }
-    async get(_key: string) {
-      return mockGet(_key)
-    }
-  },
-}))
+vi.mock('../infrastructure/storage/r2-image-storage', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('../infrastructure/storage/r2-image-storage')
+    >()
+  return {
+    ...actual,
+    R2ImageStorage: class {
+      async save(_key: string, _data: ArrayBuffer, _contentType: string) {
+        return mockPut(_key, _data, _contentType)
+      }
+      async get(_key: string) {
+        return mockGet(_key)
+      }
+    },
+  }
+})
 
 vi.mock('../infrastructure/database', () => ({
   createDbClient: () => ({}),
@@ -89,12 +96,11 @@ describe('POST /api/images', () => {
     const formData = new FormData()
     formData.append('image', file)
 
-    const res = await app.request('/api/images', {
-      method: 'POST',
-      body: formData,
-      // @ts-ignore
+    const res = await app.request(
+      '/api/images',
+      { method: 'POST', body: formData },
       env,
-    })
+    )
 
     expect(res.status).toBe(201)
     const body = await res.json()
@@ -109,12 +115,11 @@ describe('POST /api/images', () => {
     const formData = new FormData()
     formData.append('image', file)
 
-    const res = await app.request('/api/images', {
-      method: 'POST',
-      body: formData,
-      // @ts-ignore
+    const res = await app.request(
+      '/api/images',
+      { method: 'POST', body: formData },
       env,
-    })
+    )
 
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -127,12 +132,11 @@ describe('POST /api/images', () => {
     const formData = new FormData()
     formData.append('image', file)
 
-    const res = await app.request('/api/images', {
-      method: 'POST',
-      body: formData,
-      // @ts-ignore
+    const res = await app.request(
+      '/api/images',
+      { method: 'POST', body: formData },
       env,
-    })
+    )
 
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -142,12 +146,11 @@ describe('POST /api/images', () => {
   it('image フィールドがない場合は 400 を返す', async () => {
     const formData = new FormData()
 
-    const res = await app.request('/api/images', {
-      method: 'POST',
-      body: formData,
-      // @ts-ignore
+    const res = await app.request(
+      '/api/images',
+      { method: 'POST', body: formData },
       env,
-    })
+    )
 
     expect(res.status).toBe(400)
   })
@@ -162,10 +165,11 @@ describe('GET /api/public/images/:imageKey', () => {
       contentType: 'image/png',
     })
 
-    const res = await app.request('/api/public/images/test-key.png', {
-      // @ts-ignore
+    const res = await app.request(
+      '/api/public/images/test-key.png',
+      undefined,
       env,
-    })
+    )
 
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('image/png')
@@ -174,10 +178,11 @@ describe('GET /api/public/images/:imageKey', () => {
   it('画像が存在しない場合は 404 を返す', async () => {
     mockGet.mockResolvedValue({ found: false })
 
-    const res = await app.request('/api/public/images/not-exist.png', {
-      // @ts-ignore
+    const res = await app.request(
+      '/api/public/images/not-exist.png',
+      undefined,
       env,
-    })
+    )
 
     expect(res.status).toBe(404)
   })
