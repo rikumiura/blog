@@ -1,7 +1,12 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MarkdownEditor } from './MarkdownEditor'
+
+vi.mock('./image.api', () => ({
+  uploadImage: vi.fn(),
+  toAbsoluteImageUrl: (url: string) => `http://localhost:8787${url}`,
+}))
 
 afterEach(() => cleanup())
 
@@ -66,6 +71,50 @@ describe('MarkdownEditor', () => {
     })
 
     expect(onChange).toHaveBeenCalledWith('world')
+  })
+
+  it('画像ボタンをクリックしてファイルを選択するとアップロードされ本文に挿入される', async () => {
+    const { uploadImage } = await import('./image.api')
+    const mockUpload = vi.mocked(uploadImage)
+    mockUpload.mockResolvedValue({
+      key: 'abc123.png',
+      url: '/api/public/images/abc123.png',
+    })
+
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<MarkdownEditor value="" onChange={onChange} />)
+
+    const imageButton = screen.getByRole('button', { name: '画像挿入' })
+    expect(imageButton).toBeInTheDocument()
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['data'], 'test.png', { type: 'image/png' })
+    await userEvent.upload(input, file)
+
+    await waitFor(() => {
+      expect(mockUpload).toHaveBeenCalledWith(file)
+      expect(onChange).toHaveBeenCalledWith(
+        expect.stringContaining('![test.png]'),
+      )
+    })
+  })
+
+  it('アップロード失敗時にエラーが表示される', async () => {
+    const { uploadImage } = await import('./image.api')
+    const mockUpload = vi.mocked(uploadImage)
+    mockUpload.mockRejectedValue(new Error('アップロードエラー'))
+
+    const user = userEvent.setup()
+    render(<MarkdownEditor value="" onChange={() => {}} />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['data'], 'fail.png', { type: 'image/png' })
+    await userEvent.upload(input, file)
+
+    await waitFor(() => {
+      expect(screen.getByText(/アップロードエラー/)).toBeInTheDocument()
+    })
   })
 
   it('XSS対策: スクリプトタグがサニタイズされる', async () => {
