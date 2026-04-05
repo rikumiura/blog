@@ -17,6 +17,9 @@ export function MarkdownEditor({ value, onChange }: Props) {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  // アップロード完了時点で最新の value を参照するための ref（P1対策）
+  const latestValueRef = useRef(value)
+  latestValueRef.current = value
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -27,7 +30,11 @@ export function MarkdownEditor({ value, onChange }: Props) {
     try {
       const result = await uploadImage(file)
       const absoluteUrl = toAbsoluteImageUrl(result.url)
-      onChange(`${value}![${file.name}](${absoluteUrl})`)
+      // P1: uploadImage 完了後に最新の value を使う
+      const current = latestValueRef.current
+      // P2: 末尾に改行がなければ改行を挟む
+      const separator = current.length > 0 && !current.endsWith('\n') ? '\n' : ''
+      onChange(`${current}${separator}![${file.name}](${absoluteUrl})`)
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : '画像のアップロードに失敗しました')
     } finally {

@@ -81,7 +81,6 @@ describe('MarkdownEditor', () => {
       url: '/api/public/images/abc123.png',
     })
 
-    const user = userEvent.setup()
     const onChange = vi.fn()
     render(<MarkdownEditor value="" onChange={onChange} />)
 
@@ -100,12 +99,49 @@ describe('MarkdownEditor', () => {
     })
   })
 
+  it('本文末尾に改行がない場合は改行を挟んで画像を挿入する', async () => {
+    const { uploadImage } = await import('./image.api')
+    vi.mocked(uploadImage).mockResolvedValue({
+      key: 'abc123.png',
+      url: '/api/public/images/abc123.png',
+    })
+
+    const onChange = vi.fn()
+    render(<MarkdownEditor value="既存の本文" onChange={onChange} />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    await userEvent.upload(input, new File(['data'], 'img.png', { type: 'image/png' }))
+
+    await waitFor(() => {
+      const called = onChange.mock.calls[0][0] as string
+      expect(called).toBe('既存の本文\n![img.png](http://localhost:8787/api/public/images/abc123.png)')
+    })
+  })
+
+  it('本文末尾が改行で終わる場合は余分な改行を入れない', async () => {
+    const { uploadImage } = await import('./image.api')
+    vi.mocked(uploadImage).mockResolvedValue({
+      key: 'abc123.png',
+      url: '/api/public/images/abc123.png',
+    })
+
+    const onChange = vi.fn()
+    render(<MarkdownEditor value={'既存の本文\n'} onChange={onChange} />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    await userEvent.upload(input, new File(['data'], 'img.png', { type: 'image/png' }))
+
+    await waitFor(() => {
+      const called = onChange.mock.calls[0][0] as string
+      expect(called).toBe('既存の本文\n![img.png](http://localhost:8787/api/public/images/abc123.png)')
+    })
+  })
+
   it('アップロード失敗時にエラーが表示される', async () => {
     const { uploadImage } = await import('./image.api')
     const mockUpload = vi.mocked(uploadImage)
     mockUpload.mockRejectedValue(new Error('アップロードエラー'))
 
-    const user = userEvent.setup()
     render(<MarkdownEditor value="" onChange={() => {}} />)
 
     const input = document.querySelector('input[type="file"]') as HTMLInputElement
