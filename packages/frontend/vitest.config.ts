@@ -21,6 +21,8 @@ export default defineConfig({
         extends: true,
         test: {
           name: 'unit',
+          environment: 'jsdom',
+          setupFiles: ['./src/setupTests.ts'],
           exclude: ['e2e/**', 'node_modules/**', 'src/**/*.stories.*'],
         },
       },
