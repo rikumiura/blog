@@ -1,5 +1,5 @@
-import { articles } from '@my-blog/db'
-import { and, count, desc, eq, lte } from 'drizzle-orm'
+import { articleTags, articles, tags } from '@my-blog/db'
+import { and, count, desc, eq, inArray, lte } from 'drizzle-orm'
 import {
   type Article,
   ArticleId,
@@ -85,14 +85,26 @@ export class DrizzleArticleRepository implements ArticleRepository {
     params: PaginationParams,
   ): Promise<PaginatedResult<Article>> {
     const offset = (params.page - 1) * params.limit
+    const tagFilter =
+      params.tags && params.tags.length > 0
+        ? inArray(
+            articles.id,
+            this.db
+              .select({ id: articleTags.articleId })
+              .from(articleTags)
+              .innerJoin(tags, eq(articleTags.tagId, tags.id))
+              .where(inArray(tags.name, params.tags)),
+          )
+        : undefined
     const [rows, countResult] = await Promise.all([
       this.db
         .select()
         .from(articles)
+        .where(tagFilter)
         .orderBy(desc(articles.updatedAt))
         .limit(params.limit)
         .offset(offset),
-      this.db.select({ count: count() }).from(articles),
+      this.db.select({ count: count() }).from(articles).where(tagFilter),
     ])
     return {
       items: rows.map(toEntity),
@@ -127,18 +139,30 @@ export class DrizzleArticleRepository implements ArticleRepository {
     params: PaginationParams,
   ): Promise<PaginatedResult<PublishedArticle>> {
     const offset = (params.page - 1) * params.limit
+    const tagFilter =
+      params.tags && params.tags.length > 0
+        ? inArray(
+            articles.id,
+            this.db
+              .select({ id: articleTags.articleId })
+              .from(articleTags)
+              .innerJoin(tags, eq(articleTags.tagId, tags.id))
+              .where(inArray(tags.name, params.tags)),
+          )
+        : undefined
+    const whereClause = and(eq(articles.status, 'published'), tagFilter)
     const [rows, countResult] = await Promise.all([
       this.db
         .select()
         .from(articles)
-        .where(eq(articles.status, 'published'))
+        .where(whereClause)
         .orderBy(desc(articles.publishedAt))
         .limit(params.limit)
         .offset(offset),
       this.db
         .select({ count: count() })
         .from(articles)
-        .where(eq(articles.status, 'published')),
+        .where(whereClause),
     ])
     // WHERE句で published のみに絞っているため、toEntity の結果は必ず PublishedArticle
     return {

@@ -92,6 +92,10 @@ const scheduleSchema = z.object({
 const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).optional().default(1),
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
+  tags: z
+    .string()
+    .optional()
+    .transform((s) => (s ? s.split(',').filter(Boolean) : undefined)),
 })
 
 const routes = app
@@ -101,13 +105,14 @@ const routes = app
     })
   })
   .get('/api/articles', zValidator('query', paginationSchema), async (c) => {
-    const { page, limit } = c.req.valid('query')
+    const { page, limit, tags } = c.req.valid('query')
     const db = createDbClient(c.env.DB)
     const repository = new DrizzleArticleRepository(db)
     const tagRepository = new DrizzleTagRepository(db)
     const paginatedResult = await listArticlesPaginated(repository, {
       page,
       limit,
+      ...(tags ? { tags } : {}),
     })
 
     return c.json(
@@ -314,13 +319,14 @@ const routes = app
     '/api/public/articles',
     zValidator('query', paginationSchema),
     async (c) => {
-      const { page, limit } = c.req.valid('query')
+      const { page, limit, tags } = c.req.valid('query')
       const db = createDbClient(c.env.DB)
       const repository = new DrizzleArticleRepository(db)
       const tagRepository = new DrizzleTagRepository(db)
       const paginatedResult = await listPublishedArticlesPaginated(repository, {
         page,
         limit,
+        ...(tags ? { tags } : {}),
       })
 
       return c.json(

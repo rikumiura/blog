@@ -11,6 +11,7 @@ export interface ArticleRepository {
   findAll(params?: {
     page: number
     limit: number
+    tags?: string[]
   }): Promise<PaginatedResponse<Article>>
   findByPublicId(publicId: string): Promise<ArticleDetail>
   create(input: CreateArticleInput): Promise<Article>

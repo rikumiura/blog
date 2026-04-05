@@ -77,13 +77,11 @@ export function BlogArticleList() {
               </Link>
             </article>
           ))}
-          {selectedTags.length === 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={changePage}
-            />
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={changePage}
+          />
         </div>
       )}
     </>
