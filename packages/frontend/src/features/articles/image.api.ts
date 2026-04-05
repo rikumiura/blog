@@ -9,8 +9,16 @@ export type UploadImageResult = {
   url: string
 }
 
+function getToken(): string {
+  try {
+    return globalThis.localStorage?.getItem(TOKEN_STORAGE_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
 export async function uploadImage(file: File): Promise<UploadImageResult> {
-  const token = globalThis.localStorage?.getItem(TOKEN_STORAGE_KEY) ?? ''
+  const token = getToken()
 
   const formData = new FormData()
   formData.append('image', file)
