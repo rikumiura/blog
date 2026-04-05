@@ -87,7 +87,6 @@ export function MarkdownEditor({ value, onChange }: Props) {
       {activeTab === 'split' && (
         <div className="grid h-[60vh] grid-cols-2 gap-2">
           <Textarea
-            id="body"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             rows={15}
