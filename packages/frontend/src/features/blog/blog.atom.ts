@@ -49,7 +49,12 @@ export const fetchBlogArticlesAtom = atom(null, async (get, set) => {
   try {
     const page = get(blogCurrentPageAtom)
     const limit = get(blogPageLimitAtom)
-    const result = await blogApi.findAll({ page, limit })
+    const selectedTags = get(blogSelectedTagsAtom)
+    const result = await blogApi.findAll({
+      page,
+      limit,
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
+    })
     set(blogArticlesAtom, result.items)
     set(blogTotalPagesAtom, result.totalPages)
     set(blogTotalCountAtom, result.totalCount)
@@ -71,3 +76,19 @@ export const changeBlogPageAtom = atom(
     await set(fetchBlogArticlesAtom)
   },
 )
+
+/** タグを切り替えるアクション（ページを1にリセットして再フェッチ） */
+export const toggleBlogTagAtom = atom(null, async (_get, set, tag: string) => {
+  set(blogSelectedTagsAtom, (prev) =>
+    prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+  )
+  set(blogCurrentPageAtom, 1)
+  await set(fetchBlogArticlesAtom)
+})
+
+/** タグフィルターをクリアするアクション */
+export const clearBlogTagFilterAtom = atom(null, async (_get, set) => {
+  set(blogSelectedTagsAtom, [])
+  set(blogCurrentPageAtom, 1)
+  await set(fetchBlogArticlesAtom)
+})

@@ -81,7 +81,9 @@ function parsePageParams(url: URL) {
     Number.isInteger(rawLimit) && rawLimit >= 1 && rawLimit <= 100
       ? rawLimit
       : 20
-  return { page, limit }
+  const tagsParam = url.searchParams.get('tags')
+  const tags = tagsParam ? tagsParam.split(',').filter(Boolean) : []
+  return { page, limit, tags }
 }
 
 /** レスポンスから body を除外する（一覧用） */
@@ -126,8 +128,12 @@ export const handlers = [
   /** 記事一覧の取得（ページネーション付き） */
   http.get(`${baseUrl}/api/articles`, ({ request }) => {
     const url = new URL(request.url)
-    const { page, limit } = parsePageParams(url)
-    const result = paginate(mockArticles, page, limit)
+    const { page, limit, tags } = parsePageParams(url)
+    const filtered =
+      tags.length > 0
+        ? mockArticles.filter((a) => tags.some((t) => a.tags.includes(t)))
+        : mockArticles
+    const result = paginate(filtered, page, limit)
     return HttpResponse.json({
       ...result,
       items: result.items.map(omitBody),
@@ -301,9 +307,13 @@ export const handlers = [
   /** 公開記事一覧 */
   http.get(`${baseUrl}/api/public/articles`, ({ request }) => {
     const url = new URL(request.url)
-    const { page, limit } = parsePageParams(url)
+    const { page, limit, tags } = parsePageParams(url)
     const published = mockArticles.filter((a) => a.status === 'published')
-    const result = paginate(published, page, limit)
+    const filtered =
+      tags.length > 0
+        ? published.filter((a) => tags.some((t) => a.tags.includes(t)))
+        : published
+    const result = paginate(filtered, page, limit)
     return HttpResponse.json({
       ...result,
       items: result.items.map(omitBody),

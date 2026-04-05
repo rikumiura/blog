@@ -13,6 +13,7 @@ export type PaginatedResult<T> = {
 export type PaginationParams = {
   page: number
   limit: number
+  tags?: string[]
 }
 
 export interface ArticleRepository {

@@ -1,21 +1,18 @@
-import { useAtom, useAtomValue } from 'jotai'
-import { allTagsAtom, selectedTagsAtom } from './articles.atom'
+import { useAtomValue, useSetAtom } from 'jotai'
+import {
+  allTagsAtom,
+  clearTagFilterAtom,
+  selectedTagsAtom,
+  toggleTagAtom,
+} from './articles.atom'
 
 export function TagFilter() {
   const allTags = useAtomValue(allTagsAtom)
-  const [selectedTags, setSelectedTags] = useAtom(selectedTagsAtom)
+  const selectedTags = useAtomValue(selectedTagsAtom)
+  const toggleTag = useSetAtom(toggleTagAtom)
+  const clearFilter = useSetAtom(clearTagFilterAtom)
 
   if (allTags.length === 0) return null
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
-    )
-  }
-
-  const clearFilter = () => {
-    setSelectedTags([])
-  }
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">

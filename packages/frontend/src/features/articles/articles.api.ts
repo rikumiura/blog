@@ -67,12 +67,16 @@ export const articleApi: ArticleRepository = {
   async findAll(params?: {
     page: number
     limit: number
+    tags?: string[]
   }): Promise<PaginatedResponse<Article>> {
     const query = params ?? { page: 1, limit: 20 }
     const res = await apiClient.api.articles.$get({
       query: {
         page: String(query.page),
         limit: String(query.limit),
+        ...(query.tags && query.tags.length > 0
+          ? { tags: query.tags.join(',') }
+          : {}),
       },
     })
     if (!res.ok) {

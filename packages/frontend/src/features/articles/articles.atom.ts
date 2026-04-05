@@ -60,7 +60,12 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
     const repository = get(articleRepositoryAtom)
     const page = get(currentPageAtom)
     const limit = get(pageLimitAtom)
-    const result = await repository.findAll({ page, limit })
+    const selectedTags = get(selectedTagsAtom)
+    const result = await repository.findAll({
+      page,
+      limit,
+      tags: selectedTags.length > 0 ? selectedTags : undefined,
+    })
     set(articlesAtom, result.items)
     set(totalPagesAtom, result.totalPages)
     set(totalCountAtom, result.totalCount)
@@ -77,6 +82,22 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
 /** ページを変更するアクション */
 export const changePageAtom = atom(null, async (_get, set, page: number) => {
   set(currentPageAtom, page)
+  await set(fetchArticlesAtom)
+})
+
+/** タグを切り替えるアクション（ページを1にリセットして再フェッチ） */
+export const toggleTagAtom = atom(null, async (_get, set, tag: string) => {
+  set(selectedTagsAtom, (prev) =>
+    prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+  )
+  set(currentPageAtom, 1)
+  await set(fetchArticlesAtom)
+})
+
+/** タグフィルターをクリアするアクション */
+export const clearTagFilterAtom = atom(null, async (_get, set) => {
+  set(selectedTagsAtom, [])
+  set(currentPageAtom, 1)
   await set(fetchArticlesAtom)
 })
 
