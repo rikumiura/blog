@@ -46,8 +46,12 @@ export class DrizzleCommentRepository implements CommentRepository {
     return toEntity(row)
   }
 
-  async deleteById(id: CommentId): Promise<void> {
-    await this.db.delete(comments).where(eq(comments.id, id))
+  async deleteById(id: CommentId): Promise<boolean> {
+    const deleted = await this.db
+      .delete(comments)
+      .where(eq(comments.id, id))
+      .returning({ id: comments.id })
+    return deleted.length > 0
   }
 }
 

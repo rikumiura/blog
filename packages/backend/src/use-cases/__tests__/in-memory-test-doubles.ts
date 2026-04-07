@@ -176,8 +176,10 @@ export class InMemoryCommentRepository implements CommentRepository {
     return this.comments.get(id) ?? null
   }
 
-  async deleteById(id: CommentId): Promise<void> {
+  async deleteById(id: CommentId): Promise<boolean> {
+    const existed = this.comments.has(id)
     this.comments.delete(id)
+    return existed
   }
 
   getAll(): Comment[] {

@@ -11,11 +11,6 @@ export async function deleteComment(
     commentRepository: CommentRepository
   },
 ): Promise<DeleteCommentResult> {
-  const comment = await deps.commentRepository.findById(id)
-  if (!comment) {
-    return { status: 'not_found' }
-  }
-
-  await deps.commentRepository.deleteById(id)
-  return { status: 'deleted' }
+  const deleted = await deps.commentRepository.deleteById(id)
+  return deleted ? { status: 'deleted' } : { status: 'not_found' }
 }

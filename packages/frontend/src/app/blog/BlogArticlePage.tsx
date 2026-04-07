@@ -98,15 +98,9 @@ export function BlogArticlePage() {
           <BlogArticleContent body={article.body} />
           <section className="mt-12 border-t border-border pt-8">
             <h2 className="mb-6 text-xl font-bold">コメント</h2>
-            <div className="mb-8">
-              <CommentList comments={comments} />
-            </div>
-            <div>
-              <h3 className="mb-4 text-base font-semibold">
-                コメントを投稿する
-              </h3>
-              <CommentForm onSubmit={handlePostComment} />
-            </div>
+            <CommentList comments={comments} className="mb-8" />
+            <h3 className="mb-4 text-base font-semibold">コメントを投稿する</h3>
+            <CommentForm onSubmit={handlePostComment} />
           </section>
         </article>
       ) : null}

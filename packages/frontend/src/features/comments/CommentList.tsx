@@ -1,22 +1,24 @@
 import type { Comment } from '@/core/types/comment'
 import { formatDate } from '@/lib/format'
+import { cn } from '@/lib/utils'
 
 type Props = {
   comments: Comment[]
   onDelete?: (id: string) => void
+  className?: string
 }
 
-export function CommentList({ comments, onDelete }: Props) {
+export function CommentList({ comments, onDelete, className }: Props) {
   if (comments.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className={cn('text-sm text-muted-foreground', className)}>
         コメントはまだありません。
       </p>
     )
   }
 
   return (
-    <ul className="space-y-4">
+    <ul className={cn('space-y-4', className)}>
       {comments.map((comment) => (
         <li
           key={comment.id}
