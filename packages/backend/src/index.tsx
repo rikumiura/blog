@@ -4,12 +4,14 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { z } from 'zod'
 import { PublicArticleId } from './domain/models/article'
+import { CommentId } from './domain/models/comment'
 import { createAuthMiddleware } from './infrastructure/auth/auth-middleware'
 import { JwtTokenGenerator } from './infrastructure/auth/jwt-token-generator'
 import { Pbkdf2PasswordHasher } from './infrastructure/auth/pbkdf2-password-hasher'
 import { createDbClient } from './infrastructure/database'
 import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator-impl'
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
+import { DrizzleCommentRepository } from './infrastructure/repositories/drizzle-comment-repository'
 import { DrizzleTagRepository } from './infrastructure/repositories/drizzle-tag-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
 import {
@@ -17,13 +19,17 @@ import {
   toArticleSummaryDto,
   toPaginatedArticlesDto,
 } from './presentation/dto/article-dto'
+import { toCommentDto } from './presentation/dto/comment-dto'
 import { authenticateAdmin } from './use-cases/authenticate-admin'
 import { cancelSchedule } from './use-cases/cancel-schedule'
 import { createArticle } from './use-cases/create-article'
 import { deleteArticle } from './use-cases/delete-article'
+import { deleteComment } from './use-cases/delete-comment'
 import { getArticle } from './use-cases/get-article'
 import { listArticlesPaginated } from './use-cases/list-articles'
+import { listComments } from './use-cases/list-comments'
 import { listPublishedArticlesPaginated } from './use-cases/list-published-articles'
+import { postComment } from './use-cases/post-comment'
 import { publishArticle } from './use-cases/publish-article'
 import { publishScheduledArticles } from './use-cases/publish-scheduled-articles'
 import { scheduleArticle } from './use-cases/schedule-article'
@@ -109,9 +115,30 @@ const paginationSchema = z.object({
     .transform((s) => (s ? s.split(',').filter(Boolean) : undefined)),
 })
 
+const postCommentSchema = z.object({
+  authorName: z
+    .string()
+    .min(1, '投稿者名は必須です')
+    .max(50, '投稿者名は50文字以内にしてください'),
+  content: z
+    .string()
+    .min(1, 'コメント本文は必須です')
+    .max(500, 'コメント本文は500文字以内にしてください'),
+})
+
+const commentIdParamSchema = z.object({
+  id: z.string().min(1),
+})
+
 const loginSchema = z.object({
-  username: z.string().min(1, 'ユーザー名は必須です').max(64, 'ユーザー名が長すぎます'),
-  password: z.string().min(1, 'パスワードは必須です').max(256, 'パスワードが長すぎます'),
+  username: z
+    .string()
+    .min(1, 'ユーザー名は必須です')
+    .max(64, 'ユーザー名が長すぎます'),
+  password: z
+    .string()
+    .min(1, 'パスワードは必須です')
+    .max(256, 'パスワードが長すぎます'),
 })
 
 // 管理者用APIに認証ミドルウェアを適用
@@ -121,6 +148,7 @@ const authMiddleware = createAuthMiddleware(
 app.use('/api/articles/*', authMiddleware)
 app.use('/api/articles', authMiddleware)
 app.use('/api/auth/me', authMiddleware)
+app.use('/api/comments/*', authMiddleware)
 
 const routes = app
   .get('/api/hello', (c) => {
@@ -366,6 +394,26 @@ const routes = app
     },
   )
 
+  // --- コメント管理 API（管理者用） ---
+  .delete(
+    '/api/comments/:id',
+    zValidator('param', commentIdParamSchema),
+    async (c) => {
+      const id = CommentId(c.req.valid('param').id)
+      const db = createDbClient(c.env.DB)
+      const commentRepository = new DrizzleCommentRepository(db)
+
+      const result = await deleteComment(id, { commentRepository })
+
+      switch (result.status) {
+        case 'deleted':
+          return c.body(null, 204)
+        case 'not_found':
+          return c.json({ error: 'コメントが見つかりません' }, 404)
+      }
+    },
+  )
+
   // --- 公開読者向け API ---
   .get(
     '/api/public/articles',
@@ -414,6 +462,64 @@ const routes = app
 
       const tags = await tagRepository.findByArticleId(article.id)
       return c.json(toArticleDetailDto(article, bodyResult.content, tags))
+    },
+  )
+
+  // --- 公開読者向けコメント API ---
+  .get(
+    '/api/public/articles/:publicId/comments',
+    zValidator('param', publicIdParamSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const db = createDbClient(c.env.DB)
+      const articleRepository = new DrizzleArticleRepository(db)
+      const commentRepository = new DrizzleCommentRepository(db)
+
+      const article = await articleRepository.findByPublicId(publicId)
+      if (!article || article.status !== 'published') {
+        return c.json({ error: '記事が見つかりません' }, 404)
+      }
+
+      const result = await listComments(article.id, { commentRepository })
+      return c.json({ comments: result.comments.map(toCommentDto) })
+    },
+  )
+  .post(
+    '/api/public/articles/:publicId/comments',
+    zValidator('param', publicIdParamSchema),
+    zValidator('json', postCommentSchema),
+    async (c) => {
+      const publicId = PublicArticleId(c.req.valid('param').publicId)
+      const input = c.req.valid('json')
+      const db = createDbClient(c.env.DB)
+      const articleRepository = new DrizzleArticleRepository(db)
+      const commentRepository = new DrizzleCommentRepository(db)
+      const idGenerator = new ArticleIdGeneratorImpl()
+
+      const article = await articleRepository.findByPublicId(publicId)
+      if (!article || article.status !== 'published') {
+        return c.json({ error: '記事が見つかりません' }, 404)
+      }
+
+      const result = await postComment(
+        {
+          articleId: article.id,
+          authorName: input.authorName,
+          content: input.content,
+        },
+        {
+          commentRepository,
+          generateCommentId: () => idGenerator.generateCommentId(),
+          now: () => new Date().toISOString(),
+        },
+      )
+
+      switch (result.status) {
+        case 'posted':
+          return c.json(toCommentDto(result.comment), 201)
+        case 'validation_error':
+          return c.json({ error: result.message }, 400)
+      }
     },
   )
 

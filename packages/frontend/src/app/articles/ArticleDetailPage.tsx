@@ -2,8 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import type { ArticleDetail } from '@/core/types/article'
+import type { Comment } from '@/core/types/comment'
 import { articleApi } from '@/features/articles/articles.api'
 import { DeleteArticleDialog } from '@/features/articles/DeleteArticleDialog'
+import { CommentList } from '@/features/comments/CommentList'
+import { commentsApi } from '@/features/comments/comments.api'
 
 export function ArticleDetailPage() {
   const { publicId } = useParams<{ publicId: string }>()
@@ -14,6 +17,7 @@ export function ArticleDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [comments, setComments] = useState<Comment[]>([])
 
   const handleDelete = useCallback(async () => {
     if (!publicId) return
@@ -32,13 +36,23 @@ export function ArticleDetailPage() {
     }
   }, [publicId, navigate])
 
+  const handleDeleteComment = useCallback(async (commentId: string) => {
+    await commentsApi.deleteComment(commentId)
+    setComments((prev) => prev.filter((c) => c.id !== commentId))
+  }, [])
+
   useEffect(() => {
     if (!publicId) return
 
     setIsLoading(true)
-    articleApi
-      .findByPublicId(publicId)
-      .then(setArticle)
+    Promise.all([
+      articleApi.findByPublicId(publicId),
+      commentsApi.listByArticle(publicId),
+    ])
+      .then(([articleData, commentsData]) => {
+        setArticle(articleData)
+        setComments(commentsData)
+      })
       .catch((e: unknown) => {
         setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
       })
@@ -126,6 +140,14 @@ export function ArticleDetailPage() {
           <div className="whitespace-pre-wrap leading-relaxed">
             {article.body}
           </div>
+          {article.status === 'published' && (
+            <section className="mt-10 border-t border-border pt-6">
+              <h2 className="mb-4 text-lg font-bold">
+                コメント ({comments.length})
+              </h2>
+              <CommentList comments={comments} onDelete={handleDeleteComment} />
+            </section>
+          )}
         </article>
       ) : null}
       <DeleteArticleDialog

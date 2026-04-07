@@ -5,6 +5,7 @@ import {
   PublicArticleId,
   type PublishedArticle,
 } from '../../domain/models/article'
+import type { Comment, CommentId } from '../../domain/models/comment'
 import type { Tag, TagName } from '../../domain/models/tag'
 import { TagId } from '../../domain/models/tag'
 import type {
@@ -16,6 +17,7 @@ import type {
   BodyGetResult,
   BodyStorage,
 } from '../../domain/ports/body-storage'
+import type { CommentRepository } from '../../domain/ports/comment-repository'
 import type { ArticleIdGenerator } from '../../domain/ports/id-generator'
 import type { TagRepository } from '../../domain/ports/tag-repository'
 
@@ -154,6 +156,32 @@ export class InMemoryTagRepository implements TagRepository {
     tagIds: Tag['id'][],
   ): Promise<void> {
     this.articleTags.set(articleId, tagIds)
+  }
+}
+
+export class InMemoryCommentRepository implements CommentRepository {
+  private comments = new Map<string, Comment>()
+
+  async save(comment: Comment): Promise<void> {
+    this.comments.set(comment.id, comment)
+  }
+
+  async findByArticleId(articleId: ArticleId): Promise<Comment[]> {
+    return [...this.comments.values()]
+      .filter((c) => c.articleId === articleId)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  }
+
+  async findById(id: CommentId): Promise<Comment | null> {
+    return this.comments.get(id) ?? null
+  }
+
+  async deleteById(id: CommentId): Promise<void> {
+    this.comments.delete(id)
+  }
+
+  getAll(): Comment[] {
+    return [...this.comments.values()]
   }
 }
 
