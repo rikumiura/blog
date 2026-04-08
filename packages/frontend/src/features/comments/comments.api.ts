@@ -26,8 +26,11 @@ export const commentsApi = {
     if (!res.ok) {
       const data = await res.json().catch(() => null)
       const message =
-        data && 'error' in data
-          ? (data as { error: string }).error
+        data !== null &&
+        typeof data === 'object' &&
+        'error' in data &&
+        typeof data.error === 'string'
+          ? data.error
           : `コメントの投稿に失敗しました: ${res.status}`
       throw new Error(message)
     }
