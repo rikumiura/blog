@@ -45,4 +45,8 @@ export class R2ImageStorage {
       object.httpMetadata?.contentType ?? 'application/octet-stream'
     return { found: true, data, contentType }
   }
+
+  async delete(key: string): Promise<void> {
+    await this.bucket.delete(`${IMAGE_PREFIX}${key}`)
+  }
 }

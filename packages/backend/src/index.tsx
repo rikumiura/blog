@@ -114,6 +114,15 @@ const paginationSchema = z.object({
     .transform((s) => (s ? s.split(',').filter(Boolean) : undefined)),
 })
 
+const imageKeyParamSchema = z.object({
+  imageKey: z
+    .string()
+    .regex(
+      /^[0-9a-f-]+\.(jpeg|jpg|png|gif|webp)$/i,
+      '不正な画像キーです',
+    ),
+})
+
 const loginSchema = z.object({
   username: z.string().min(1, 'ユーザー名は必須です').max(64, 'ユーザー名が長すぎます'),
   password: z.string().min(1, 'パスワードは必須です').max(256, 'パスワードが長すぎます'),
@@ -477,19 +486,23 @@ const routes = app
     const url = `/api/public/images/${key}`
     return c.json({ key, url }, 201)
   })
-  .get('/api/public/images/:imageKey', async (c) => {
-    const imageKey = c.req.param('imageKey')
-    const imageStorage = new R2ImageStorage(c.env.ARTICLE_BUCKET)
-    const result = await imageStorage.get(imageKey)
+  .get(
+    '/api/public/images/:imageKey',
+    zValidator('param', imageKeyParamSchema),
+    async (c) => {
+      const { imageKey } = c.req.valid('param')
+      const imageStorage = new R2ImageStorage(c.env.ARTICLE_BUCKET)
+      const result = await imageStorage.get(imageKey)
 
-    if (!result.found) {
-      return c.json({ error: '画像が見つかりません' }, 404)
-    }
+      if (!result.found) {
+        return c.json({ error: '画像が見つかりません' }, 404)
+      }
 
-    return new Response(result.data, {
-      headers: { 'content-type': result.contentType },
-    })
-  })
+      return new Response(result.data, {
+        headers: { 'content-type': result.contentType },
+      })
+    },
+  )
 
 export { app }
 export type AppType = typeof routes

@@ -8,7 +8,10 @@ vi.mock('./image.api', () => ({
   toAbsoluteImageUrl: (url: string) => `http://localhost:8787${url}`,
 }))
 
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  vi.clearAllMocks()
+})
 
 describe('MarkdownEditor', () => {
   it('初期状態で編集タブが選択されている', () => {

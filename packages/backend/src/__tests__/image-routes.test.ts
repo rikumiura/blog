@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // --- モック定義 ---
 
@@ -84,6 +84,11 @@ vi.mock('../use-cases/publish-scheduled-articles', () => ({
 const { app } = await import('../index')
 
 const env = { DB: {}, ARTICLE_BUCKET: {} }
+
+beforeEach(() => {
+  mockPut.mockReset()
+  mockGet.mockReset()
+})
 
 // --- テスト ---
 

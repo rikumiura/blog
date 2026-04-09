@@ -92,7 +92,7 @@ export function MarkdownEditor({ value, onChange }: Props) {
             type="button"
             variant={activeTab === 'edit' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActiveTab('edit')}
+            onClick={() => { setActiveTab('edit'); setUploadError(null) }}
           >
             編集
           </Button>
@@ -100,7 +100,7 @@ export function MarkdownEditor({ value, onChange }: Props) {
             type="button"
             variant={activeTab === 'preview' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActiveTab('preview')}
+            onClick={() => { setActiveTab('preview'); setUploadError(null) }}
           >
             プレビュー
           </Button>
@@ -108,7 +108,7 @@ export function MarkdownEditor({ value, onChange }: Props) {
             type="button"
             variant={activeTab === 'split' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActiveTab('split')}
+            onClick={() => { setActiveTab('split'); setUploadError(null) }}
           >
             分割
           </Button>
