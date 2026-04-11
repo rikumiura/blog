@@ -55,12 +55,14 @@ export function BlogCommentSection({ publicId }: Props) {
       ) : error ? (
         <p className="text-sm text-destructive">{error}</p>
       ) : (
-        <CommentList comments={comments} className="mb-8" />
+        <>
+          <CommentList comments={comments} className="mb-8" />
+          <h3 className="mb-4 mt-8 text-base font-semibold">
+            コメントを投稿する
+          </h3>
+          <CommentForm onSubmit={handlePostComment} />
+        </>
       )}
-      <h3 className="mb-4 mt-8 text-base font-semibold">
-        コメントを投稿する
-      </h3>
-      <CommentForm onSubmit={handlePostComment} />
     </section>
   )
 }
