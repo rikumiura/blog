@@ -18,7 +18,9 @@ fi
 
 if [ "$RUN_MIGRATION" = "true" ]; then
   echo "Running database migrations..."
-  pnpm --filter @my-blog/db migrate:local
+  cd /workspace/packages/backend
+  pnpm exec wrangler d1 migrations apply my-blog-db --local
+  cd /workspace
 fi
 
 exec "$@"
