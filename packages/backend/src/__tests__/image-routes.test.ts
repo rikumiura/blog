@@ -171,7 +171,7 @@ describe('GET /api/public/images/:imageKey', () => {
     })
 
     const res = await app.request(
-      '/api/public/images/test-key.png',
+      '/api/public/images/01234567-abcd-ef01-2345-6789abcdef01.png',
       undefined,
       env,
     )
@@ -184,7 +184,7 @@ describe('GET /api/public/images/:imageKey', () => {
     mockGet.mockResolvedValue({ found: false })
 
     const res = await app.request(
-      '/api/public/images/not-exist.png',
+      '/api/public/images/ffffffff-0000-1111-2222-333333333333.png',
       undefined,
       env,
     )

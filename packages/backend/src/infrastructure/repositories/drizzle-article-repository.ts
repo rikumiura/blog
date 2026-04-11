@@ -1,4 +1,4 @@
-import { articleTags, articles, tags } from '@my-blog/db'
+import { articles, articleTags, tags } from '@my-blog/db'
 import { and, count, desc, eq, inArray, lte } from 'drizzle-orm'
 import {
   type Article,
@@ -159,10 +159,7 @@ export class DrizzleArticleRepository implements ArticleRepository {
         .orderBy(desc(articles.publishedAt))
         .limit(params.limit)
         .offset(offset),
-      this.db
-        .select({ count: count() })
-        .from(articles)
-        .where(whereClause),
+      this.db.select({ count: count() }).from(articles).where(whereClause),
     ])
     // WHERE句で published のみに絞っているため、toEntity の結果は必ず PublishedArticle
     return {

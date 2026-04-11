@@ -5,6 +5,7 @@ import {
   BodyKey,
   PublicArticleId,
 } from '../../domain/models/article'
+import { CommentId } from '../../domain/models/comment'
 import { TagId } from '../../domain/models/tag'
 import type { ArticleIdGenerator } from '../../domain/ports/id-generator'
 
@@ -23,5 +24,9 @@ export class ArticleIdGeneratorImpl implements ArticleIdGenerator {
 
   generateTagId(): TagId {
     return TagId(uuidv7())
+  }
+
+  generateCommentId(): CommentId {
+    return CommentId(uuidv7())
   }
 }

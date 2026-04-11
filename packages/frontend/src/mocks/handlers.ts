@@ -24,6 +24,24 @@ type MockArticle = {
   scheduledAt: string | null
 }
 
+type MockComment = {
+  id: string
+  articleId: string
+  authorName: string
+  content: string
+  createdAt: string
+}
+
+const mockComments: MockComment[] = [
+  {
+    id: 'comment-1',
+    articleId: 'abc123',
+    authorName: '読者A',
+    content: 'とても参考になりました。',
+    createdAt: '2026-03-02T10:00:00.000Z',
+  },
+]
+
 /** モック用の記事データ（APIレスポンスのDTO構造に準拠） */
 const mockArticles: MockArticle[] = [
   {
@@ -332,5 +350,74 @@ export const handlers = [
       )
     }
     return HttpResponse.json(article)
+  }),
+
+  /** コメント一覧取得 */
+  http.get(
+    `${baseUrl}/api/public/articles/:publicId/comments`,
+    ({ params }) => {
+      const article = mockArticles.find(
+        (a) => a.publicId === params.publicId && a.status === 'published',
+      )
+      if (!article) {
+        return HttpResponse.json(
+          { error: '記事が見つかりません' },
+          { status: 404 },
+        )
+      }
+      const comments = mockComments.filter(
+        (c) => c.articleId === article.publicId,
+      )
+      return HttpResponse.json({ comments })
+    },
+  ),
+
+  /** コメント投稿 */
+  http.post(
+    `${baseUrl}/api/public/articles/:publicId/comments`,
+    async ({ params, request }) => {
+      const article = mockArticles.find(
+        (a) => a.publicId === params.publicId && a.status === 'published',
+      )
+      if (!article) {
+        return HttpResponse.json(
+          { error: '記事が見つかりません' },
+          { status: 404 },
+        )
+      }
+      const parsed: unknown = await request.json()
+      if (
+        !isRecord(parsed) ||
+        typeof parsed.authorName !== 'string' ||
+        typeof parsed.content !== 'string'
+      ) {
+        return HttpResponse.json(
+          { error: 'authorName と content は必須です' },
+          { status: 400 },
+        )
+      }
+      const newComment: MockComment = {
+        id: `comment-${Date.now()}`,
+        articleId: article.publicId,
+        authorName: parsed.authorName,
+        content: parsed.content,
+        createdAt: new Date().toISOString(),
+      }
+      mockComments.push(newComment)
+      return HttpResponse.json(newComment, { status: 201 })
+    },
+  ),
+
+  /** コメント削除（管理者） */
+  http.delete(`${baseUrl}/api/comments/:id`, ({ params }) => {
+    const idx = mockComments.findIndex((c) => c.id === params.id)
+    if (idx === -1) {
+      return HttpResponse.json(
+        { error: 'コメントが見つかりません' },
+        { status: 404 },
+      )
+    }
+    mockComments.splice(idx, 1)
+    return new HttpResponse(null, { status: 204 })
   }),
 ]
