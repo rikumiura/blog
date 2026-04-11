@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import type { ArticleDetail } from '@/core/types/article'
-import type { Comment } from '@/core/types/comment'
 import { BlogArticleContent } from '@/features/blog/BlogArticleContent'
 import { blogApi } from '@/features/blog/blog.api'
-import { CommentForm } from '@/features/comments/CommentForm'
-import { CommentList } from '@/features/comments/CommentList'
-import { commentsApi } from '@/features/comments/comments.api'
+import { BlogCommentSection } from '@/features/comments/BlogCommentSection'
 import { formatDate } from '@/lib/format'
 
 export function BlogArticlePage() {
@@ -14,7 +11,6 @@ export function BlogArticlePage() {
   const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [comments, setComments] = useState<Comment[]>([])
 
   useEffect(() => {
     if (!publicId) return
@@ -23,39 +19,24 @@ export function BlogArticlePage() {
     setIsLoading(true)
     setArticle(null)
     setError(null)
-    setComments([])
 
-    Promise.all([
-      blogApi.findByPublicId(publicId),
-      commentsApi.listByArticle(publicId),
-    ])
-      .then(([articleData, commentsData]) => {
-        if (!cancelled) {
-          setArticle(articleData)
-          setComments(commentsData)
-        }
+    blogApi
+      .findByPublicId(publicId)
+      .then((articleData) => {
+        if (!cancelled) setArticle(articleData)
       })
       .catch((e: unknown) => {
-        if (!cancelled) {
+        if (!cancelled)
           setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
-        }
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
       })
+
     return () => {
       cancelled = true
     }
   }, [publicId])
-
-  const handlePostComment = async (input: {
-    authorName: string
-    content: string
-  }) => {
-    if (!publicId) return
-    const newComment = await commentsApi.post(publicId, input)
-    setComments((prev) => [...prev, newComment])
-  }
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10 font-sans">
@@ -96,12 +77,7 @@ export function BlogArticlePage() {
             </div>
           </header>
           <BlogArticleContent body={article.body} />
-          <section className="mt-12 border-t border-border pt-8">
-            <h2 className="mb-6 text-xl font-bold">コメント</h2>
-            <CommentList comments={comments} className="mb-8" />
-            <h3 className="mb-4 text-base font-semibold">コメントを投稿する</h3>
-            <CommentForm onSubmit={handlePostComment} />
-          </section>
+          <BlogCommentSection publicId={article.publicId} />
         </article>
       ) : null}
     </div>
