@@ -1,9 +1,17 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MarkdownEditor } from './MarkdownEditor'
 
-afterEach(() => cleanup())
+vi.mock('./image.api', () => ({
+  uploadImage: vi.fn(),
+  toAbsoluteImageUrl: (url: string) => `http://localhost:8787${url}`,
+}))
+
+afterEach(() => {
+  cleanup()
+  vi.clearAllMocks()
+})
 
 describe('MarkdownEditor', () => {
   it('初期状態で編集タブが選択されている', () => {
@@ -66,6 +74,86 @@ describe('MarkdownEditor', () => {
     })
 
     expect(onChange).toHaveBeenCalledWith('world')
+  })
+
+  it('画像ボタンをクリックしてファイルを選択するとアップロードされ本文に挿入される', async () => {
+    const { uploadImage } = await import('./image.api')
+    const mockUpload = vi.mocked(uploadImage)
+    mockUpload.mockResolvedValue({
+      key: 'abc123.png',
+      url: '/api/public/images/abc123.png',
+    })
+
+    const onChange = vi.fn()
+    render(<MarkdownEditor value="" onChange={onChange} />)
+
+    const imageButton = screen.getByRole('button', { name: '画像挿入' })
+    expect(imageButton).toBeInTheDocument()
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['data'], 'test.png', { type: 'image/png' })
+    await userEvent.upload(input, file)
+
+    await waitFor(() => {
+      expect(mockUpload).toHaveBeenCalledWith(file)
+      expect(onChange).toHaveBeenCalledWith(
+        expect.stringContaining('![test.png]'),
+      )
+    })
+  })
+
+  it('本文末尾に改行がない場合は改行を挟んで画像を挿入する', async () => {
+    const { uploadImage } = await import('./image.api')
+    vi.mocked(uploadImage).mockResolvedValue({
+      key: 'abc123.png',
+      url: '/api/public/images/abc123.png',
+    })
+
+    const onChange = vi.fn()
+    render(<MarkdownEditor value="既存の本文" onChange={onChange} />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    await userEvent.upload(input, new File(['data'], 'img.png', { type: 'image/png' }))
+
+    await waitFor(() => {
+      const called = onChange.mock.calls[0][0] as string
+      expect(called).toBe('既存の本文\n![img.png](http://localhost:8787/api/public/images/abc123.png)')
+    })
+  })
+
+  it('本文末尾が改行で終わる場合は余分な改行を入れない', async () => {
+    const { uploadImage } = await import('./image.api')
+    vi.mocked(uploadImage).mockResolvedValue({
+      key: 'abc123.png',
+      url: '/api/public/images/abc123.png',
+    })
+
+    const onChange = vi.fn()
+    render(<MarkdownEditor value={'既存の本文\n'} onChange={onChange} />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    await userEvent.upload(input, new File(['data'], 'img.png', { type: 'image/png' }))
+
+    await waitFor(() => {
+      const called = onChange.mock.calls[0][0] as string
+      expect(called).toBe('既存の本文\n![img.png](http://localhost:8787/api/public/images/abc123.png)')
+    })
+  })
+
+  it('アップロード失敗時にエラーが表示される', async () => {
+    const { uploadImage } = await import('./image.api')
+    const mockUpload = vi.mocked(uploadImage)
+    mockUpload.mockRejectedValue(new Error('アップロードエラー'))
+
+    render(<MarkdownEditor value="" onChange={() => {}} />)
+
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const file = new File(['data'], 'fail.png', { type: 'image/png' })
+    await userEvent.upload(input, file)
+
+    await waitFor(() => {
+      expect(screen.getByText(/アップロードエラー/)).toBeInTheDocument()
+    })
   })
 
   it('XSS対策: スクリプトタグがサニタイズされる', async () => {

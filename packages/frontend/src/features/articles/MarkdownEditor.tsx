@@ -1,8 +1,9 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { useMemo, useState } from 'react'
+import { useRef, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { toAbsoluteImageUrl, uploadImage } from './image.api'
 
 type Tab = 'edit' | 'preview' | 'split'
 
@@ -13,6 +14,34 @@ type Props = {
 
 export function MarkdownEditor({ value, onChange }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('edit')
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  // アップロード完了時点で最新の value を参照するための ref（P1対策）
+  const latestValueRef = useRef(value)
+  latestValueRef.current = value
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadError(null)
+    setIsUploading(true)
+    try {
+      const result = await uploadImage(file)
+      const absoluteUrl = toAbsoluteImageUrl(result.url)
+      // P1: uploadImage 完了後に最新の value を使う
+      const current = latestValueRef.current
+      // P2: 末尾に改行がなければ改行を挟む
+      const separator = current.length > 0 && !current.endsWith('\n') ? '\n' : ''
+      onChange(`${current}${separator}![${file.name}](${absoluteUrl})`)
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : '画像のアップロードに失敗しました')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
 
   const previewHtml = useMemo(() => {
     if (!value) return ''
@@ -43,11 +72,27 @@ export function MarkdownEditor({ value, onChange }: Props) {
           本文（Markdown）
         </label>
         <div className="flex gap-1">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            画像挿入
+          </Button>
           <Button
             type="button"
             variant={activeTab === 'edit' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActiveTab('edit')}
+            onClick={() => { setActiveTab('edit'); setUploadError(null) }}
           >
             編集
           </Button>
@@ -55,7 +100,7 @@ export function MarkdownEditor({ value, onChange }: Props) {
             type="button"
             variant={activeTab === 'preview' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActiveTab('preview')}
+            onClick={() => { setActiveTab('preview'); setUploadError(null) }}
           >
             プレビュー
           </Button>
@@ -63,12 +108,15 @@ export function MarkdownEditor({ value, onChange }: Props) {
             type="button"
             variant={activeTab === 'split' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => setActiveTab('split')}
+            onClick={() => { setActiveTab('split'); setUploadError(null) }}
           >
             分割
           </Button>
         </div>
       </div>
+      {uploadError && (
+        <p className="text-sm text-destructive">{uploadError}</p>
+      )}
 
       {activeTab === 'edit' && (
         <Textarea

@@ -15,6 +15,11 @@ import { DrizzleCommentRepository } from './infrastructure/repositories/drizzle-
 import { DrizzleTagRepository } from './infrastructure/repositories/drizzle-tag-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
 import {
+  MAX_IMAGE_SIZE_BYTES,
+  R2ImageStorage,
+  isAllowedImageContentType,
+} from './infrastructure/storage/r2-image-storage'
+import {
   toArticleDetailDto,
   toArticleSummaryDto,
   toPaginatedArticlesDto,
@@ -130,6 +135,15 @@ const commentIdParamSchema = z.object({
   id: z.string().min(1),
 })
 
+const imageKeyParamSchema = z.object({
+  imageKey: z
+    .string()
+    .regex(
+      /^[0-9a-f-]+\.(jpeg|jpg|png|gif|webp)$/i,
+      '不正な画像キーです',
+    ),
+})
+
 const loginSchema = z.object({
   username: z
     .string()
@@ -149,6 +163,7 @@ app.use('/api/articles/*', authMiddleware)
 app.use('/api/articles', authMiddleware)
 app.use('/api/auth/me', authMiddleware)
 app.use('/api/comments/*', authMiddleware)
+app.use('/api/images', authMiddleware)
 
 const routes = app
   .get('/api/hello', (c) => {
@@ -540,6 +555,58 @@ const routes = app
         case 'not_found':
           return c.json({ error: '記事が見つかりません' }, 404)
       }
+    },
+  )
+
+  // --- 画像 API ---
+  .post('/api/images', async (c) => {
+    const formData = await c.req.formData()
+    const file = formData.get('image')
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: '画像ファイルが指定されていません' }, 400)
+    }
+
+    if (!isAllowedImageContentType(file.type)) {
+      return c.json(
+        {
+          error:
+            'サポートされていないファイル形式です。JPEG / PNG / GIF / WebP のみ使用できます',
+        },
+        400,
+      )
+    }
+
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      return c.json({ error: '画像サイズは 5MB 以内にしてください' }, 400)
+    }
+
+    const ext = file.type.split('/')[1]
+    const { uuidv7 } = await import('uuidv7')
+    const key = `${uuidv7()}.${ext}`
+
+    const imageStorage = new R2ImageStorage(c.env.ARTICLE_BUCKET)
+    const data = await file.arrayBuffer()
+    await imageStorage.save(key, data, file.type)
+
+    const url = `/api/public/images/${key}`
+    return c.json({ key, url }, 201)
+  })
+  .get(
+    '/api/public/images/:imageKey',
+    zValidator('param', imageKeyParamSchema),
+    async (c) => {
+      const { imageKey } = c.req.valid('param')
+      const imageStorage = new R2ImageStorage(c.env.ARTICLE_BUCKET)
+      const result = await imageStorage.get(imageKey)
+
+      if (!result.found) {
+        return c.json({ error: '画像が見つかりません' }, 404)
+      }
+
+      return new Response(result.data, {
+        headers: { 'content-type': result.contentType },
+      })
     },
   )
 
