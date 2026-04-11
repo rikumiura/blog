@@ -1,4 +1,4 @@
-import type { AppType } from '@my-blog/backend/src/index'
+import type { AppType } from '@my-blog/backend'
 import { hc } from 'hono/client'
 import { TOKEN_STORAGE_KEY } from '@/features/auth/constants'
 

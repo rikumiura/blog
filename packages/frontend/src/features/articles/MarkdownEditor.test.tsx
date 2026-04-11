@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MarkdownEditor } from './MarkdownEditor'
@@ -90,7 +96,9 @@ describe('MarkdownEditor', () => {
     const imageButton = screen.getByRole('button', { name: '画像挿入' })
     expect(imageButton).toBeInTheDocument()
 
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement
     const file = new File(['data'], 'test.png', { type: 'image/png' })
     await userEvent.upload(input, file)
 
@@ -112,12 +120,19 @@ describe('MarkdownEditor', () => {
     const onChange = vi.fn()
     render(<MarkdownEditor value="既存の本文" onChange={onChange} />)
 
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    await userEvent.upload(input, new File(['data'], 'img.png', { type: 'image/png' }))
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement
+    await userEvent.upload(
+      input,
+      new File(['data'], 'img.png', { type: 'image/png' }),
+    )
 
     await waitFor(() => {
-      const called = onChange.mock.calls[0][0] as string
-      expect(called).toBe('既存の本文\n![img.png](http://localhost:8787/api/public/images/abc123.png)')
+      const called = onChange.mock.calls.at(0)?.at(0) as string
+      expect(called).toBe(
+        '既存の本文\n![img.png](http://localhost:8787/api/public/images/abc123.png)',
+      )
     })
   })
 
@@ -131,12 +146,19 @@ describe('MarkdownEditor', () => {
     const onChange = vi.fn()
     render(<MarkdownEditor value={'既存の本文\n'} onChange={onChange} />)
 
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
-    await userEvent.upload(input, new File(['data'], 'img.png', { type: 'image/png' }))
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement
+    await userEvent.upload(
+      input,
+      new File(['data'], 'img.png', { type: 'image/png' }),
+    )
 
     await waitFor(() => {
-      const called = onChange.mock.calls[0][0] as string
-      expect(called).toBe('既存の本文\n![img.png](http://localhost:8787/api/public/images/abc123.png)')
+      const called = onChange.mock.calls.at(0)?.at(0) as string
+      expect(called).toBe(
+        '既存の本文\n![img.png](http://localhost:8787/api/public/images/abc123.png)',
+      )
     })
   })
 
@@ -147,7 +169,9 @@ describe('MarkdownEditor', () => {
 
     render(<MarkdownEditor value="" onChange={() => {}} />)
 
-    const input = document.querySelector('input[type="file"]') as HTMLInputElement
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement
     const file = new File(['data'], 'fail.png', { type: 'image/png' })
     await userEvent.upload(input, file)
 

@@ -90,7 +90,7 @@ describe('auth.atom', () => {
   })
 
   it('ログイン中はローディング状態になる', async () => {
-    let resolveLogin: (value: { status: 'success'; token: string }) => void
+    let resolveLogin!: (value: { status: 'success'; token: string }) => void
     mockedAuthApi.login.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -105,7 +105,7 @@ describe('auth.atom', () => {
 
     expect(store.get(loginLoadingAtom)).toBe(true)
 
-    resolveLogin!({ status: 'success', token: 'test-token' })
+    resolveLogin({ status: 'success', token: 'test-token' })
     await loginPromise
 
     expect(store.get(loginLoadingAtom)).toBe(false)
@@ -153,7 +153,7 @@ describe('auth.atom', () => {
       password: 'password',
     })
 
-    let resolveMeFn: (value: {
+    let resolveMeFn!: (value: {
       status: 'authenticated'
       username: string
     }) => void
@@ -168,7 +168,7 @@ describe('auth.atom', () => {
 
     expect(store.get(verifyingTokenAtom)).toBe(true)
 
-    resolveMeFn!({ status: 'authenticated', username: 'admin' })
+    resolveMeFn({ status: 'authenticated', username: 'admin' })
     await verifyPromise
 
     expect(store.get(verifyingTokenAtom)).toBe(false)

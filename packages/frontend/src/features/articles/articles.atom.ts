@@ -64,7 +64,7 @@ export const fetchArticlesAtom = atom(null, async (get, set) => {
     const result = await repository.findAll({
       page,
       limit,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      ...(selectedTags.length > 0 ? { tags: selectedTags } : {}),
     })
     set(articlesAtom, result.items)
     set(totalPagesAtom, result.totalPages)

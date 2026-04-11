@@ -267,7 +267,12 @@ const routes = app
     zValidator('json', updateArticleSchema),
     async (c) => {
       const publicId = PublicArticleId(c.req.valid('param').publicId)
-      const input = c.req.valid('json')
+      const rawInput = c.req.valid('json')
+      const input: { title?: string; body?: string; tags?: string[] } = {
+        ...(rawInput.title !== undefined ? { title: rawInput.title } : {}),
+        ...(rawInput.body !== undefined ? { body: rawInput.body } : {}),
+        ...(rawInput.tags !== undefined ? { tags: rawInput.tags } : {}),
+      }
       const db = createDbClient(c.env.DB)
       const repository = new DrizzleArticleRepository(db)
       const tagRepository = new DrizzleTagRepository(db)

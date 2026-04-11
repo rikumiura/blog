@@ -1,6 +1,9 @@
 {
   "name": "@my-blog/backend",
   "type": "module",
+  "exports": {
+    ".": "./src/index.tsx"
+  },
   "scripts": {
     "dev": "wrangler dev",
     "build": "vite build",
