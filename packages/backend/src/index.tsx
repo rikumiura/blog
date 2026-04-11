@@ -15,9 +15,9 @@ import { DrizzleCommentRepository } from './infrastructure/repositories/drizzle-
 import { DrizzleTagRepository } from './infrastructure/repositories/drizzle-tag-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
 import {
+  isAllowedImageContentType,
   MAX_IMAGE_SIZE_BYTES,
   R2ImageStorage,
-  isAllowedImageContentType,
 } from './infrastructure/storage/r2-image-storage'
 import {
   toArticleDetailDto,
@@ -138,10 +138,7 @@ const commentIdParamSchema = z.object({
 const imageKeyParamSchema = z.object({
   imageKey: z
     .string()
-    .regex(
-      /^[0-9a-f-]+\.(jpeg|jpg|png|gif|webp)$/i,
-      '不正な画像キーです',
-    ),
+    .regex(/^[0-9a-f-]+\.(jpeg|jpg|png|gif|webp)$/i, '不正な画像キーです'),
 })
 
 const loginSchema = z.object({
