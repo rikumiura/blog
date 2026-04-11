@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { Comment } from '@/core/types/comment'
 import { commentsApi } from '@/features/comments/comments.api'
-import { CommentForm } from './CommentForm'
-import { CommentList } from './CommentList'
+import { CommentForm } from '@/features/comments/CommentForm'
+import { CommentList } from '@/features/comments/CommentList'
 
 type Props = {
   publicId: string
@@ -17,6 +17,7 @@ export function BlogCommentSection({ publicId }: Props) {
     let cancelled = false
     setIsLoading(true)
     setError(null)
+    setComments([])
 
     commentsApi
       .listByArticle(publicId)
