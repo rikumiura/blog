@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import type { Comment } from '@/core/types/comment'
-import { commentsApi } from '@/features/comments/comments.api'
 import { CommentForm } from '@/features/comments/CommentForm'
 import { CommentList } from '@/features/comments/CommentList'
+import { commentsApi } from '@/features/comments/comments.api'
 
 type Props = {
   publicId: string
