@@ -30,6 +30,8 @@ services:
       - /workspace/packages/backend/node_modules
       - /workspace/packages/db/node_modules
       - pnpm-store:/root/.local/share/pnpm/store
+    environment:
+      - RUN_MIGRATION=true
     networks:
       - app-network
 

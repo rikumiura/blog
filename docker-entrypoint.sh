@@ -16,4 +16,9 @@ else
   echo "Dependencies up to date, skipping install."
 fi
 
+if [ "$RUN_MIGRATION" = "true" ]; then
+  echo "Running database migrations..."
+  pnpm --filter @my-blog/db migrate:local
+fi
+
 exec "$@"
