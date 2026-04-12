@@ -17,13 +17,10 @@ export async function deleteArticle(
   const article = await deps.repository.findByPublicId(publicId)
   if (!article) return { status: 'not_found' }
 
-  // D1の記事削除とoutboxへの bodyKey 記録を原子的に実行する。
-  // どちらか片方が欠けた状態にならないため、クラッシュ時も cron による再試行が可能。
-  await deps.repository.deleteAndEnqueueBodyKey(
-    article.id,
-    article.bodyKey,
-    deps.now(),
-  )
+  // D1の記事削除と現在の bodyKey の outbox 記録を原子的に実行する。
+  // INSERT INTO pending SELECT body_key + DELETE を batch で行うため、
+  // 呼び出し元が読んだ stale な bodyKey ではなく DB の現在の bodyKey が記録される。
+  await deps.repository.deleteAndEnqueueBodyKey(article.id, deps.now())
 
   // R2削除をbest-effortで試みる。失敗してもoutbox経由でcronが再試行する。
   await deps.bodyStorage.delete(article.bodyKey).catch((e) => {

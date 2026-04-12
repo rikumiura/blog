@@ -4,7 +4,7 @@ import {
   pendingBodyKeyDeletions,
   tags,
 } from '@my-blog/db'
-import { and, count, desc, eq, inArray, lte } from 'drizzle-orm'
+import { and, count, desc, eq, inArray, lte, sql } from 'drizzle-orm'
 import {
   type Article,
   ArticleId,
@@ -130,15 +130,17 @@ export class DrizzleArticleRepository implements ArticleRepository {
 
   async deleteAndEnqueueBodyKey(
     id: ArticleId,
-    bodyKey: BodyKey,
     queuedAt: string,
   ): Promise<void> {
+    // INSERT INTO pending SELECT body_key FROM articles WHERE id と DELETE を
+    // db.batch() で原子的に実行する。呼び出し元の stale な bodyKey ではなく、
+    // 削除時点の DB の実際の bodyKey を outbox に記録する。
     await this.db.batch([
+      this.db.run(
+        sql`INSERT OR IGNORE INTO pending_body_key_deletions (body_key, queued_at)
+            SELECT body_key, ${queuedAt} FROM articles WHERE id = ${id}`,
+      ),
       this.db.delete(articles).where(eq(articles.id, id)),
-      this.db
-        .insert(pendingBodyKeyDeletions)
-        .values({ bodyKey, queuedAt })
-        .onConflictDoNothing(),
     ])
   }
 

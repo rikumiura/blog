@@ -146,11 +146,14 @@ export class InMemoryArticleRepository implements ArticleRepository {
 
   async deleteAndEnqueueBodyKey(
     id: ArticleId,
-    bodyKey: BodyKey,
     _queuedAt: string,
   ): Promise<void> {
-    this._pendingBodyKeys.add(bodyKey)
-    this.articles.delete(id)
+    // 呼び出し元の stale な bodyKey を使わず、削除時点の現在の bodyKey を outbox に記録する
+    const article = this.articles.get(id)
+    if (article) {
+      this._pendingBodyKeys.add(article.bodyKey)
+      this.articles.delete(id)
+    }
   }
 
   hasPendingBodyKey(bodyKey: BodyKey): boolean {

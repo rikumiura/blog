@@ -60,13 +60,11 @@ export interface ArticleRepository {
   ): Promise<void>
   /**
    * 記事行の削除と bodyKey の outbox 追加を原子的に行う。
-   * D1 実装では db.batch() を使用し、どちらか片方が欠ける状態を防ぐ。
+   * D1 実装では INSERT INTO pending SELECT body_key FROM articles + DELETE を
+   * db.batch() で実行し、DB の現在の bodyKey を確実に outbox に記録する。
+   * 呼び出し元が読んだ stale な bodyKey ではなく、削除時点の実際の bodyKey を使う。
    */
-  deleteAndEnqueueBodyKey(
-    id: ArticleId,
-    bodyKey: BodyKey,
-    queuedAt: string,
-  ): Promise<void>
+  deleteAndEnqueueBodyKey(id: ArticleId, queuedAt: string): Promise<void>
   delete(id: ArticleId): Promise<void>
   findById(id: ArticleId): Promise<Article | null>
   findByPublicId(publicId: PublicArticleId): Promise<Article | null>

@@ -94,4 +94,29 @@ describe('deleteArticle', () => {
 
     expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-1'))).toBe(true)
   })
+
+  it('削除直前に並行した本文更新があっても、最新の bodyKey が outbox に記録される', async () => {
+    const deps = setup()
+    const article = createTestDraft()
+    await deps.repository.save(article)
+
+    // 削除の直前に並行して bodyKey が更新されたと仮定する
+    await deps.repository.save({
+      ...article,
+      bodyKey: BodyKey('body-key-updated'),
+      updatedAt: '2025-01-20T10:00:00.001Z',
+    })
+
+    // deleteArticle は findByPublicId で stale な body-key-1 を読むが、
+    // deleteAndEnqueueBodyKey は DB の現在の body-key-updated を outbox に記録する
+    await deps.repository.deleteAndEnqueueBodyKey(
+      article.id,
+      '2025-01-20T10:00:00.000Z',
+    )
+
+    expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-updated'))).toBe(
+      true,
+    )
+    expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-1'))).toBe(false)
+  })
 })

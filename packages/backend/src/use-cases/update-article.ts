@@ -87,23 +87,56 @@ export async function updateArticle(
     if (input.body !== undefined) {
       // 本文変更あり: bodyKey更新と旧key outbox登録を D1 batch で原子的に実行
       // CAS（旧bodyKeyをWHERE条件に含む）で並行更新を検出する
-      const casResult = await deps.repository.updateBodyKeyAndEnqueueOldKey(
-        updated.id,
-        updated.bodyKey, // 新 bodyKey
-        article.bodyKey, // 旧 bodyKey（CAS条件 + outbox登録対象）
-        validatedTitle,
-        now,
-        now,
-      )
-      if (casResult !== 'updated') {
-        // 新 bodyKey はR2に保存済みだが、DBには反映されず孤立している → outboxへ
-        await deps.bodyKeyDeletionQueue
-          .enqueue(updated.bodyKey, now)
-          .catch((queueErr) => {
+      let casResult: 'updated' | 'conflict' | 'not_found'
+      try {
+        casResult = await deps.repository.updateBodyKeyAndEnqueueOldKey(
+          updated.id,
+          updated.bodyKey, // 新 bodyKey
+          article.bodyKey, // 旧 bodyKey（CAS条件 + outbox登録対象）
+          validatedTitle,
+          now,
+          now,
+        )
+      } catch (e) {
+        // D1 batch 失敗: 新 bodyKey が R2 に保存済みだが DB に反映されていない
+        // R2 から直接削除を試みてクリーンアップし、失敗なら outbox へ記録する
+        console.error(`D1 bodyKey 更新失敗: bodyKey=${updated.bodyKey}`, e)
+        await deps.bodyStorage
+          .delete(updated.bodyKey)
+          .catch(async (deleteErr) => {
             console.error(
-              `孤立した新bodyKeyのキュー登録失敗: bodyKey=${updated.bodyKey}`,
-              queueErr,
+              `孤立した新bodyKey R2削除失敗: bodyKey=${updated.bodyKey}`,
+              deleteErr,
             )
+            await deps.bodyKeyDeletionQueue
+              .enqueue(updated.bodyKey, now)
+              .catch((queueErr) => {
+                console.error(
+                  `孤立した新bodyKeyのキュー登録も失敗: bodyKey=${updated.bodyKey}`,
+                  queueErr,
+                )
+              })
+          })
+        throw e // D1障害は想定外エラーなので上位へ伝播させる
+      }
+      if (casResult !== 'updated') {
+        // CAS競合 or 記事不在: 新 bodyKey は孤立している
+        // R2 から直接削除を試みて同期的にクリーンアップし、失敗なら outbox へ
+        await deps.bodyStorage
+          .delete(updated.bodyKey)
+          .catch(async (deleteErr) => {
+            console.error(
+              `競合時の新bodyKey R2削除失敗: bodyKey=${updated.bodyKey}`,
+              deleteErr,
+            )
+            await deps.bodyKeyDeletionQueue
+              .enqueue(updated.bodyKey, now)
+              .catch((queueErr) => {
+                console.error(
+                  `競合時の新bodyKeyのキュー登録も失敗: bodyKey=${updated.bodyKey}`,
+                  queueErr,
+                )
+              })
           })
         return casResult === 'not_found'
           ? { status: 'not_found' }

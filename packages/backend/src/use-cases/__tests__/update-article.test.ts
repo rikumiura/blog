@@ -268,10 +268,9 @@ describe('updateArticle', () => {
     expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-1'))).toBe(true)
   })
 
-  it('並行する本文更新が競合した場合、新しく保存した bodyKey がキューに登録される', async () => {
+  it('並行する本文更新が競合した場合、孤立した新 bodyKey が R2 から直接削除される', async () => {
     const deps = await setup()
 
-    // 競合を模擬: updateBodyKeyAndEnqueueOldKey が 'conflict' を返すよう強制
     const originalMethod = deps.repository.updateBodyKeyAndEnqueueOldKey.bind(
       deps.repository,
     )
@@ -284,10 +283,61 @@ describe('updateArticle', () => {
     )
 
     expect(result.status).toBe('conflict')
-    // 孤立した新 bodyKey がキューに登録されて cron がクリーンアップできる
+    // 孤立した新 bodyKey は R2 から直接削除される（同期削除が優先）
+    expect(deps.bodyStorage.has(BodyKey('new-body-key-1'))).toBe(false)
+
+    deps.repository.updateBodyKeyAndEnqueueOldKey = originalMethod
+  })
+
+  it('競合時に R2 直接削除も失敗した場合、孤立した新 bodyKey がキューに登録される', async () => {
+    const deps = await setup()
+
+    const originalMethod = deps.repository.updateBodyKeyAndEnqueueOldKey.bind(
+      deps.repository,
+    )
+    deps.repository.updateBodyKeyAndEnqueueOldKey = async () => 'conflict'
+    deps.bodyStorage.simulateDeleteError()
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // R2直接削除が失敗したので、キューで再試行できる
     expect(deps.bodyKeyDeletionQueue.has(BodyKey('new-body-key-1'))).toBe(true)
 
-    // 元に戻す（他テストへの影響防止）
     deps.repository.updateBodyKeyAndEnqueueOldKey = originalMethod
+  })
+
+  it('D1 bodyKey 更新が throw した場合、新 bodyKey が R2 から直接削除される', async () => {
+    const deps = await setup()
+
+    deps.repository.updateBodyKeyAndEnqueueOldKey = async () => {
+      throw new Error('D1 batch 失敗')
+    }
+
+    await expect(
+      updateArticle(PublicArticleId('public-1'), { body: '新しい本文' }, deps),
+    ).rejects.toThrow('D1 batch 失敗')
+
+    // 孤立した新 bodyKey は R2 から直接削除される
+    expect(deps.bodyStorage.has(BodyKey('new-body-key-1'))).toBe(false)
+  })
+
+  it('D1 bodyKey 更新が throw し R2 削除も失敗した場合、新 bodyKey がキューに登録される', async () => {
+    const deps = await setup()
+
+    deps.repository.updateBodyKeyAndEnqueueOldKey = async () => {
+      throw new Error('D1 batch 失敗')
+    }
+    deps.bodyStorage.simulateDeleteError()
+
+    await expect(
+      updateArticle(PublicArticleId('public-1'), { body: '新しい本文' }, deps),
+    ).rejects.toThrow()
+
+    // R2削除も失敗したので、キューで再試行できる
+    expect(deps.bodyKeyDeletionQueue.has(BodyKey('new-body-key-1'))).toBe(true)
   })
 })
