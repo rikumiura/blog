@@ -12,6 +12,7 @@ export async function deleteArticle(
     repository: ArticleRepository
     bodyStorage: BodyStorage
     now: () => string
+    waitUntil: (p: Promise<unknown>) => void
   },
 ): Promise<DeleteArticleResult> {
   const article = await deps.repository.findByPublicId(publicId)
@@ -22,10 +23,13 @@ export async function deleteArticle(
   // 呼び出し元が読んだ stale な bodyKey ではなく DB の現在の bodyKey が記録される。
   await deps.repository.deleteAndEnqueueBodyKey(article.id, deps.now())
 
-  // R2削除をbest-effortで試みる。失敗してもoutbox経由でcronが再試行する。
-  await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
-    console.error(`R2削除失敗: bodyKey=${article.bodyKey}`, e)
-  })
+  // R2削除をbest-effortで試みる。レスポンスをブロックしないよう waitUntil に渡す。
+  // 失敗してもoutbox経由でcronが再試行する。
+  deps.waitUntil(
+    deps.bodyStorage.delete(article.bodyKey).catch((e) => {
+      console.error(`R2削除失敗: bodyKey=${article.bodyKey}`, e)
+    }),
+  )
 
   return { status: 'deleted' }
 }

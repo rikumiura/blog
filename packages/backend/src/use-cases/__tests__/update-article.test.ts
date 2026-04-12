@@ -50,6 +50,11 @@ describe('updateArticle', () => {
       return BodyKey(`new-body-key-${bodyKeyCounter}`)
     }
     const now = () => FIXED_NOW
+    const waitUntilCalls: Array<Promise<unknown>> = []
+    const waitUntil = (p: Promise<unknown>) => {
+      waitUntilCalls.push(p)
+      void p
+    }
 
     // テスト用の記事と本文をセットアップ
     await repository.save(createTestDraft())
@@ -63,6 +68,8 @@ describe('updateArticle', () => {
       generateTagId,
       generateBodyKey,
       now,
+      waitUntil,
+      waitUntilCalls,
     }
   }
 
@@ -323,6 +330,19 @@ describe('updateArticle', () => {
 
     // 孤立した新 bodyKey は R2 から直接削除される
     expect(deps.bodyStorage.has(BodyKey('new-body-key-1'))).toBe(false)
+  })
+
+  it('本文更新成功後、旧 bodyKey の R2 削除は waitUntil に渡される', async () => {
+    const deps = await setup()
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // 旧 bodyKey の R2 削除はリクエストのクリティカルパスに含まれない
+    expect(deps.waitUntilCalls.length).toBeGreaterThanOrEqual(1)
   })
 
   it('D1 bodyKey 更新が throw し R2 削除も失敗した場合、新 bodyKey がキューに登録される', async () => {

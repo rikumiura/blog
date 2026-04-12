@@ -32,7 +32,12 @@ describe('deleteArticle', () => {
     const repository = new InMemoryArticleRepository()
     const bodyStorage = new InMemoryBodyStorage()
     const now = () => '2025-01-20T10:00:00.000Z'
-    return { repository, bodyStorage, now }
+    const waitUntilCalls: Array<Promise<unknown>> = []
+    const waitUntil = (p: Promise<unknown>) => {
+      waitUntilCalls.push(p)
+      void p
+    }
+    return { repository, bodyStorage, now, waitUntil, waitUntilCalls }
   }
 
   it('記事とストレージが削除される', async () => {
@@ -93,6 +98,18 @@ describe('deleteArticle', () => {
     await deleteArticle(PublicArticleId('public-1'), deps)
 
     expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-1'))).toBe(true)
+  })
+
+  it('R2削除はwaitUntilに渡され、クリティカルパスに含まれない', async () => {
+    const deps = setup()
+    const article = createTestDraft()
+    await deps.repository.save(article)
+    await deps.bodyStorage.save(BodyKey('body-key-1'), '本文')
+
+    await deleteArticle(PublicArticleId('public-1'), deps)
+
+    // R2削除はwaitUntilに渡されており、レスポンス送信前に await されない
+    expect(deps.waitUntilCalls).toHaveLength(1)
   })
 
   it('削除直前に並行した本文更新があっても、最新の bodyKey が outbox に記録される', async () => {

@@ -31,6 +31,7 @@ export async function updateArticle(
     generateTagId: () => Tag['id']
     generateBodyKey: () => BodyKey
     now: () => string
+    waitUntil: (p: Promise<unknown>) => void
   },
 ): Promise<UpdateArticleResult> {
   const article = await deps.repository.findByPublicId(publicId)
@@ -143,10 +144,13 @@ export async function updateArticle(
           : { status: 'conflict' }
       }
       // DB更新成功後、旧bodyKeyをR2から削除する（best-effort）
-      // 旧keyはbatchで既にoutboxに登録済みのため、cronが再試行可能
-      await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
-        console.error(`旧bodyKey R2削除失敗: bodyKey=${article.bodyKey}`, e)
-      })
+      // 旧keyはbatchで既にoutboxに登録済みのため、cronが再試行可能。
+      // レスポンスをブロックしないよう waitUntil に渡す。
+      deps.waitUntil(
+        deps.bodyStorage.delete(article.bodyKey).catch((e) => {
+          console.error(`旧bodyKey R2削除失敗: bodyKey=${article.bodyKey}`, e)
+        }),
+      )
     } else {
       // タイトルのみ変更: bodyKey を上書きしない narrow UPDATE
       await deps.repository.updateTitle(updated.id, updated.title, now)

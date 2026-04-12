@@ -287,6 +287,7 @@ const routes = app
         generateTagId: () => idGenerator.generateTagId(),
         generateBodyKey: () => idGenerator.generateBodyKey(),
         now: () => new Date().toISOString(),
+        waitUntil: (p) => c.executionCtx.waitUntil(p),
       })
 
       switch (result.status) {
@@ -564,6 +565,7 @@ const routes = app
         repository,
         bodyStorage,
         now: () => new Date().toISOString(),
+        waitUntil: (p) => c.executionCtx.waitUntil(p),
       })
 
       switch (result.status) {
@@ -630,9 +632,40 @@ const routes = app
 export { app }
 export type AppType = typeof routes
 
+// モジュールスコープ: 同一アイソレート内で一度だけスキーマチェックを実行する
+let schemaChecked = false
+
 // Scheduled handler: 予約公開日時を過ぎた記事を自動公開する
 export default {
-  fetch: app.fetch,
+  async fetch(
+    request: Request,
+    env: Bindings,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
+    // migration gate: D1マイグレーションが適用済みかを確認する。
+    // 未適用の場合（コードとスキーマの一時的なskew）に 503 を返して障害を明示する。
+    if (!schemaChecked) {
+      try {
+        await env.DB.prepare(
+          'SELECT 1 FROM pending_body_key_deletions LIMIT 1',
+        ).first()
+        schemaChecked = true
+      } catch (e) {
+        console.error(
+          'DBスキーマが未適用です。D1マイグレーションを実行してください。',
+          e,
+        )
+        return new Response(
+          JSON.stringify({
+            error:
+              'サービスが一時的に利用できません。しばらく待ってから再度お試しください。',
+          }),
+          { status: 503, headers: { 'content-type': 'application/json' } },
+        )
+      }
+    }
+    return app.fetch(request, env, ctx)
+  },
   async scheduled(
     _event: ScheduledEvent,
     env: Bindings,
