@@ -9,6 +9,7 @@ import {
 import { deleteArticle } from '../delete-article'
 import {
   InMemoryArticleRepository,
+  InMemoryBodyKeyDeletionQueue,
   InMemoryBodyStorage,
 } from './in-memory-test-doubles'
 
@@ -31,7 +32,9 @@ describe('deleteArticle', () => {
   const setup = () => {
     const repository = new InMemoryArticleRepository()
     const bodyStorage = new InMemoryBodyStorage()
-    return { repository, bodyStorage }
+    const bodyKeyDeletionQueue = new InMemoryBodyKeyDeletionQueue()
+    const now = () => '2025-01-20T10:00:00.000Z'
+    return { repository, bodyStorage, bodyKeyDeletionQueue, now }
   }
 
   it('記事とストレージが削除される', async () => {
@@ -68,5 +71,18 @@ describe('deleteArticle', () => {
     expect(result).toEqual({ status: 'deleted' })
     const remaining = await deps.repository.findAll()
     expect(remaining).toHaveLength(0)
+  })
+
+  it('R2削除が失敗した場合、bodyKey がクリーンアップキューに登録される', async () => {
+    const deps = setup()
+    const article = createTestDraft()
+    await deps.repository.save(article)
+    await deps.bodyStorage.save(BodyKey('body-key-1'), '本文')
+    deps.bodyStorage.simulateDeleteError()
+
+    await deleteArticle(PublicArticleId('public-1'), deps)
+
+    // bodyKeyがキューに入っており後でcronが再試行できる
+    expect(deps.bodyKeyDeletionQueue.has(BodyKey('body-key-1'))).toBe(true)
   })
 })

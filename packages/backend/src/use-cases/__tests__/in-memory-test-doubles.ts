@@ -14,6 +14,7 @@ import type {
   PaginatedResult,
   PaginationParams,
 } from '../../domain/ports/article-repository'
+import type { BodyKeyDeletionQueue } from '../../domain/ports/body-key-deletion-queue'
 import type {
   BodyGetResult,
   BodyStorage,
@@ -59,6 +60,23 @@ export class InMemoryArticleRepository implements ArticleRepository {
     const article = this.articles.get(id)
     if (article) {
       this.articles.set(id, { ...article, title, updatedAt })
+    }
+  }
+
+  async updateBodyKey(
+    id: ArticleId,
+    bodyKey: BodyKey,
+    title: Title | undefined,
+    updatedAt: string,
+  ): Promise<void> {
+    const article = this.articles.get(id)
+    if (article) {
+      this.articles.set(id, {
+        ...article,
+        bodyKey,
+        ...(title !== undefined ? { title } : {}),
+        updatedAt,
+      })
     }
   }
 
@@ -233,5 +251,25 @@ export class FakeArticleIdGenerator implements ArticleIdGenerator {
   generateTagId(): TagId {
     this._tagIdCounter++
     return TagId(`tag-${this._tagIdCounter}`)
+  }
+}
+
+export class InMemoryBodyKeyDeletionQueue implements BodyKeyDeletionQueue {
+  private queue = new Map<string, string>()
+
+  async enqueue(bodyKey: BodyKey, queuedAt: string): Promise<void> {
+    this.queue.set(bodyKey, queuedAt)
+  }
+
+  async listAll(): Promise<BodyKey[]> {
+    return [...this.queue.keys()].map(BodyKey)
+  }
+
+  async remove(bodyKey: BodyKey): Promise<void> {
+    this.queue.delete(bodyKey)
+  }
+
+  has(bodyKey: BodyKey): boolean {
+    return this.queue.has(bodyKey)
   }
 }

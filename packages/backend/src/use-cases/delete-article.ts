@@ -1,5 +1,6 @@
 import type { PublicArticleId } from '../domain/models/article'
 import type { ArticleRepository } from '../domain/ports/article-repository'
+import type { BodyKeyDeletionQueue } from '../domain/ports/body-key-deletion-queue'
 import type { BodyStorage } from '../domain/ports/body-storage'
 
 export type DeleteArticleResult =
@@ -11,17 +12,29 @@ export async function deleteArticle(
   deps: {
     repository: ArticleRepository
     bodyStorage: BodyStorage
+    bodyKeyDeletionQueue: BodyKeyDeletionQueue
+    now: () => string
   },
 ): Promise<DeleteArticleResult> {
   const article = await deps.repository.findByPublicId(publicId)
   if (!article) return { status: 'not_found' }
 
-  // D1を先に削除する（ユーザー視点での削除状態を確定させる）。
-  // R2削除はbest-effort: 失敗時はbodyKeyをログに残し将来のGCで回収する。
+  // D1を先に削除してユーザー視点の削除状態を確定させる
   await deps.repository.delete(article.id)
-  await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
-    console.error(`R2削除失敗: bodyKey=${article.bodyKey}`, e)
-  })
+
+  // R2削除を試みる。失敗した場合はoutboxに記録してcronが再試行する
+  try {
+    await deps.bodyStorage.delete(article.bodyKey)
+  } catch {
+    await deps.bodyKeyDeletionQueue
+      .enqueue(article.bodyKey, deps.now())
+      .catch((queueErr) => {
+        console.error(
+          `クリーンアップキューへの追加も失敗: bodyKey=${article.bodyKey}`,
+          queueErr,
+        )
+      })
+  }
 
   return { status: 'deleted' }
 }

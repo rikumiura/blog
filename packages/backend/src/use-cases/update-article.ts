@@ -82,8 +82,14 @@ export async function updateArticle(
   // タイトルか本文の変更がある場合、記事を保存する
   if (hasContentChange) {
     if (input.body !== undefined) {
-      // 本文変更あり: bodyKeyを含む全列 upsert
-      await deps.repository.save(updated)
+      // 本文変更あり: bodyKey（と必要ならtitle）のみ narrow UPDATE
+      // status/publishedAt/scheduledAt を含まず並行更新（公開・予約等）を上書きしない
+      await deps.repository.updateBodyKey(
+        updated.id,
+        updated.bodyKey,
+        validatedTitle,
+        now,
+      )
       // D1保存成功後、旧bodyKeyをR2から削除する（best-effort）
       await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
         console.error(`旧bodyKey削除失敗: bodyKey=${article.bodyKey}`, e)

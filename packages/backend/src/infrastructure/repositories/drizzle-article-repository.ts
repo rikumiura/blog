@@ -65,6 +65,18 @@ export class DrizzleArticleRepository implements ArticleRepository {
       .where(eq(articles.id, id))
   }
 
+  async updateBodyKey(
+    id: ArticleId,
+    bodyKey: BodyKey,
+    title: Title | undefined,
+    updatedAt: string,
+  ): Promise<void> {
+    await this.db
+      .update(articles)
+      .set({ bodyKey, ...(title !== undefined ? { title } : {}), updatedAt })
+      .where(eq(articles.id, id))
+  }
+
   async delete(id: ArticleId): Promise<void> {
     await this.db.delete(articles).where(eq(articles.id, id))
   }

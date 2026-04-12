@@ -11,6 +11,7 @@ import { Pbkdf2PasswordHasher } from './infrastructure/auth/pbkdf2-password-hash
 import { createDbClient } from './infrastructure/database'
 import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator-impl'
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
+import { DrizzleBodyKeyDeletionQueue } from './infrastructure/repositories/drizzle-body-key-deletion-queue'
 import { DrizzleCommentRepository } from './infrastructure/repositories/drizzle-comment-repository'
 import { DrizzleTagRepository } from './infrastructure/repositories/drizzle-tag-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
@@ -27,6 +28,7 @@ import {
 import { toCommentDto } from './presentation/dto/comment-dto'
 import { authenticateAdmin } from './use-cases/authenticate-admin'
 import { cancelSchedule } from './use-cases/cancel-schedule'
+import { cleanupPendingBodyDeletions } from './use-cases/cleanup-pending-body-deletions'
 import { createArticle } from './use-cases/create-article'
 import { deleteArticle } from './use-cases/delete-article'
 import { deleteComment } from './use-cases/delete-comment'
@@ -550,8 +552,14 @@ const routes = app
       const db = createDbClient(c.env.DB)
       const repository = new DrizzleArticleRepository(db)
       const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
+      const bodyKeyDeletionQueue = new DrizzleBodyKeyDeletionQueue(db)
 
-      const result = await deleteArticle(publicId, { repository, bodyStorage })
+      const result = await deleteArticle(publicId, {
+        repository,
+        bodyStorage,
+        bodyKeyDeletionQueue,
+        now: () => new Date().toISOString(),
+      })
 
       switch (result.status) {
         case 'deleted':
@@ -625,20 +633,35 @@ export default {
     env: Bindings,
     _ctx: ExecutionContext,
   ) {
-    try {
-      const db = createDbClient(env.DB)
-      const repository = new DrizzleArticleRepository(db)
+    const db = createDbClient(env.DB)
 
+    try {
+      const repository = new DrizzleArticleRepository(db)
       const result = await publishScheduledArticles({
         repository,
         now: () => new Date().toISOString(),
       })
-
       if (result.publishedCount > 0) {
         console.log(`予約公開: ${result.publishedCount}件の記事を公開しました`)
       }
     } catch (error) {
       console.error('予約公開処理でエラーが発生しました:', error)
+    }
+
+    try {
+      const bodyKeyDeletionQueue = new DrizzleBodyKeyDeletionQueue(db)
+      const bodyStorage = new R2BodyStorage(env.ARTICLE_BUCKET)
+      const result = await cleanupPendingBodyDeletions({
+        bodyKeyDeletionQueue,
+        bodyStorage,
+      })
+      if (result.deletedCount > 0) {
+        console.log(
+          `R2クリーンアップ: ${result.deletedCount}件の本文を削除しました`,
+        )
+      }
+    } catch (error) {
+      console.error('R2クリーンアップ処理でエラーが発生しました:', error)
     }
   },
 }

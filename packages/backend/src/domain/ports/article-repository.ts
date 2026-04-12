@@ -1,6 +1,7 @@
 import type {
   Article,
   ArticleId,
+  BodyKey,
   PublicArticleId,
   PublishedArticle,
   Title,
@@ -23,6 +24,16 @@ export interface ArticleRepository {
   updateUpdatedAt(id: ArticleId, updatedAt: string): Promise<void>
   /** title と updatedAt のみを更新する。bodyKey を含まず並行更新の上書きを防ぐ。 */
   updateTitle(id: ArticleId, title: Title, updatedAt: string): Promise<void>
+  /**
+   * bodyKey と updatedAt のみを更新する（title は省略可）。
+   * status/publishedAt/scheduledAt を含まず並行更新（公開・予約等）の上書きを防ぐ。
+   */
+  updateBodyKey(
+    id: ArticleId,
+    bodyKey: BodyKey,
+    title: Title | undefined,
+    updatedAt: string,
+  ): Promise<void>
   delete(id: ArticleId): Promise<void>
   findById(id: ArticleId): Promise<Article | null>
   findByPublicId(publicId: PublicArticleId): Promise<Article | null>

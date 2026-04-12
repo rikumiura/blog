@@ -216,4 +216,24 @@ describe('updateArticle', () => {
     // bodyKeyを含む全列 upsert ではなく narrow update が使われる
     expect(saveCalledAfterSetup).toBe(false)
   })
+
+  it('本文更新は status/publishedAt/scheduledAt を含む全列 save をしない', async () => {
+    const deps = await setup()
+
+    let saveCalledAfterSetup = false
+    const originalSave = deps.repository.save.bind(deps.repository)
+    deps.repository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // status/publishedAt/scheduledAt を含む全列 upsert ではなく narrow update が使われる
+    expect(saveCalledAfterSetup).toBe(false)
+  })
 })
