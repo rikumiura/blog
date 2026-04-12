@@ -43,6 +43,13 @@ export class InMemoryArticleRepository implements ArticleRepository {
     return null
   }
 
+  async updateUpdatedAt(id: ArticleId, updatedAt: string): Promise<void> {
+    const article = this.articles.get(id)
+    if (article) {
+      this.articles.set(id, { ...article, updatedAt })
+    }
+  }
+
   async delete(id: ArticleId): Promise<void> {
     this.articles.delete(id)
   }

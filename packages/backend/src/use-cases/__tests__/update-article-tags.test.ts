@@ -101,4 +101,24 @@ describe('updateArticleTags', () => {
     )
     expect(article?.updatedAt).toBe(FIXED_NOW)
   })
+
+  it('タグ更新は updatedAt のみを更新し、記事全体を save しない', async () => {
+    const deps = setup()
+    await deps.articleRepository.save(createTestDraft())
+
+    // save が呼ばれたかを追跡するスパイ
+    let saveCalledAfterSetup = false
+    const originalSave = deps.articleRepository.save.bind(
+      deps.articleRepository,
+    )
+    deps.articleRepository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await updateArticleTags(PublicArticleId('public-1'), ['TypeScript'], deps)
+
+    // 全列 upsert の save ではなく、narrow update の updateUpdatedAt が使われる
+    expect(saveCalledAfterSetup).toBe(false)
+  })
 })

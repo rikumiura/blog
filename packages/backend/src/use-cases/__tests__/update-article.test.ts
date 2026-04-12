@@ -183,4 +183,17 @@ describe('updateArticle', () => {
       expect(result.body).toBe('新しい本文')
     }
   })
+
+  it('本文を更新した後、旧 bodyKey がストレージから削除される', async () => {
+    const deps = await setup()
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // 旧keyはストレージから削除されている（ストレージリーク防止）
+    expect(deps.bodyStorage.has(BodyKey('body-key-1'))).toBe(false)
+  })
 })

@@ -49,6 +49,10 @@ export class DrizzleArticleRepository implements ArticleRepository {
       })
   }
 
+  async updateUpdatedAt(id: ArticleId, updatedAt: string): Promise<void> {
+    await this.db.update(articles).set({ updatedAt }).where(eq(articles.id, id))
+  }
+
   async delete(id: ArticleId): Promise<void> {
     await this.db.delete(articles).where(eq(articles.id, id))
   }

@@ -36,7 +36,7 @@ export async function updateArticleTags(
     article.id,
     resolvedTags.map((t) => t.id),
   )
-  await deps.articleRepository.save({ ...article, updatedAt: deps.now() })
+  await deps.articleRepository.updateUpdatedAt(article.id, deps.now())
 
   return { status: 'updated', tags: resolvedTags }
 }

@@ -82,6 +82,13 @@ export async function updateArticle(
   // タイトルか本文の変更がある場合、記事を保存する
   if (hasContentChange) {
     await deps.repository.save(updated)
+    // D1保存成功後、旧bodyKeyをR2から削除する（best-effort）
+    // 新keyでの保存とD1更新が完了しているため、旧keyは不要
+    if (input.body !== undefined) {
+      await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
+        console.error(`旧bodyKey削除失敗: bodyKey=${article.bodyKey}`, e)
+      })
+    }
   }
 
   // タグの更新
