@@ -7,6 +7,7 @@ import {
   PublicArticleId,
   type PublishedArticle,
   restoreTitle,
+  type Title,
 } from '../../domain/models/article'
 import type {
   ArticleRepository,
@@ -51,6 +52,17 @@ export class DrizzleArticleRepository implements ArticleRepository {
 
   async updateUpdatedAt(id: ArticleId, updatedAt: string): Promise<void> {
     await this.db.update(articles).set({ updatedAt }).where(eq(articles.id, id))
+  }
+
+  async updateTitle(
+    id: ArticleId,
+    title: Title,
+    updatedAt: string,
+  ): Promise<void> {
+    await this.db
+      .update(articles)
+      .set({ title, updatedAt })
+      .where(eq(articles.id, id))
   }
 
   async delete(id: ArticleId): Promise<void> {

@@ -4,6 +4,7 @@ import {
   BodyKey,
   PublicArticleId,
   type PublishedArticle,
+  type Title,
 } from '../../domain/models/article'
 import type { Comment, CommentId } from '../../domain/models/comment'
 import type { Tag, TagName } from '../../domain/models/tag'
@@ -47,6 +48,17 @@ export class InMemoryArticleRepository implements ArticleRepository {
     const article = this.articles.get(id)
     if (article) {
       this.articles.set(id, { ...article, updatedAt })
+    }
+  }
+
+  async updateTitle(
+    id: ArticleId,
+    title: Title,
+    updatedAt: string,
+  ): Promise<void> {
+    const article = this.articles.get(id)
+    if (article) {
+      this.articles.set(id, { ...article, title, updatedAt })
     }
   }
 

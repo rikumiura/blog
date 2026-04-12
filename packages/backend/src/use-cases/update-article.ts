@@ -81,13 +81,16 @@ export async function updateArticle(
 
   // タイトルか本文の変更がある場合、記事を保存する
   if (hasContentChange) {
-    await deps.repository.save(updated)
-    // D1保存成功後、旧bodyKeyをR2から削除する（best-effort）
-    // 新keyでの保存とD1更新が完了しているため、旧keyは不要
     if (input.body !== undefined) {
+      // 本文変更あり: bodyKeyを含む全列 upsert
+      await deps.repository.save(updated)
+      // D1保存成功後、旧bodyKeyをR2から削除する（best-effort）
       await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
         console.error(`旧bodyKey削除失敗: bodyKey=${article.bodyKey}`, e)
       })
+    } else {
+      // タイトルのみ変更: bodyKey を上書きしない narrow UPDATE
+      await deps.repository.updateTitle(updated.id, updated.title, now)
     }
   }
 
@@ -97,10 +100,10 @@ export async function updateArticle(
       updated.id,
       resolvedTags.map((t) => t.id),
     )
-    // タグのみ更新の場合も updatedAt を更新する
+    // タグのみ更新の場合も updatedAt を更新する（narrow UPDATE で bodyKey を触らない）
     if (!hasContentChange) {
       updated = { ...updated, updatedAt: now }
-      await deps.repository.save(updated)
+      await deps.repository.updateUpdatedAt(updated.id, now)
     }
   }
 

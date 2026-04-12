@@ -196,4 +196,24 @@ describe('updateArticle', () => {
     // 旧keyはストレージから削除されている（ストレージリーク防止）
     expect(deps.bodyStorage.has(BodyKey('body-key-1'))).toBe(false)
   })
+
+  it('タイトルのみ更新は bodyKey を含む全列 save をしない', async () => {
+    const deps = await setup()
+
+    let saveCalledAfterSetup = false
+    const originalSave = deps.repository.save.bind(deps.repository)
+    deps.repository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { title: '新タイトル' },
+      deps,
+    )
+
+    // bodyKeyを含む全列 upsert ではなく narrow update が使われる
+    expect(saveCalledAfterSetup).toBe(false)
+  })
 })

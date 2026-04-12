@@ -16,10 +16,12 @@ export async function deleteArticle(
   const article = await deps.repository.findByPublicId(publicId)
   if (!article) return { status: 'not_found' }
 
-  // R2を先に削除する。失敗した場合はエラーを伝播させD1は削除しない。
-  // これによりbodyKeyの参照が保持され、クライアントが再試行できる。
-  await deps.bodyStorage.delete(article.bodyKey)
+  // D1を先に削除する（ユーザー視点での削除状態を確定させる）。
+  // R2削除はbest-effort: 失敗時はbodyKeyをログに残し将来のGCで回収する。
   await deps.repository.delete(article.id)
+  await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
+    console.error(`R2削除失敗: bodyKey=${article.bodyKey}`, e)
+  })
 
   return { status: 'deleted' }
 }
