@@ -17,7 +17,14 @@ export async function publishScheduledArticles(deps: {
     if (article.status !== 'scheduled') continue
     try {
       const published = publishDomainArticle(article, now)
-      await deps.repository.save(published)
+      // bodyKey を含む全列 upsert ではなく status/publishedAt/updatedAt のみ narrow UPDATE する
+      await deps.repository.updateStatus(
+        published.id,
+        'published',
+        published.publishedAt,
+        published.scheduledAt,
+        now,
+      )
       publishedCount++
     } catch (error) {
       console.error(

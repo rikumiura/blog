@@ -75,4 +75,20 @@ describe('publishArticle', () => {
 
     expect(result).toEqual({ status: 'already_published' })
   })
+
+  it('公開操作は bodyKey を含む全列 save をしない（並行本文更新の上書き防止）', async () => {
+    const draft = createTestDraft()
+    await repository.save(draft)
+
+    let saveCalledAfterSetup = false
+    const originalSave = repository.save.bind(repository)
+    repository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await publishArticle(PublicArticleId('public-1'), deps())
+
+    expect(saveCalledAfterSetup).toBe(false)
+  })
 })

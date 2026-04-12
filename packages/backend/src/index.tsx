@@ -278,10 +278,12 @@ const routes = app
       const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
       const idGenerator = new ArticleIdGeneratorImpl()
 
+      const bodyKeyDeletionQueue = new DrizzleBodyKeyDeletionQueue(db)
       const result = await updateArticle(publicId, input, {
         repository,
         bodyStorage,
         tagRepository,
+        bodyKeyDeletionQueue,
         generateTagId: () => idGenerator.generateTagId(),
         generateBodyKey: () => idGenerator.generateBodyKey(),
         now: () => new Date().toISOString(),
@@ -552,12 +554,10 @@ const routes = app
       const db = createDbClient(c.env.DB)
       const repository = new DrizzleArticleRepository(db)
       const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
-      const bodyKeyDeletionQueue = new DrizzleBodyKeyDeletionQueue(db)
 
       const result = await deleteArticle(publicId, {
         repository,
         bodyStorage,
-        bodyKeyDeletionQueue,
         now: () => new Date().toISOString(),
       })
 

@@ -8,6 +8,7 @@ import {
 } from '../domain/models/article'
 import type { Tag } from '../domain/models/tag'
 import type { ArticleRepository } from '../domain/ports/article-repository'
+import type { BodyKeyDeletionQueue } from '../domain/ports/body-key-deletion-queue'
 import type { BodyStorage } from '../domain/ports/body-storage'
 import type { TagRepository } from '../domain/ports/tag-repository'
 import { resolveTags } from './resolve-tags'
@@ -25,6 +26,7 @@ export async function updateArticle(
     repository: ArticleRepository
     bodyStorage: BodyStorage
     tagRepository: TagRepository
+    bodyKeyDeletionQueue: BodyKeyDeletionQueue
     generateTagId: () => Tag['id']
     generateBodyKey: () => BodyKey
     now: () => string
@@ -91,8 +93,17 @@ export async function updateArticle(
         now,
       )
       // D1保存成功後、旧bodyKeyをR2から削除する（best-effort）
-      await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
+      // 失敗した場合はクリーンアップキューに登録してcronが再試行する
+      await deps.bodyStorage.delete(article.bodyKey).catch(async (e) => {
         console.error(`旧bodyKey削除失敗: bodyKey=${article.bodyKey}`, e)
+        await deps.bodyKeyDeletionQueue
+          .enqueue(article.bodyKey, deps.now())
+          .catch((queueErr) => {
+            console.error(
+              `クリーンアップキューへの追加も失敗: bodyKey=${article.bodyKey}`,
+              queueErr,
+            )
+          })
       })
     } else {
       // タイトルのみ変更: bodyKey を上書きしない narrow UPDATE

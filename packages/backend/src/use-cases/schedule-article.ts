@@ -36,7 +36,14 @@ export async function scheduleArticle(
   }
 
   const scheduled = scheduleDomainArticle(article, scheduledAt, now)
-  await deps.repository.save(scheduled)
+  // bodyKey を含む全列 upsert ではなく status/scheduledAt/updatedAt のみ narrow UPDATE する
+  await deps.repository.updateStatus(
+    scheduled.id,
+    'scheduled',
+    null,
+    scheduled.scheduledAt,
+    now,
+  )
 
   return { status: 'scheduled', article: scheduled }
 }

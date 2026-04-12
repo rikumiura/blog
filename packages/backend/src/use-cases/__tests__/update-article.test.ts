@@ -10,6 +10,7 @@ import { TagId } from '../../domain/models/tag'
 import { updateArticle } from '../update-article'
 import {
   InMemoryArticleRepository,
+  InMemoryBodyKeyDeletionQueue,
   InMemoryBodyStorage,
   InMemoryTagRepository,
 } from './in-memory-test-doubles'
@@ -39,6 +40,7 @@ describe('updateArticle', () => {
     const repository = new InMemoryArticleRepository()
     const bodyStorage = new InMemoryBodyStorage()
     const tagRepository = new InMemoryTagRepository()
+    const bodyKeyDeletionQueue = new InMemoryBodyKeyDeletionQueue()
     const generateTagId = () => {
       tagIdCounter++
       return TagId(`tag-${tagIdCounter}`)
@@ -57,6 +59,7 @@ describe('updateArticle', () => {
       repository,
       bodyStorage,
       tagRepository,
+      bodyKeyDeletionQueue,
       generateTagId,
       generateBodyKey,
       now,
@@ -235,5 +238,19 @@ describe('updateArticle', () => {
 
     // status/publishedAt/scheduledAt を含む全列 upsert ではなく narrow update が使われる
     expect(saveCalledAfterSetup).toBe(false)
+  })
+
+  it('旧 bodyKey の R2 削除失敗時、bodyKey がクリーンアップキューに登録される', async () => {
+    const deps = await setup()
+    deps.bodyStorage.simulateDeleteError()
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // R2削除失敗した旧 bodyKey がキューに入り、cron が再試行できる
+    expect(deps.bodyKeyDeletionQueue.has(BodyKey('body-key-1'))).toBe(true)
   })
 })

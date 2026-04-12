@@ -27,7 +27,15 @@ export async function publishArticle(
 
   const now = deps.now()
   const published = publishDomainArticle(article, now)
-  await deps.repository.save(published)
+  // bodyKey を含む全列 upsert ではなく status/publishedAt/updatedAt のみ narrow UPDATE する
+  // （並行する本文更新が bodyKey を書き換えても上書きしない）
+  await deps.repository.updateStatus(
+    published.id,
+    'published',
+    published.publishedAt,
+    published.scheduledAt,
+    now,
+  )
 
   return { status: 'published', article: published }
 }

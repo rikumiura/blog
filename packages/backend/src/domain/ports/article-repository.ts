@@ -34,6 +34,26 @@ export interface ArticleRepository {
     title: Title | undefined,
     updatedAt: string,
   ): Promise<void>
+  /**
+   * status/publishedAt/scheduledAt/updatedAt のみを更新する。
+   * bodyKey/title を含まず並行する本文更新の上書きを防ぐ。
+   */
+  updateStatus(
+    id: ArticleId,
+    status: 'draft' | 'scheduled' | 'published',
+    publishedAt: string | null,
+    scheduledAt: string | null,
+    updatedAt: string,
+  ): Promise<void>
+  /**
+   * 記事行の削除と bodyKey の outbox 追加を原子的に行う。
+   * D1 実装では db.batch() を使用し、どちらか片方が欠ける状態を防ぐ。
+   */
+  deleteAndEnqueueBodyKey(
+    id: ArticleId,
+    bodyKey: BodyKey,
+    queuedAt: string,
+  ): Promise<void>
   delete(id: ArticleId): Promise<void>
   findById(id: ArticleId): Promise<Article | null>
   findByPublicId(publicId: PublicArticleId): Promise<Article | null>

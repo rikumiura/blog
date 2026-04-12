@@ -85,4 +85,20 @@ describe('cancelSchedule', () => {
 
     expect(result).toEqual({ status: 'not_scheduled' })
   })
+
+  it('予約解除操作は bodyKey を含む全列 save をしない（並行本文更新の上書き防止）', async () => {
+    const deps = setup()
+    await deps.repository.save(createTestScheduled())
+
+    let saveCalledAfterSetup = false
+    const originalSave = deps.repository.save.bind(deps.repository)
+    deps.repository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await cancelSchedule(PublicArticleId('public-1'), deps)
+
+    expect(saveCalledAfterSetup).toBe(false)
+  })
 })

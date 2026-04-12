@@ -26,6 +26,7 @@ import type { TagRepository } from '../../domain/ports/tag-repository'
 export class InMemoryArticleRepository implements ArticleRepository {
   private articles = new Map<string, Article>()
   private shouldFailOnSave = false
+  private _pendingBodyKeys = new Set<string>()
 
   async save(article: Article): Promise<void> {
     if (this.shouldFailOnSave) {
@@ -78,6 +79,60 @@ export class InMemoryArticleRepository implements ArticleRepository {
         updatedAt,
       })
     }
+  }
+
+  async updateStatus(
+    id: ArticleId,
+    status: 'draft' | 'scheduled' | 'published',
+    publishedAt: string | null,
+    scheduledAt: string | null,
+    updatedAt: string,
+  ): Promise<void> {
+    const article = this.articles.get(id)
+    if (!article) return
+    const base = {
+      id: article.id,
+      publicId: article.publicId,
+      title: article.title,
+      bodyKey: article.bodyKey,
+      createdAt: article.createdAt,
+      updatedAt,
+    }
+    if (status === 'draft') {
+      this.articles.set(id, {
+        ...base,
+        status: 'draft',
+        publishedAt: null,
+        scheduledAt: null,
+      })
+    } else if (status === 'scheduled') {
+      this.articles.set(id, {
+        ...base,
+        status: 'scheduled',
+        publishedAt: null,
+        scheduledAt: scheduledAt as string,
+      })
+    } else {
+      this.articles.set(id, {
+        ...base,
+        status: 'published',
+        publishedAt: publishedAt as string,
+        scheduledAt,
+      })
+    }
+  }
+
+  async deleteAndEnqueueBodyKey(
+    id: ArticleId,
+    bodyKey: BodyKey,
+    _queuedAt: string,
+  ): Promise<void> {
+    this._pendingBodyKeys.add(bodyKey)
+    this.articles.delete(id)
+  }
+
+  hasPendingBodyKey(bodyKey: BodyKey): boolean {
+    return this._pendingBodyKeys.has(bodyKey)
   }
 
   async delete(id: ArticleId): Promise<void> {

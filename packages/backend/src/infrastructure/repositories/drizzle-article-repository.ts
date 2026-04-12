@@ -1,4 +1,9 @@
-import { articles, articleTags, tags } from '@my-blog/db'
+import {
+  articles,
+  articleTags,
+  pendingBodyKeyDeletions,
+  tags,
+} from '@my-blog/db'
 import { and, count, desc, eq, inArray, lte } from 'drizzle-orm'
 import {
   type Article,
@@ -75,6 +80,33 @@ export class DrizzleArticleRepository implements ArticleRepository {
       .update(articles)
       .set({ bodyKey, ...(title !== undefined ? { title } : {}), updatedAt })
       .where(eq(articles.id, id))
+  }
+
+  async updateStatus(
+    id: ArticleId,
+    status: 'draft' | 'scheduled' | 'published',
+    publishedAt: string | null,
+    scheduledAt: string | null,
+    updatedAt: string,
+  ): Promise<void> {
+    await this.db
+      .update(articles)
+      .set({ status, publishedAt, scheduledAt, updatedAt })
+      .where(eq(articles.id, id))
+  }
+
+  async deleteAndEnqueueBodyKey(
+    id: ArticleId,
+    bodyKey: BodyKey,
+    queuedAt: string,
+  ): Promise<void> {
+    await this.db.batch([
+      this.db.delete(articles).where(eq(articles.id, id)),
+      this.db
+        .insert(pendingBodyKeyDeletions)
+        .values({ bodyKey, queuedAt })
+        .onConflictDoNothing(),
+    ])
   }
 
   async delete(id: ArticleId): Promise<void> {
