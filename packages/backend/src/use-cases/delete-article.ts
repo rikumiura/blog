@@ -17,7 +17,10 @@ export async function deleteArticle(
   if (!article) return { status: 'not_found' }
 
   await deps.repository.delete(article.id)
-  await deps.bodyStorage.delete(article.bodyKey)
+  // R2削除はbest-effort: 失敗しても記事はすでにD1から削除済みのためdeletedを返す
+  await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
+    console.error(`R2削除失敗: bodyKey=${article.bodyKey}`, e)
+  })
 
   return { status: 'deleted' }
 }

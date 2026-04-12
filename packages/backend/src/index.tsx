@@ -281,6 +281,7 @@ const routes = app
         bodyStorage,
         tagRepository,
         generateTagId: () => idGenerator.generateTagId(),
+        generateBodyKey: () => idGenerator.generateBodyKey(),
         now: () => new Date().toISOString(),
       })
 
@@ -396,6 +397,7 @@ const routes = app
         articleRepository,
         tagRepository,
         generateTagId: () => idGenerator.generateTagId(),
+        now: () => new Date().toISOString(),
       })
 
       switch (result.status) {

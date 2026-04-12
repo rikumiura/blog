@@ -1,5 +1,6 @@
 import {
   type Article,
+  type BodyKey,
   createTitle,
   type PublicArticleId,
   type Title,
@@ -25,6 +26,7 @@ export async function updateArticle(
     bodyStorage: BodyStorage
     tagRepository: TagRepository
     generateTagId: () => Tag['id']
+    generateBodyKey: () => BodyKey
     now: () => string
   },
 ): Promise<UpdateArticleResult> {
@@ -69,15 +71,16 @@ export async function updateArticle(
   }
 
   if (input.body !== undefined) {
-    await deps.bodyStorage.save(article.bodyKey, input.body)
+    // immutableなkeyに新しい本文を保存する。
+    // D1保存前にR2保存が失敗しても旧keyが有効なまま。
+    // D1保存が失敗しても旧keyはそのままで整合性が保たれる（新keyは孤立するが許容）。
+    const newBodyKey = deps.generateBodyKey()
+    await deps.bodyStorage.save(newBodyKey, input.body)
+    updated = { ...updated, bodyKey: newBodyKey, updatedAt: now }
   }
 
   // タイトルか本文の変更がある場合、記事を保存する
   if (hasContentChange) {
-    if (validatedTitle === undefined) {
-      // 本文のみ変更の場合、updatedAt だけ更新
-      updated = { ...updated, updatedAt: now }
-    }
     await deps.repository.save(updated)
   }
 

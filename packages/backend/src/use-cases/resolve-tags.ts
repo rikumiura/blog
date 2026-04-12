@@ -43,7 +43,11 @@ export async function resolveTags(
 
   if (newTags.length > 0) {
     await deps.tagRepository.saveMany(newTags)
+    // onConflictDoNothing により挿入がスキップされる競合が起きた場合でも
+    // DB正規のIDを返すために全タグを再取得する
+    const allTags = await deps.tagRepository.findByNames(uniqueNames)
+    return { ok: true, tags: allTags }
   }
 
-  return { ok: true, tags: [...existingTags, ...newTags] }
+  return { ok: true, tags: existingTags }
 }

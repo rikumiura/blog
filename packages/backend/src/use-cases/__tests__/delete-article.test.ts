@@ -54,4 +54,16 @@ describe('deleteArticle', () => {
 
     expect(result).toEqual({ status: 'not_found' })
   })
+
+  it('R2削除が失敗しても deleted が返る', async () => {
+    const deps = setup()
+    const article = createTestDraft()
+    await deps.repository.save(article)
+    await deps.bodyStorage.save(BodyKey('body-key-1'), '本文')
+    deps.bodyStorage.simulateDeleteError()
+
+    const result = await deleteArticle(PublicArticleId('public-1'), deps)
+
+    expect(result).toEqual({ status: 'deleted' })
+  })
 })

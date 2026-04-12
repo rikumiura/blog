@@ -32,8 +32,10 @@ function createTestDraft(): DraftArticle {
 
 describe('updateArticle', () => {
   let tagIdCounter = 0
+  let bodyKeyCounter = 0
   const setup = async () => {
     tagIdCounter = 0
+    bodyKeyCounter = 0
     const repository = new InMemoryArticleRepository()
     const bodyStorage = new InMemoryBodyStorage()
     const tagRepository = new InMemoryTagRepository()
@@ -41,13 +43,24 @@ describe('updateArticle', () => {
       tagIdCounter++
       return TagId(`tag-${tagIdCounter}`)
     }
+    const generateBodyKey = () => {
+      bodyKeyCounter++
+      return BodyKey(`new-body-key-${bodyKeyCounter}`)
+    }
     const now = () => FIXED_NOW
 
     // テスト用の記事と本文をセットアップ
     await repository.save(createTestDraft())
     await bodyStorage.save(BodyKey('body-key-1'), '元の本文')
 
-    return { repository, bodyStorage, tagRepository, generateTagId, now }
+    return {
+      repository,
+      bodyStorage,
+      tagRepository,
+      generateTagId,
+      generateBodyKey,
+      now,
+    }
   }
 
   it('タイトルを更新できる', async () => {
@@ -152,5 +165,22 @@ describe('updateArticle', () => {
       status: 'validation_error',
       message: 'タグ名は空にできません',
     })
+  })
+
+  it('本文を更新した場合、新しい bodyKey が割り当てられる', async () => {
+    const deps = await setup()
+
+    const result = await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    expect(result.status).toBe('updated')
+    if (result.status === 'updated') {
+      // 元のbodyKeyとは異なる新しいkeyが割り当てられる（immutable key設計）
+      expect(String(result.article.bodyKey)).not.toBe('body-key-1')
+      expect(result.body).toBe('新しい本文')
+    }
   })
 })

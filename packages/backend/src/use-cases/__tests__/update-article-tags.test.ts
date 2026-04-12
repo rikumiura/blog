@@ -27,6 +27,8 @@ function createTestDraft(): DraftArticle {
   }
 }
 
+const FIXED_NOW = '2025-02-01T00:00:00.000Z'
+
 describe('updateArticleTags', () => {
   let tagIdCounter = 0
   const setup = () => {
@@ -37,7 +39,8 @@ describe('updateArticleTags', () => {
       tagIdCounter++
       return TagId(`tag-${tagIdCounter}`)
     }
-    return { articleRepository, tagRepository, generateTagId }
+    const now = () => FIXED_NOW
+    return { articleRepository, tagRepository, generateTagId, now }
   }
 
   it('タグが更新される', async () => {
@@ -85,5 +88,17 @@ describe('updateArticleTags', () => {
       status: 'validation_error',
       message: 'タグ名は空にできません',
     })
+  })
+
+  it('タグ更新後に updatedAt が更新される', async () => {
+    const deps = setup()
+    await deps.articleRepository.save(createTestDraft())
+
+    await updateArticleTags(PublicArticleId('public-1'), ['TypeScript'], deps)
+
+    const article = await deps.articleRepository.findByPublicId(
+      PublicArticleId('public-1'),
+    )
+    expect(article?.updatedAt).toBe(FIXED_NOW)
   })
 })
