@@ -10,7 +10,7 @@ function toHex(buffer: ArrayBuffer): string {
     .join('')
 }
 
-function fromHex(hex: string): Uint8Array {
+function fromHex(hex: string): Uint8Array<ArrayBuffer> {
   const bytes = new Uint8Array(hex.length / 2)
   for (let i = 0; i < hex.length; i += 2) {
     bytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16)
@@ -43,7 +43,7 @@ export class Pbkdf2PasswordHasher implements PasswordHasher {
 
   private async deriveKey(
     password: string,
-    salt: Uint8Array,
+    salt: Uint8Array<ArrayBuffer>,
   ): Promise<ArrayBuffer> {
     const encoder = new TextEncoder()
     const keyMaterial = await crypto.subtle.importKey(

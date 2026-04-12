@@ -15,9 +15,9 @@ import { DrizzleCommentRepository } from './infrastructure/repositories/drizzle-
 import { DrizzleTagRepository } from './infrastructure/repositories/drizzle-tag-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
 import {
+  isAllowedImageContentType,
   MAX_IMAGE_SIZE_BYTES,
   R2ImageStorage,
-  isAllowedImageContentType,
 } from './infrastructure/storage/r2-image-storage'
 import {
   toArticleDetailDto,
@@ -138,10 +138,7 @@ const commentIdParamSchema = z.object({
 const imageKeyParamSchema = z.object({
   imageKey: z
     .string()
-    .regex(
-      /^[0-9a-f-]+\.(jpeg|jpg|png|gif|webp)$/i,
-      '不正な画像キーです',
-    ),
+    .regex(/^[0-9a-f-]+\.(jpeg|jpg|png|gif|webp)$/i, '不正な画像キーです'),
 })
 
 const loginSchema = z.object({
@@ -267,7 +264,12 @@ const routes = app
     zValidator('json', updateArticleSchema),
     async (c) => {
       const publicId = PublicArticleId(c.req.valid('param').publicId)
-      const input = c.req.valid('json')
+      const rawInput = c.req.valid('json')
+      const input: { title?: string; body?: string; tags?: string[] } = {
+        ...(rawInput.title !== undefined ? { title: rawInput.title } : {}),
+        ...(rawInput.body !== undefined ? { body: rawInput.body } : {}),
+        ...(rawInput.tags !== undefined ? { tags: rawInput.tags } : {}),
+      }
       const db = createDbClient(c.env.DB)
       const repository = new DrizzleArticleRepository(db)
       const tagRepository = new DrizzleTagRepository(db)

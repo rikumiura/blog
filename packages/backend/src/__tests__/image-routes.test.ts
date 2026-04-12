@@ -5,23 +5,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockPut = vi.fn()
 const mockGet = vi.fn()
 
-vi.mock('../infrastructure/storage/r2-image-storage', async (importOriginal) => {
-  const actual =
-    await importOriginal<
-      typeof import('../infrastructure/storage/r2-image-storage')
-    >()
-  return {
-    ...actual,
-    R2ImageStorage: class {
-      async save(_key: string, _data: ArrayBuffer, _contentType: string) {
-        return mockPut(_key, _data, _contentType)
-      }
-      async get(_key: string) {
-        return mockGet(_key)
-      }
-    },
-  }
-})
+vi.mock(
+  '../infrastructure/storage/r2-image-storage',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('../infrastructure/storage/r2-image-storage')
+      >()
+    return {
+      ...actual,
+      R2ImageStorage: class {
+        async save(_key: string, _data: ArrayBuffer, _contentType: string) {
+          return mockPut(_key, _data, _contentType)
+        }
+        async get(_key: string) {
+          return mockGet(_key)
+        }
+      },
+    }
+  },
+)
 
 vi.mock('../infrastructure/database', () => ({
   createDbClient: () => ({}),

@@ -1,5 +1,5 @@
 import { articleTags, tags } from '@my-blog/db'
-import { and, eq, inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import type { ArticleId } from '../../domain/models/article'
 import { restoreTagName, type Tag, TagId } from '../../domain/models/tag'
 import type { TagRepository } from '../../domain/ports/tag-repository'

@@ -1,6 +1,6 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { useRef, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { toAbsoluteImageUrl, uploadImage } from './image.api'
@@ -33,10 +33,13 @@ export function MarkdownEditor({ value, onChange }: Props) {
       // P1: uploadImage 完了後に最新の value を使う
       const current = latestValueRef.current
       // P2: 末尾に改行がなければ改行を挟む
-      const separator = current.length > 0 && !current.endsWith('\n') ? '\n' : ''
+      const separator =
+        current.length > 0 && !current.endsWith('\n') ? '\n' : ''
       onChange(`${current}${separator}![${file.name}](${absoluteUrl})`)
     } catch (err) {
-      setUploadError(err instanceof Error ? err.message : '画像のアップロードに失敗しました')
+      setUploadError(
+        err instanceof Error ? err.message : '画像のアップロードに失敗しました',
+      )
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -92,7 +95,10 @@ export function MarkdownEditor({ value, onChange }: Props) {
             type="button"
             variant={activeTab === 'edit' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => { setActiveTab('edit'); setUploadError(null) }}
+            onClick={() => {
+              setActiveTab('edit')
+              setUploadError(null)
+            }}
           >
             編集
           </Button>
@@ -100,7 +106,10 @@ export function MarkdownEditor({ value, onChange }: Props) {
             type="button"
             variant={activeTab === 'preview' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => { setActiveTab('preview'); setUploadError(null) }}
+            onClick={() => {
+              setActiveTab('preview')
+              setUploadError(null)
+            }}
           >
             プレビュー
           </Button>
@@ -108,15 +117,16 @@ export function MarkdownEditor({ value, onChange }: Props) {
             type="button"
             variant={activeTab === 'split' ? 'default' : 'ghost'}
             size="sm"
-            onClick={() => { setActiveTab('split'); setUploadError(null) }}
+            onClick={() => {
+              setActiveTab('split')
+              setUploadError(null)
+            }}
           >
             分割
           </Button>
         </div>
       </div>
-      {uploadError && (
-        <p className="text-sm text-destructive">{uploadError}</p>
-      )}
+      {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
 
       {activeTab === 'edit' && (
         <Textarea

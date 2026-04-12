@@ -53,7 +53,7 @@ export const fetchBlogArticlesAtom = atom(null, async (get, set) => {
     const result = await blogApi.findAll({
       page,
       limit,
-      tags: selectedTags.length > 0 ? selectedTags : undefined,
+      ...(selectedTags.length > 0 ? { tags: selectedTags } : {}),
     })
     set(blogArticlesAtom, result.items)
     set(blogTotalPagesAtom, result.totalPages)
