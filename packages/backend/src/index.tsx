@@ -300,6 +300,11 @@ const routes = app
           return c.json({ error: '記事本文が見つかりません' }, 404)
         case 'validation_error':
           return c.json({ error: result.message }, 400)
+        case 'conflict':
+          return c.json(
+            { error: '並行する本文更新が競合しました。再度お試しください。' },
+            409,
+          )
       }
     },
   )

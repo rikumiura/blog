@@ -82,6 +82,39 @@ export class DrizzleArticleRepository implements ArticleRepository {
       .where(eq(articles.id, id))
   }
 
+  async updateBodyKeyAndEnqueueOldKey(
+    id: ArticleId,
+    newBodyKey: BodyKey,
+    oldBodyKey: BodyKey,
+    title: Title | undefined,
+    queuedAt: string,
+    updatedAt: string,
+  ): Promise<'updated' | 'conflict' | 'not_found'> {
+    // CAS で bodyKey を更新しつつ、旧 bodyKey の outbox 登録を原子的に行う
+    await this.db.batch([
+      this.db
+        .update(articles)
+        .set({
+          bodyKey: newBodyKey,
+          ...(title !== undefined ? { title } : {}),
+          updatedAt,
+        })
+        .where(and(eq(articles.id, id), eq(articles.bodyKey, oldBodyKey))),
+      this.db
+        .insert(pendingBodyKeyDeletions)
+        .values({ bodyKey: oldBodyKey, queuedAt })
+        .onConflictDoNothing(),
+    ])
+    // CAS の成否を確認するため記事を再取得する
+    const rows = await this.db
+      .select({ bodyKey: articles.bodyKey })
+      .from(articles)
+      .where(eq(articles.id, id))
+    if (rows.length === 0) return 'not_found'
+    if (rows[0].bodyKey !== newBodyKey) return 'conflict'
+    return 'updated'
+  }
+
   async updateStatus(
     id: ArticleId,
     status: 'draft' | 'scheduled' | 'published',

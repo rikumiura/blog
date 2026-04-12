@@ -35,6 +35,19 @@ export interface ArticleRepository {
     updatedAt: string,
   ): Promise<void>
   /**
+   * bodyKey の更新と旧 bodyKey の outbox 登録を原子的に行う（D1 batch）。
+   * CAS（旧 bodyKey を WHERE 条件に含む）で並行更新を検出し、
+   * 新 bodyKey が孤立しないよう呼び出し元が処理できるようにする。
+   */
+  updateBodyKeyAndEnqueueOldKey(
+    id: ArticleId,
+    newBodyKey: BodyKey,
+    oldBodyKey: BodyKey,
+    title: Title | undefined,
+    queuedAt: string,
+    updatedAt: string,
+  ): Promise<'updated' | 'conflict' | 'not_found'>
+  /**
    * status/publishedAt/scheduledAt/updatedAt のみを更新する。
    * bodyKey/title を含まず並行する本文更新の上書きを防ぐ。
    */

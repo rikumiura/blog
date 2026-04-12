@@ -18,6 +18,7 @@ export type UpdateArticleResult =
   | { status: 'not_found' }
   | { status: 'body_not_found' }
   | { status: 'validation_error'; message: string }
+  | { status: 'conflict' }
 
 export async function updateArticle(
   publicId: PublicArticleId,
@@ -84,26 +85,34 @@ export async function updateArticle(
   // タイトルか本文の変更がある場合、記事を保存する
   if (hasContentChange) {
     if (input.body !== undefined) {
-      // 本文変更あり: bodyKey（と必要ならtitle）のみ narrow UPDATE
-      // status/publishedAt/scheduledAt を含まず並行更新（公開・予約等）を上書きしない
-      await deps.repository.updateBodyKey(
+      // 本文変更あり: bodyKey更新と旧key outbox登録を D1 batch で原子的に実行
+      // CAS（旧bodyKeyをWHERE条件に含む）で並行更新を検出する
+      const casResult = await deps.repository.updateBodyKeyAndEnqueueOldKey(
         updated.id,
-        updated.bodyKey,
+        updated.bodyKey, // 新 bodyKey
+        article.bodyKey, // 旧 bodyKey（CAS条件 + outbox登録対象）
         validatedTitle,
         now,
+        now,
       )
-      // D1保存成功後、旧bodyKeyをR2から削除する（best-effort）
-      // 失敗した場合はクリーンアップキューに登録してcronが再試行する
-      await deps.bodyStorage.delete(article.bodyKey).catch(async (e) => {
-        console.error(`旧bodyKey削除失敗: bodyKey=${article.bodyKey}`, e)
+      if (casResult !== 'updated') {
+        // 新 bodyKey はR2に保存済みだが、DBには反映されず孤立している → outboxへ
         await deps.bodyKeyDeletionQueue
-          .enqueue(article.bodyKey, deps.now())
+          .enqueue(updated.bodyKey, now)
           .catch((queueErr) => {
             console.error(
-              `クリーンアップキューへの追加も失敗: bodyKey=${article.bodyKey}`,
+              `孤立した新bodyKeyのキュー登録失敗: bodyKey=${updated.bodyKey}`,
               queueErr,
             )
           })
+        return casResult === 'not_found'
+          ? { status: 'not_found' }
+          : { status: 'conflict' }
+      }
+      // DB更新成功後、旧bodyKeyをR2から削除する（best-effort）
+      // 旧keyはbatchで既にoutboxに登録済みのため、cronが再試行可能
+      await deps.bodyStorage.delete(article.bodyKey).catch((e) => {
+        console.error(`旧bodyKey R2削除失敗: bodyKey=${article.bodyKey}`, e)
       })
     } else {
       // タイトルのみ変更: bodyKey を上書きしない narrow UPDATE

@@ -240,9 +240,23 @@ describe('updateArticle', () => {
     expect(saveCalledAfterSetup).toBe(false)
   })
 
-  it('旧 bodyKey の R2 削除失敗時、bodyKey がクリーンアップキューに登録される', async () => {
+  it('旧 bodyKey の R2 削除が失敗しても更新は成功し、outbox で cron が再試行できる', async () => {
     const deps = await setup()
     deps.bodyStorage.simulateDeleteError()
+
+    const result = await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // R2削除が失敗しても更新自体は成功する（旧keyは既にoutboxに原子的に登録済み）
+    expect(result.status).toBe('updated')
+    expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-1'))).toBe(true)
+  })
+
+  it('本文更新時に旧 bodyKey が D1 更新と同時に outbox へ原子的に記録される', async () => {
+    const deps = await setup()
 
     await updateArticle(
       PublicArticleId('public-1'),
@@ -250,7 +264,30 @@ describe('updateArticle', () => {
       deps,
     )
 
-    // R2削除失敗した旧 bodyKey がキューに入り、cron が再試行できる
-    expect(deps.bodyKeyDeletionQueue.has(BodyKey('body-key-1'))).toBe(true)
+    // R2削除成功・失敗に関わらず旧 bodyKey は outbox に記録される
+    expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-1'))).toBe(true)
+  })
+
+  it('並行する本文更新が競合した場合、新しく保存した bodyKey がキューに登録される', async () => {
+    const deps = await setup()
+
+    // 競合を模擬: updateBodyKeyAndEnqueueOldKey が 'conflict' を返すよう強制
+    const originalMethod = deps.repository.updateBodyKeyAndEnqueueOldKey.bind(
+      deps.repository,
+    )
+    deps.repository.updateBodyKeyAndEnqueueOldKey = async () => 'conflict'
+
+    const result = await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    expect(result.status).toBe('conflict')
+    // 孤立した新 bodyKey がキューに登録されて cron がクリーンアップできる
+    expect(deps.bodyKeyDeletionQueue.has(BodyKey('new-body-key-1'))).toBe(true)
+
+    // 元に戻す（他テストへの影響防止）
+    deps.repository.updateBodyKeyAndEnqueueOldKey = originalMethod
   })
 })

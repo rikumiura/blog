@@ -81,6 +81,28 @@ export class InMemoryArticleRepository implements ArticleRepository {
     }
   }
 
+  async updateBodyKeyAndEnqueueOldKey(
+    id: ArticleId,
+    newBodyKey: BodyKey,
+    oldBodyKey: BodyKey,
+    title: Title | undefined,
+    _queuedAt: string,
+    updatedAt: string,
+  ): Promise<'updated' | 'conflict' | 'not_found'> {
+    const article = this.articles.get(id)
+    if (!article) return 'not_found'
+    if (article.bodyKey !== oldBodyKey) return 'conflict'
+    // 原子的に: bodyKey更新 + 旧keyをoutboxに記録
+    this._pendingBodyKeys.add(oldBodyKey)
+    this.articles.set(id, {
+      ...article,
+      bodyKey: newBodyKey,
+      ...(title !== undefined ? { title } : {}),
+      updatedAt,
+    })
+    return 'updated'
+  }
+
   async updateStatus(
     id: ArticleId,
     status: 'draft' | 'scheduled' | 'published',
