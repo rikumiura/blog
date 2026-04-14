@@ -14,6 +14,14 @@ export type MockArticle = {
   scheduledAt: string | null
 }
 
+export type MockComment = {
+  id: string
+  articleId: string
+  authorName: string
+  content: string
+  createdAt: string
+}
+
 /** テスト用の記事データを生成する */
 export function createMockArticles(): MockArticle[] {
   return [
@@ -75,6 +83,26 @@ export function createMockArticles(): MockArticle[] {
   ]
 }
 
+/** テスト用のコメントデータを生成する */
+export function createMockComments(): MockComment[] {
+  return [
+    {
+      id: 'comment-001',
+      articleId: 'pub-001',
+      authorName: '読者A',
+      content: 'とても参考になりました！',
+      createdAt: '2026-03-02T10:00:00.000Z',
+    },
+    {
+      id: 'comment-002',
+      articleId: 'pub-001',
+      authorName: '読者B',
+      content: '続きも楽しみにしています。',
+      createdAt: '2026-03-03T15:30:00.000Z',
+    },
+  ]
+}
+
 type PaginatedResponse<T> = {
   items: T[]
   totalCount: number
@@ -102,8 +130,26 @@ function paginate<T>(
 export async function setupApiMock(
   page: Page,
   initialArticles?: MockArticle[],
+  initialComments?: MockComment[],
 ) {
   const articles = initialArticles ?? createMockArticles()
+  const comments = initialComments ?? createMockComments()
+
+  // 認証トークンを localStorage に設定（ProtectedRoute が通過できるようにする）
+  await page.addInitScript(() => {
+    localStorage.setItem('auth_token', 'mock-jwt-token')
+  })
+
+  // --- 認証 API ---
+
+  /** 認証状態の確認 */
+  await page.route(`${API_BASE}/api/auth/me`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ username: 'admin' }),
+    })
+  })
 
   // --- 管理者用 API ---
 
@@ -213,7 +259,10 @@ export async function setupApiMock(
       const reqBody = request.postDataJSON()
       article.status = 'scheduled'
       article.updatedAt = new Date().toISOString()
-      article.scheduledAt = reqBody.scheduledAt
+      article.scheduledAt =
+        reqBody && typeof reqBody.scheduledAt === 'string'
+          ? reqBody.scheduledAt
+          : null
       const { body: _, ...rest } = article
       await route.fulfill({
         status: 200,
@@ -274,7 +323,10 @@ export async function setupApiMock(
         return
       }
       const reqBody = request.postDataJSON()
-      article.tags = reqBody.tags
+      if (reqBody && Array.isArray(reqBody.tags)) {
+        article.tags = reqBody.tags
+        article.updatedAt = new Date().toISOString()
+      }
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -350,6 +402,34 @@ export async function setupApiMock(
     },
   )
 
+  // --- コメント管理 API（管理者用） ---
+
+  /** コメント削除 */
+  await page.route(
+    new RegExp(
+      `${API_BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/api/comments/[^/]+$`,
+    ),
+    async (route, request) => {
+      if (request.method() !== 'DELETE') {
+        await route.continue()
+        return
+      }
+      const url = new URL(request.url())
+      const commentId = url.pathname.split('/').pop()
+      const idx = comments.findIndex((c) => c.id === commentId)
+      if (idx === -1) {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'コメントが見つかりません' }),
+        })
+        return
+      }
+      comments.splice(idx, 1)
+      await route.fulfill({ status: 204 })
+    },
+  )
+
   // --- 公開読者用 API ---
 
   /** 公開記事一覧 */
@@ -383,6 +463,58 @@ export async function setupApiMock(
     })
   })
 
+  /** 公開記事のコメント一覧・投稿 */
+  await page.route(
+    new RegExp(
+      `${API_BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/api/public/articles/[^/]+/comments$`,
+    ),
+    async (route, request) => {
+      const method = request.method()
+      const url = new URL(request.url())
+      // /api/public/articles/:publicId/comments → index 4
+      const publicId = url.pathname.split('/')[4]
+      const article = articles.find(
+        (a) => a.publicId === publicId && a.status === 'published',
+      )
+      if (!article) {
+        await route.fulfill({
+          status: 404,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: '記事が見つかりません' }),
+        })
+        return
+      }
+
+      if (method === 'GET') {
+        const articleComments = comments.filter(
+          (c) => c.articleId === publicId,
+        )
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ comments: articleComments }),
+        })
+      } else if (method === 'POST') {
+        const reqBody = request.postDataJSON()
+        const newComment: MockComment = {
+          id: `comment-${Date.now()}`,
+          articleId: publicId,
+          authorName: reqBody.authorName,
+          content: reqBody.content,
+          createdAt: new Date().toISOString(),
+        }
+        comments.push(newComment)
+        await route.fulfill({
+          status: 201,
+          contentType: 'application/json',
+          body: JSON.stringify(newComment),
+        })
+      } else {
+        await route.continue()
+      }
+    },
+  )
+
   /** 公開記事詳細 */
   await page.route(
     new RegExp(
@@ -410,5 +542,5 @@ export async function setupApiMock(
     },
   )
 
-  return articles
+  return { articles, comments }
 }
