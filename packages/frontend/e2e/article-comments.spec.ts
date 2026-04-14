@@ -9,7 +9,7 @@ test.describe('ブログ読者のコメント機能', () => {
 
     // コメントセクションの見出しが表示されること
     await expect(
-      page.getByRole('heading', { name: 'コメント' }),
+      page.getByRole('heading', { name: /コメント/ }),
     ).toBeVisible()
 
     // モックのコメントが表示されること
