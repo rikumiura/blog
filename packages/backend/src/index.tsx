@@ -692,6 +692,7 @@ export default {
       const result = await cleanupPendingBodyDeletions({
         bodyKeyDeletionQueue,
         bodyStorage,
+        articleRepository: new DrizzleArticleRepository(db),
       })
       if (result.deletedCount > 0) {
         console.log(

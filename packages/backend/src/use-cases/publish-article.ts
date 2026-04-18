@@ -35,6 +35,7 @@ export async function publishArticle(
     published.publishedAt,
     published.scheduledAt,
     now,
+    article.status,
   )
 
   return { status: 'published', article: published }

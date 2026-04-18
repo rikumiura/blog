@@ -28,7 +28,14 @@ export async function cancelSchedule(
   const now = deps.now()
   const draft = cancelScheduleDomain(article, now)
   // bodyKey を含む全列 upsert ではなく status/scheduledAt/updatedAt のみ narrow UPDATE する
-  await deps.repository.updateStatus(draft.id, 'draft', null, null, now)
+  await deps.repository.updateStatus(
+    draft.id,
+    'draft',
+    null,
+    null,
+    now,
+    'scheduled',
+  )
 
   return { status: 'cancelled', article: draft }
 }

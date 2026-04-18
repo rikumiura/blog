@@ -43,6 +43,7 @@ export async function scheduleArticle(
     null,
     scheduled.scheduledAt,
     now,
+    'draft',
   )
 
   return { status: 'scheduled', article: scheduled }

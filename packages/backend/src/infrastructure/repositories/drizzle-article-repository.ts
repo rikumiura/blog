@@ -127,11 +127,32 @@ export class DrizzleArticleRepository implements ArticleRepository {
     publishedAt: string | null,
     scheduledAt: string | null,
     updatedAt: string,
-  ): Promise<void> {
-    await this.db
+    expectedCurrentStatus: 'draft' | 'scheduled' | 'published',
+    scheduledBefore?: string,
+  ): Promise<'updated' | 'skipped'> {
+    const whereClause =
+      scheduledBefore !== undefined
+        ? and(
+            eq(articles.id, id),
+            eq(articles.status, expectedCurrentStatus),
+            lte(articles.scheduledAt, scheduledBefore),
+          )
+        : and(eq(articles.id, id), eq(articles.status, expectedCurrentStatus))
+    const rows = await this.db
       .update(articles)
       .set({ status, publishedAt, scheduledAt, updatedAt })
-      .where(eq(articles.id, id))
+      .where(whereClause)
+      .returning({ id: articles.id })
+    return rows.length > 0 ? 'updated' : 'skipped'
+  }
+
+  async existsWithBodyKey(bodyKey: BodyKey): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: articles.id })
+      .from(articles)
+      .where(eq(articles.bodyKey, bodyKey))
+      .limit(1)
+    return rows.length > 0
   }
 
   async deleteAndEnqueueBodyKey(

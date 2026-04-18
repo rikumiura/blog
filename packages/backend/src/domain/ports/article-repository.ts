@@ -50,6 +50,9 @@ export interface ArticleRepository {
   /**
    * status/publishedAt/scheduledAt/updatedAt のみを更新する。
    * bodyKey/title を含まず並行する本文更新の上書きを防ぐ。
+   * CAS: expectedCurrentStatus が現在の status と一致する行のみ更新し、
+   * scheduledBefore が指定された場合は scheduled_at <= scheduledBefore の条件も加える。
+   * 更新行がなければ 'skipped' を返す（並行変更で条件が成立しなかった）。
    */
   updateStatus(
     id: ArticleId,
@@ -57,7 +60,14 @@ export interface ArticleRepository {
     publishedAt: string | null,
     scheduledAt: string | null,
     updatedAt: string,
-  ): Promise<void>
+    expectedCurrentStatus: 'draft' | 'scheduled' | 'published',
+    scheduledBefore?: string,
+  ): Promise<'updated' | 'skipped'>
+  /**
+   * 指定した bodyKey を持つ記事が存在するか確認する。
+   * クリーンアップ時にライブ参照の有無を確認するために使用する。
+   */
+  existsWithBodyKey(bodyKey: BodyKey): Promise<boolean>
   /**
    * 記事行の削除と bodyKey の outbox 追加を原子的に行う。
    * D1 実装では INSERT INTO pending SELECT body_key FROM articles + DELETE を

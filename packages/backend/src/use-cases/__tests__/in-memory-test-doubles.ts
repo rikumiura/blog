@@ -109,9 +109,18 @@ export class InMemoryArticleRepository implements ArticleRepository {
     publishedAt: string | null,
     scheduledAt: string | null,
     updatedAt: string,
-  ): Promise<void> {
+    expectedCurrentStatus: 'draft' | 'scheduled' | 'published',
+    scheduledBefore?: string,
+  ): Promise<'updated' | 'skipped'> {
     const article = this.articles.get(id)
-    if (!article) return
+    if (!article) return 'skipped'
+    if (article.status !== expectedCurrentStatus) return 'skipped'
+    if (
+      scheduledBefore !== undefined &&
+      article.status === 'scheduled' &&
+      article.scheduledAt > scheduledBefore
+    )
+      return 'skipped'
     const base = {
       id: article.id,
       publicId: article.publicId,
@@ -142,6 +151,14 @@ export class InMemoryArticleRepository implements ArticleRepository {
         scheduledAt,
       })
     }
+    return 'updated'
+  }
+
+  async existsWithBodyKey(bodyKey: BodyKey): Promise<boolean> {
+    for (const article of this.articles.values()) {
+      if (article.bodyKey === bodyKey) return true
+    }
+    return false
   }
 
   async deleteAndEnqueueBodyKey(
