@@ -332,6 +332,14 @@ const routes = app
           return c.json({ error: '記事が見つかりません' }, 404)
         case 'already_published':
           return c.json({ error: 'すでに公開されています' }, 400)
+        case 'conflict':
+          return c.json(
+            {
+              error:
+                '競合が発生しました。最新の状態を取得してから再試行してください',
+            },
+            409,
+          )
       }
     },
   )
@@ -362,6 +370,14 @@ const routes = app
           return c.json({ error: '下書き記事のみ予約公開を設定できます' }, 400)
         case 'validation_error':
           return c.json({ error: result.message }, 400)
+        case 'conflict':
+          return c.json(
+            {
+              error:
+                '競合が発生しました。最新の状態を取得してから再試行してください',
+            },
+            409,
+          )
       }
     },
   )
@@ -388,6 +404,14 @@ const routes = app
           return c.json({ error: '記事が見つかりません' }, 404)
         case 'not_scheduled':
           return c.json({ error: '予約公開されていません' }, 400)
+        case 'conflict':
+          return c.json(
+            {
+              error:
+                '競合が発生しました。最新の状態を取得してから再試行してください',
+            },
+            409,
+          )
       }
     },
   )

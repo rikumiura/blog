@@ -9,6 +9,7 @@ export type PublishArticleResult =
   | { status: 'published'; article: PublishedArticle }
   | { status: 'not_found' }
   | { status: 'already_published' }
+  | { status: 'conflict' }
 
 export async function publishArticle(
   publicId: PublicArticleId,
@@ -29,7 +30,8 @@ export async function publishArticle(
   const published = publishDomainArticle(article, now)
   // bodyKey を含む全列 upsert ではなく status/publishedAt/updatedAt のみ narrow UPDATE する
   // （並行する本文更新が bodyKey を書き換えても上書きしない）
-  await deps.repository.updateStatus(
+  // CAS: expectedCurrentStatus で並行削除・予約キャンセルを検出する
+  const updateResult = await deps.repository.updateStatus(
     published.id,
     'published',
     published.publishedAt,
@@ -37,6 +39,7 @@ export async function publishArticle(
     now,
     article.status,
   )
+  if (updateResult === 'skipped') return { status: 'conflict' }
 
   return { status: 'published', article: published }
 }

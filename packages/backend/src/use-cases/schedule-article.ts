@@ -10,6 +10,7 @@ export type ScheduleArticleResult =
   | { status: 'not_found' }
   | { status: 'not_draft' }
   | { status: 'validation_error'; message: string }
+  | { status: 'conflict' }
 
 export async function scheduleArticle(
   publicId: PublicArticleId,
@@ -37,7 +38,8 @@ export async function scheduleArticle(
 
   const scheduled = scheduleDomainArticle(article, scheduledAt, now)
   // bodyKey を含む全列 upsert ではなく status/scheduledAt/updatedAt のみ narrow UPDATE する
-  await deps.repository.updateStatus(
+  // CAS: expectedCurrentStatus で並行削除・公開を検出する
+  const updateResult = await deps.repository.updateStatus(
     scheduled.id,
     'scheduled',
     null,
@@ -45,6 +47,7 @@ export async function scheduleArticle(
     now,
     'draft',
   )
+  if (updateResult === 'skipped') return { status: 'conflict' }
 
   return { status: 'scheduled', article: scheduled }
 }
