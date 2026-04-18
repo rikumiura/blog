@@ -90,8 +90,11 @@ export class DrizzleArticleRepository implements ArticleRepository {
     queuedAt: string,
     updatedAt: string,
   ): Promise<'updated' | 'conflict' | 'not_found'> {
-    // CAS で bodyKey を更新しつつ、旧 bodyKey の outbox 登録を原子的に行う
-    await this.db.batch([
+    // CAS で bodyKey を更新しつつ、旧 bodyKey の outbox 登録を原子的に行う。
+    // .returning() で UPDATE の影響行を取得する。
+    // 後続 SELECT で判定すると batch コミット後に並行更新が割り込み、
+    // 成功した更新を conflict と誤分類する恐れがあるため使用しない。
+    const [updatedRows] = await this.db.batch([
       this.db
         .update(articles)
         .set({
@@ -99,20 +102,23 @@ export class DrizzleArticleRepository implements ArticleRepository {
           ...(title !== undefined ? { title } : {}),
           updatedAt,
         })
-        .where(and(eq(articles.id, id), eq(articles.bodyKey, oldBodyKey))),
+        .where(and(eq(articles.id, id), eq(articles.bodyKey, oldBodyKey)))
+        .returning({ id: articles.id }),
       this.db
         .insert(pendingBodyKeyDeletions)
         .values({ bodyKey: oldBodyKey, queuedAt })
         .onConflictDoNothing(),
-    ])
-    // CAS の成否を確認するため記事を再取得する
+    ] as const)
+
+    // RETURNING に行があれば UPDATE が確実に成功した
+    if (updatedRows.length > 0) return 'updated'
+
+    // 行が更新されなかった: 記事不在か bodyKey が既に変わっていた（競合）を区別する
     const rows = await this.db
-      .select({ bodyKey: articles.bodyKey })
+      .select({ id: articles.id })
       .from(articles)
       .where(eq(articles.id, id))
-    if (rows.length === 0) return 'not_found'
-    if (rows[0].bodyKey !== newBodyKey) return 'conflict'
-    return 'updated'
+    return rows.length === 0 ? 'not_found' : 'conflict'
   }
 
   async updateStatus(

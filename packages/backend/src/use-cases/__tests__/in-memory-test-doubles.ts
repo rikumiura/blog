@@ -341,8 +341,11 @@ export class InMemoryBodyKeyDeletionQueue implements BodyKeyDeletionQueue {
     this.queue.set(bodyKey, queuedAt)
   }
 
-  async listAll(): Promise<BodyKey[]> {
-    return [...this.queue.keys()].map(BodyKey)
+  async listBatch(limit: number): Promise<BodyKey[]> {
+    return [...this.queue.entries()]
+      .sort(([, a], [, b]) => a.localeCompare(b))
+      .slice(0, limit)
+      .map(([key]) => BodyKey(key))
   }
 
   async remove(bodyKey: BodyKey): Promise<void> {
