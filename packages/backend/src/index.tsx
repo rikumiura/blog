@@ -11,6 +11,7 @@ import { Pbkdf2PasswordHasher } from './infrastructure/auth/pbkdf2-password-hash
 import { createDbClient } from './infrastructure/database'
 import { ArticleIdGeneratorImpl } from './infrastructure/id/article-id-generator-impl'
 import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
+import { DrizzleBodyKeyDeletionQueue } from './infrastructure/repositories/drizzle-body-key-deletion-queue'
 import { DrizzleCommentRepository } from './infrastructure/repositories/drizzle-comment-repository'
 import { DrizzleTagRepository } from './infrastructure/repositories/drizzle-tag-repository'
 import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
@@ -27,6 +28,7 @@ import {
 import { toCommentDto } from './presentation/dto/comment-dto'
 import { authenticateAdmin } from './use-cases/authenticate-admin'
 import { cancelSchedule } from './use-cases/cancel-schedule'
+import { cleanupPendingBodyDeletions } from './use-cases/cleanup-pending-body-deletions'
 import { createArticle } from './use-cases/create-article'
 import { deleteArticle } from './use-cases/delete-article'
 import { deleteComment } from './use-cases/delete-comment'
@@ -276,12 +278,16 @@ const routes = app
       const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
       const idGenerator = new ArticleIdGeneratorImpl()
 
+      const bodyKeyDeletionQueue = new DrizzleBodyKeyDeletionQueue(db)
       const result = await updateArticle(publicId, input, {
         repository,
         bodyStorage,
         tagRepository,
+        bodyKeyDeletionQueue,
         generateTagId: () => idGenerator.generateTagId(),
+        generateBodyKey: () => idGenerator.generateBodyKey(),
         now: () => new Date().toISOString(),
+        waitUntil: (p) => c.executionCtx.waitUntil(p),
       })
 
       switch (result.status) {
@@ -295,6 +301,11 @@ const routes = app
           return c.json({ error: '記事本文が見つかりません' }, 404)
         case 'validation_error':
           return c.json({ error: result.message }, 400)
+        case 'conflict':
+          return c.json(
+            { error: '並行する本文更新が競合しました。再度お試しください。' },
+            409,
+          )
       }
     },
   )
@@ -321,6 +332,14 @@ const routes = app
           return c.json({ error: '記事が見つかりません' }, 404)
         case 'already_published':
           return c.json({ error: 'すでに公開されています' }, 400)
+        case 'conflict':
+          return c.json(
+            {
+              error:
+                '競合が発生しました。最新の状態を取得してから再試行してください',
+            },
+            409,
+          )
       }
     },
   )
@@ -351,6 +370,14 @@ const routes = app
           return c.json({ error: '下書き記事のみ予約公開を設定できます' }, 400)
         case 'validation_error':
           return c.json({ error: result.message }, 400)
+        case 'conflict':
+          return c.json(
+            {
+              error:
+                '競合が発生しました。最新の状態を取得してから再試行してください',
+            },
+            409,
+          )
       }
     },
   )
@@ -377,6 +404,14 @@ const routes = app
           return c.json({ error: '記事が見つかりません' }, 404)
         case 'not_scheduled':
           return c.json({ error: '予約公開されていません' }, 400)
+        case 'conflict':
+          return c.json(
+            {
+              error:
+                '競合が発生しました。最新の状態を取得してから再試行してください',
+            },
+            409,
+          )
       }
     },
   )
@@ -396,6 +431,7 @@ const routes = app
         articleRepository,
         tagRepository,
         generateTagId: () => idGenerator.generateTagId(),
+        now: () => new Date().toISOString(),
       })
 
       switch (result.status) {
@@ -549,7 +585,12 @@ const routes = app
       const repository = new DrizzleArticleRepository(db)
       const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
 
-      const result = await deleteArticle(publicId, { repository, bodyStorage })
+      const result = await deleteArticle(publicId, {
+        repository,
+        bodyStorage,
+        now: () => new Date().toISOString(),
+        waitUntil: (p) => c.executionCtx.waitUntil(p),
+      })
 
       switch (result.status) {
         case 'deleted':
@@ -615,28 +656,75 @@ const routes = app
 export { app }
 export type AppType = typeof routes
 
+// モジュールスコープ: 同一アイソレート内で一度だけスキーマチェックを実行する
+let schemaChecked = false
+
 // Scheduled handler: 予約公開日時を過ぎた記事を自動公開する
 export default {
-  fetch: app.fetch,
+  async fetch(
+    request: Request,
+    env: Bindings,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
+    // migration gate: D1マイグレーションが適用済みかを確認する。
+    // 未適用の場合（コードとスキーマの一時的なskew）に 503 を返して障害を明示する。
+    if (!schemaChecked) {
+      try {
+        await env.DB.prepare(
+          'SELECT 1 FROM pending_body_key_deletions LIMIT 1',
+        ).first()
+        schemaChecked = true
+      } catch (e) {
+        console.error(
+          'DBスキーマが未適用です。D1マイグレーションを実行してください。',
+          e,
+        )
+        return new Response(
+          JSON.stringify({
+            error:
+              'サービスが一時的に利用できません。しばらく待ってから再度お試しください。',
+          }),
+          { status: 503, headers: { 'content-type': 'application/json' } },
+        )
+      }
+    }
+    return app.fetch(request, env, ctx)
+  },
   async scheduled(
     _event: ScheduledEvent,
     env: Bindings,
     _ctx: ExecutionContext,
   ) {
-    try {
-      const db = createDbClient(env.DB)
-      const repository = new DrizzleArticleRepository(db)
+    const db = createDbClient(env.DB)
 
+    try {
+      const repository = new DrizzleArticleRepository(db)
       const result = await publishScheduledArticles({
         repository,
         now: () => new Date().toISOString(),
       })
-
       if (result.publishedCount > 0) {
         console.log(`予約公開: ${result.publishedCount}件の記事を公開しました`)
       }
     } catch (error) {
       console.error('予約公開処理でエラーが発生しました:', error)
+    }
+
+    try {
+      const bodyKeyDeletionQueue = new DrizzleBodyKeyDeletionQueue(db)
+      const bodyStorage = new R2BodyStorage(env.ARTICLE_BUCKET)
+      const result = await cleanupPendingBodyDeletions({
+        bodyKeyDeletionQueue,
+        bodyStorage,
+        articleRepository: new DrizzleArticleRepository(db),
+      })
+      if (result.deletedCount > 0) {
+        console.log(
+          `R2クリーンアップ: ${result.deletedCount}件の本文を削除しました`,
+        )
+      }
+    } catch (error) {
+      console.error('R2クリーンアップ処理でエラーが発生しました:', error)
     }
   },
 }

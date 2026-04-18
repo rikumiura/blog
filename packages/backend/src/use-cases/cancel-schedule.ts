@@ -9,6 +9,7 @@ export type CancelScheduleResult =
   | { status: 'cancelled'; article: DraftArticle }
   | { status: 'not_found' }
   | { status: 'not_scheduled' }
+  | { status: 'conflict' }
 
 export async function cancelSchedule(
   publicId: PublicArticleId,
@@ -27,7 +28,17 @@ export async function cancelSchedule(
 
   const now = deps.now()
   const draft = cancelScheduleDomain(article, now)
-  await deps.repository.save(draft)
+  // bodyKey を含む全列 upsert ではなく status/scheduledAt/updatedAt のみ narrow UPDATE する
+  // CAS: expectedCurrentStatus で並行削除・公開を検出する
+  const updateResult = await deps.repository.updateStatus(
+    draft.id,
+    'draft',
+    null,
+    null,
+    now,
+    'scheduled',
+  )
+  if (updateResult === 'skipped') return { status: 'conflict' }
 
   return { status: 'cancelled', article: draft }
 }

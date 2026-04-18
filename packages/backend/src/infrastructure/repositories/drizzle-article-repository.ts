@@ -1,5 +1,10 @@
-import { articles, articleTags, tags } from '@my-blog/db'
-import { and, count, desc, eq, inArray, lte } from 'drizzle-orm'
+import {
+  articles,
+  articleTags,
+  pendingBodyKeyDeletions,
+  tags,
+} from '@my-blog/db'
+import { and, count, desc, eq, inArray, lte, sql } from 'drizzle-orm'
 import {
   type Article,
   ArticleId,
@@ -7,6 +12,7 @@ import {
   PublicArticleId,
   type PublishedArticle,
   restoreTitle,
+  type Title,
 } from '../../domain/models/article'
 import type {
   ArticleRepository,
@@ -47,6 +53,122 @@ export class DrizzleArticleRepository implements ArticleRepository {
           scheduledAt: article.scheduledAt,
         },
       })
+  }
+
+  async updateUpdatedAt(id: ArticleId, updatedAt: string): Promise<void> {
+    await this.db.update(articles).set({ updatedAt }).where(eq(articles.id, id))
+  }
+
+  async updateTitle(
+    id: ArticleId,
+    title: Title,
+    updatedAt: string,
+  ): Promise<void> {
+    await this.db
+      .update(articles)
+      .set({ title, updatedAt })
+      .where(eq(articles.id, id))
+  }
+
+  async updateBodyKey(
+    id: ArticleId,
+    bodyKey: BodyKey,
+    title: Title | undefined,
+    updatedAt: string,
+  ): Promise<void> {
+    await this.db
+      .update(articles)
+      .set({ bodyKey, ...(title !== undefined ? { title } : {}), updatedAt })
+      .where(eq(articles.id, id))
+  }
+
+  async updateBodyKeyAndEnqueueOldKey(
+    id: ArticleId,
+    newBodyKey: BodyKey,
+    oldBodyKey: BodyKey,
+    title: Title | undefined,
+    queuedAt: string,
+    updatedAt: string,
+  ): Promise<'updated' | 'conflict' | 'not_found'> {
+    // CAS で bodyKey を更新しつつ、旧 bodyKey の outbox 登録を原子的に行う。
+    // .returning() で UPDATE の影響行を取得する。
+    // 後続 SELECT で判定すると batch コミット後に並行更新が割り込み、
+    // 成功した更新を conflict と誤分類する恐れがあるため使用しない。
+    const [updatedRows] = await this.db.batch([
+      this.db
+        .update(articles)
+        .set({
+          bodyKey: newBodyKey,
+          ...(title !== undefined ? { title } : {}),
+          updatedAt,
+        })
+        .where(and(eq(articles.id, id), eq(articles.bodyKey, oldBodyKey)))
+        .returning({ id: articles.id }),
+      this.db
+        .insert(pendingBodyKeyDeletions)
+        .values({ bodyKey: oldBodyKey, queuedAt })
+        .onConflictDoNothing(),
+    ] as const)
+
+    // RETURNING に行があれば UPDATE が確実に成功した
+    if (updatedRows.length > 0) return 'updated'
+
+    // 行が更新されなかった: 記事不在か bodyKey が既に変わっていた（競合）を区別する
+    const rows = await this.db
+      .select({ id: articles.id })
+      .from(articles)
+      .where(eq(articles.id, id))
+    return rows.length === 0 ? 'not_found' : 'conflict'
+  }
+
+  async updateStatus(
+    id: ArticleId,
+    status: 'draft' | 'scheduled' | 'published',
+    publishedAt: string | null,
+    scheduledAt: string | null,
+    updatedAt: string,
+    expectedCurrentStatus: 'draft' | 'scheduled' | 'published',
+    scheduledBefore?: string,
+  ): Promise<'updated' | 'skipped'> {
+    const whereClause =
+      scheduledBefore !== undefined
+        ? and(
+            eq(articles.id, id),
+            eq(articles.status, expectedCurrentStatus),
+            lte(articles.scheduledAt, scheduledBefore),
+          )
+        : and(eq(articles.id, id), eq(articles.status, expectedCurrentStatus))
+    const rows = await this.db
+      .update(articles)
+      .set({ status, publishedAt, scheduledAt, updatedAt })
+      .where(whereClause)
+      .returning({ id: articles.id })
+    return rows.length > 0 ? 'updated' : 'skipped'
+  }
+
+  async existsWithBodyKey(bodyKey: BodyKey): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: articles.id })
+      .from(articles)
+      .where(eq(articles.bodyKey, bodyKey))
+      .limit(1)
+    return rows.length > 0
+  }
+
+  async deleteAndEnqueueBodyKey(
+    id: ArticleId,
+    queuedAt: string,
+  ): Promise<void> {
+    // INSERT INTO pending SELECT body_key FROM articles WHERE id と DELETE を
+    // db.batch() で原子的に実行する。呼び出し元の stale な bodyKey ではなく、
+    // 削除時点の DB の実際の bodyKey を outbox に記録する。
+    await this.db.batch([
+      this.db.run(
+        sql`INSERT OR IGNORE INTO pending_body_key_deletions (body_key, queued_at)
+            SELECT body_key, ${queuedAt} FROM articles WHERE id = ${id}`,
+      ),
+      this.db.delete(articles).where(eq(articles.id, id)),
+    ])
   }
 
   async delete(id: ArticleId): Promise<void> {

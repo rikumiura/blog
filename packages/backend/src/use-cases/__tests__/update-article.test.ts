@@ -10,6 +10,7 @@ import { TagId } from '../../domain/models/tag'
 import { updateArticle } from '../update-article'
 import {
   InMemoryArticleRepository,
+  InMemoryBodyKeyDeletionQueue,
   InMemoryBodyStorage,
   InMemoryTagRepository,
 } from './in-memory-test-doubles'
@@ -32,22 +33,44 @@ function createTestDraft(): DraftArticle {
 
 describe('updateArticle', () => {
   let tagIdCounter = 0
+  let bodyKeyCounter = 0
   const setup = async () => {
     tagIdCounter = 0
+    bodyKeyCounter = 0
     const repository = new InMemoryArticleRepository()
     const bodyStorage = new InMemoryBodyStorage()
     const tagRepository = new InMemoryTagRepository()
+    const bodyKeyDeletionQueue = new InMemoryBodyKeyDeletionQueue()
     const generateTagId = () => {
       tagIdCounter++
       return TagId(`tag-${tagIdCounter}`)
     }
+    const generateBodyKey = () => {
+      bodyKeyCounter++
+      return BodyKey(`new-body-key-${bodyKeyCounter}`)
+    }
     const now = () => FIXED_NOW
+    const waitUntilCalls: Array<Promise<unknown>> = []
+    const waitUntil = (p: Promise<unknown>) => {
+      waitUntilCalls.push(p)
+      void p
+    }
 
     // テスト用の記事と本文をセットアップ
     await repository.save(createTestDraft())
     await bodyStorage.save(BodyKey('body-key-1'), '元の本文')
 
-    return { repository, bodyStorage, tagRepository, generateTagId, now }
+    return {
+      repository,
+      bodyStorage,
+      tagRepository,
+      bodyKeyDeletionQueue,
+      generateTagId,
+      generateBodyKey,
+      now,
+      waitUntil,
+      waitUntilCalls,
+    }
   }
 
   it('タイトルを更新できる', async () => {
@@ -152,5 +175,189 @@ describe('updateArticle', () => {
       status: 'validation_error',
       message: 'タグ名は空にできません',
     })
+  })
+
+  it('本文を更新した場合、新しい bodyKey が割り当てられる', async () => {
+    const deps = await setup()
+
+    const result = await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    expect(result.status).toBe('updated')
+    if (result.status === 'updated') {
+      // 元のbodyKeyとは異なる新しいkeyが割り当てられる（immutable key設計）
+      expect(String(result.article.bodyKey)).not.toBe('body-key-1')
+      expect(result.body).toBe('新しい本文')
+    }
+  })
+
+  it('本文を更新した後、旧 bodyKey がストレージから削除される', async () => {
+    const deps = await setup()
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // 旧keyはストレージから削除されている（ストレージリーク防止）
+    expect(deps.bodyStorage.has(BodyKey('body-key-1'))).toBe(false)
+  })
+
+  it('タイトルのみ更新は bodyKey を含む全列 save をしない', async () => {
+    const deps = await setup()
+
+    let saveCalledAfterSetup = false
+    const originalSave = deps.repository.save.bind(deps.repository)
+    deps.repository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { title: '新タイトル' },
+      deps,
+    )
+
+    // bodyKeyを含む全列 upsert ではなく narrow update が使われる
+    expect(saveCalledAfterSetup).toBe(false)
+  })
+
+  it('本文更新は status/publishedAt/scheduledAt を含む全列 save をしない', async () => {
+    const deps = await setup()
+
+    let saveCalledAfterSetup = false
+    const originalSave = deps.repository.save.bind(deps.repository)
+    deps.repository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // status/publishedAt/scheduledAt を含む全列 upsert ではなく narrow update が使われる
+    expect(saveCalledAfterSetup).toBe(false)
+  })
+
+  it('旧 bodyKey の R2 削除が失敗しても更新は成功し、outbox で cron が再試行できる', async () => {
+    const deps = await setup()
+    deps.bodyStorage.simulateDeleteError()
+
+    const result = await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // R2削除が失敗しても更新自体は成功する（旧keyは既にoutboxに原子的に登録済み）
+    expect(result.status).toBe('updated')
+    expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-1'))).toBe(true)
+  })
+
+  it('本文更新時に旧 bodyKey が D1 更新と同時に outbox へ原子的に記録される', async () => {
+    const deps = await setup()
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // R2削除成功・失敗に関わらず旧 bodyKey は outbox に記録される
+    expect(deps.repository.hasPendingBodyKey(BodyKey('body-key-1'))).toBe(true)
+  })
+
+  it('並行する本文更新が競合した場合、孤立した新 bodyKey が R2 から直接削除される', async () => {
+    const deps = await setup()
+
+    const originalMethod = deps.repository.updateBodyKeyAndEnqueueOldKey.bind(
+      deps.repository,
+    )
+    deps.repository.updateBodyKeyAndEnqueueOldKey = async () => 'conflict'
+
+    const result = await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    expect(result.status).toBe('conflict')
+    // 孤立した新 bodyKey は R2 から直接削除される（同期削除が優先）
+    expect(deps.bodyStorage.has(BodyKey('new-body-key-1'))).toBe(false)
+
+    deps.repository.updateBodyKeyAndEnqueueOldKey = originalMethod
+  })
+
+  it('競合時に R2 直接削除も失敗した場合、孤立した新 bodyKey がキューに登録される', async () => {
+    const deps = await setup()
+
+    const originalMethod = deps.repository.updateBodyKeyAndEnqueueOldKey.bind(
+      deps.repository,
+    )
+    deps.repository.updateBodyKeyAndEnqueueOldKey = async () => 'conflict'
+    deps.bodyStorage.simulateDeleteError()
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // R2直接削除が失敗したので、キューで再試行できる
+    expect(deps.bodyKeyDeletionQueue.has(BodyKey('new-body-key-1'))).toBe(true)
+
+    deps.repository.updateBodyKeyAndEnqueueOldKey = originalMethod
+  })
+
+  it('D1 bodyKey 更新が throw した場合、新 bodyKey が R2 から直接削除される', async () => {
+    const deps = await setup()
+
+    deps.repository.updateBodyKeyAndEnqueueOldKey = async () => {
+      throw new Error('D1 batch 失敗')
+    }
+
+    await expect(
+      updateArticle(PublicArticleId('public-1'), { body: '新しい本文' }, deps),
+    ).rejects.toThrow('D1 batch 失敗')
+
+    // 孤立した新 bodyKey は R2 から直接削除される
+    expect(deps.bodyStorage.has(BodyKey('new-body-key-1'))).toBe(false)
+  })
+
+  it('本文更新成功後、旧 bodyKey の R2 削除は waitUntil に渡される', async () => {
+    const deps = await setup()
+
+    await updateArticle(
+      PublicArticleId('public-1'),
+      { body: '新しい本文' },
+      deps,
+    )
+
+    // 旧 bodyKey の R2 削除はリクエストのクリティカルパスに含まれない
+    expect(deps.waitUntilCalls.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('D1 bodyKey 更新が throw し R2 削除も失敗した場合、新 bodyKey がキューに登録される', async () => {
+    const deps = await setup()
+
+    deps.repository.updateBodyKeyAndEnqueueOldKey = async () => {
+      throw new Error('D1 batch 失敗')
+    }
+    deps.bodyStorage.simulateDeleteError()
+
+    await expect(
+      updateArticle(PublicArticleId('public-1'), { body: '新しい本文' }, deps),
+    ).rejects.toThrow()
+
+    // R2削除も失敗したので、キューで再試行できる
+    expect(deps.bodyKeyDeletionQueue.has(BodyKey('new-body-key-1'))).toBe(true)
   })
 })

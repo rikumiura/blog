@@ -17,8 +17,18 @@ export async function publishScheduledArticles(deps: {
     if (article.status !== 'scheduled') continue
     try {
       const published = publishDomainArticle(article, now)
-      await deps.repository.save(published)
-      publishedCount++
+      // CAS: status = 'scheduled' AND scheduled_at <= now の条件で更新し、
+      // 並行キャンセルや延期で条件が成立しない場合はスキップする
+      const result = await deps.repository.updateStatus(
+        published.id,
+        'published',
+        published.publishedAt,
+        published.scheduledAt,
+        now,
+        'scheduled',
+        now,
+      )
+      if (result === 'updated') publishedCount++
     } catch (error) {
       console.error(
         `予約公開に失敗しました (publicId: ${article.publicId}):`,

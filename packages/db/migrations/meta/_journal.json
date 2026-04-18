@@ -57,6 +57,13 @@
       "when": 1775521724552,
       "tag": "0007_chubby_albert_cleary",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1775962245815,
+      "tag": "0008_lively_kingpin",
+      "breakpoints": true
     }
   ]
 }

@@ -16,6 +16,7 @@ export async function updateArticleTags(
     articleRepository: ArticleRepository
     tagRepository: TagRepository
     generateTagId: () => Tag['id']
+    now: () => string
   },
 ): Promise<UpdateArticleTagsResult> {
   const article = await deps.articleRepository.findByPublicId(publicId)
@@ -35,6 +36,7 @@ export async function updateArticleTags(
     article.id,
     resolvedTags.map((t) => t.id),
   )
+  await deps.articleRepository.updateUpdatedAt(article.id, deps.now())
 
   return { status: 'updated', tags: resolvedTags }
 }

@@ -83,16 +83,20 @@ describe('publishScheduledArticles', () => {
       createTestScheduled('2', '2025-02-01T11:00:00.000Z'),
     )
 
-    // セットアップ後にsaveをモックし、最初の公開保存でエラーを起こす
-    let publishSaveCount = 0
-    const originalSave = deps.repository.save.bind(deps.repository)
-    vi.spyOn(deps.repository, 'save').mockImplementation(async (article) => {
-      publishSaveCount++
-      if (publishSaveCount === 1) {
-        throw new Error('保存エラー')
-      }
-      return originalSave(article)
-    })
+    // updateStatus をモックし、最初の公開保存でエラーを起こす
+    let updateStatusCount = 0
+    const originalUpdateStatus = deps.repository.updateStatus.bind(
+      deps.repository,
+    )
+    vi.spyOn(deps.repository, 'updateStatus').mockImplementation(
+      async (...args) => {
+        updateStatusCount++
+        if (updateStatusCount === 1) {
+          throw new Error('保存エラー')
+        }
+        return originalUpdateStatus(...args)
+      },
+    )
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     const result = await publishScheduledArticles(deps)
@@ -101,5 +105,37 @@ describe('publishScheduledArticles', () => {
     expect(result.publishedCount).toBe(1)
     expect(consoleSpy).toHaveBeenCalled()
     consoleSpy.mockRestore()
+  })
+
+  it('updateStatus が skipped を返した記事は publishedCount に含まれない（並行キャンセル対応）', async () => {
+    const deps = setup()
+    await deps.repository.save(
+      createTestScheduled('1', '2025-02-01T10:00:00.000Z'),
+    )
+
+    // 並行キャンセルをシミュレート: updateStatus が 'skipped' を返す
+    vi.spyOn(deps.repository, 'updateStatus').mockResolvedValue('skipped')
+
+    const result = await publishScheduledArticles(deps)
+
+    expect(result.publishedCount).toBe(0)
+  })
+
+  it('予約公開操作は bodyKey を含む全列 save をしない（並行本文更新の上書き防止）', async () => {
+    const deps = setup()
+    await deps.repository.save(
+      createTestScheduled('1', '2025-02-01T10:00:00.000Z'),
+    )
+
+    let saveCalledAfterSetup = false
+    const originalSave = deps.repository.save.bind(deps.repository)
+    deps.repository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await publishScheduledArticles(deps)
+
+    expect(saveCalledAfterSetup).toBe(false)
   })
 })

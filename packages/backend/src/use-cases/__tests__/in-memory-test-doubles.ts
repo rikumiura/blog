@@ -4,6 +4,7 @@ import {
   BodyKey,
   PublicArticleId,
   type PublishedArticle,
+  type Title,
 } from '../../domain/models/article'
 import type { Comment, CommentId } from '../../domain/models/comment'
 import type { Tag, TagName } from '../../domain/models/tag'
@@ -13,6 +14,7 @@ import type {
   PaginatedResult,
   PaginationParams,
 } from '../../domain/ports/article-repository'
+import type { BodyKeyDeletionQueue } from '../../domain/ports/body-key-deletion-queue'
 import type {
   BodyGetResult,
   BodyStorage,
@@ -24,6 +26,7 @@ import type { TagRepository } from '../../domain/ports/tag-repository'
 export class InMemoryArticleRepository implements ArticleRepository {
   private articles = new Map<string, Article>()
   private shouldFailOnSave = false
+  private _pendingBodyKeys = new Set<string>()
 
   async save(article: Article): Promise<void> {
     if (this.shouldFailOnSave) {
@@ -41,6 +44,137 @@ export class InMemoryArticleRepository implements ArticleRepository {
       if (article.publicId === publicId) return article
     }
     return null
+  }
+
+  async updateUpdatedAt(id: ArticleId, updatedAt: string): Promise<void> {
+    const article = this.articles.get(id)
+    if (article) {
+      this.articles.set(id, { ...article, updatedAt })
+    }
+  }
+
+  async updateTitle(
+    id: ArticleId,
+    title: Title,
+    updatedAt: string,
+  ): Promise<void> {
+    const article = this.articles.get(id)
+    if (article) {
+      this.articles.set(id, { ...article, title, updatedAt })
+    }
+  }
+
+  async updateBodyKey(
+    id: ArticleId,
+    bodyKey: BodyKey,
+    title: Title | undefined,
+    updatedAt: string,
+  ): Promise<void> {
+    const article = this.articles.get(id)
+    if (article) {
+      this.articles.set(id, {
+        ...article,
+        bodyKey,
+        ...(title !== undefined ? { title } : {}),
+        updatedAt,
+      })
+    }
+  }
+
+  async updateBodyKeyAndEnqueueOldKey(
+    id: ArticleId,
+    newBodyKey: BodyKey,
+    oldBodyKey: BodyKey,
+    title: Title | undefined,
+    _queuedAt: string,
+    updatedAt: string,
+  ): Promise<'updated' | 'conflict' | 'not_found'> {
+    const article = this.articles.get(id)
+    if (!article) return 'not_found'
+    if (article.bodyKey !== oldBodyKey) return 'conflict'
+    // 原子的に: bodyKey更新 + 旧keyをoutboxに記録
+    this._pendingBodyKeys.add(oldBodyKey)
+    this.articles.set(id, {
+      ...article,
+      bodyKey: newBodyKey,
+      ...(title !== undefined ? { title } : {}),
+      updatedAt,
+    })
+    return 'updated'
+  }
+
+  async updateStatus(
+    id: ArticleId,
+    status: 'draft' | 'scheduled' | 'published',
+    publishedAt: string | null,
+    scheduledAt: string | null,
+    updatedAt: string,
+    expectedCurrentStatus: 'draft' | 'scheduled' | 'published',
+    scheduledBefore?: string,
+  ): Promise<'updated' | 'skipped'> {
+    const article = this.articles.get(id)
+    if (!article) return 'skipped'
+    if (article.status !== expectedCurrentStatus) return 'skipped'
+    if (
+      scheduledBefore !== undefined &&
+      article.status === 'scheduled' &&
+      article.scheduledAt > scheduledBefore
+    )
+      return 'skipped'
+    const base = {
+      id: article.id,
+      publicId: article.publicId,
+      title: article.title,
+      bodyKey: article.bodyKey,
+      createdAt: article.createdAt,
+      updatedAt,
+    }
+    if (status === 'draft') {
+      this.articles.set(id, {
+        ...base,
+        status: 'draft',
+        publishedAt: null,
+        scheduledAt: null,
+      })
+    } else if (status === 'scheduled') {
+      this.articles.set(id, {
+        ...base,
+        status: 'scheduled',
+        publishedAt: null,
+        scheduledAt: scheduledAt as string,
+      })
+    } else {
+      this.articles.set(id, {
+        ...base,
+        status: 'published',
+        publishedAt: publishedAt as string,
+        scheduledAt,
+      })
+    }
+    return 'updated'
+  }
+
+  async existsWithBodyKey(bodyKey: BodyKey): Promise<boolean> {
+    for (const article of this.articles.values()) {
+      if (article.bodyKey === bodyKey) return true
+    }
+    return false
+  }
+
+  async deleteAndEnqueueBodyKey(
+    id: ArticleId,
+    _queuedAt: string,
+  ): Promise<void> {
+    // 呼び出し元の stale な bodyKey を使わず、削除時点の現在の bodyKey を outbox に記録する
+    const article = this.articles.get(id)
+    if (article) {
+      this._pendingBodyKeys.add(article.bodyKey)
+      this.articles.delete(id)
+    }
+  }
+
+  hasPendingBodyKey(bodyKey: BodyKey): boolean {
+    return this._pendingBodyKeys.has(bodyKey)
   }
 
   async delete(id: ArticleId): Promise<void> {
@@ -214,5 +348,28 @@ export class FakeArticleIdGenerator implements ArticleIdGenerator {
   generateTagId(): TagId {
     this._tagIdCounter++
     return TagId(`tag-${this._tagIdCounter}`)
+  }
+}
+
+export class InMemoryBodyKeyDeletionQueue implements BodyKeyDeletionQueue {
+  private queue = new Map<string, string>()
+
+  async enqueue(bodyKey: BodyKey, queuedAt: string): Promise<void> {
+    this.queue.set(bodyKey, queuedAt)
+  }
+
+  async listBatch(limit: number): Promise<BodyKey[]> {
+    return [...this.queue.entries()]
+      .sort(([, a], [, b]) => a.localeCompare(b))
+      .slice(0, limit)
+      .map(([key]) => BodyKey(key))
+  }
+
+  async remove(bodyKey: BodyKey): Promise<void> {
+    this.queue.delete(bodyKey)
+  }
+
+  has(bodyKey: BodyKey): boolean {
+    return this.queue.has(bodyKey)
   }
 }

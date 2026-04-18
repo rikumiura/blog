@@ -112,4 +112,20 @@ describe('scheduleArticle', () => {
       message: '予約日時は現在より未来を指定してください',
     })
   })
+
+  it('予約操作は bodyKey を含む全列 save をしない（並行本文更新の上書き防止）', async () => {
+    const deps = setup()
+    await deps.repository.save(createTestDraft())
+
+    let saveCalledAfterSetup = false
+    const originalSave = deps.repository.save.bind(deps.repository)
+    deps.repository.save = async (article) => {
+      saveCalledAfterSetup = true
+      return originalSave(article)
+    }
+
+    await scheduleArticle(PublicArticleId('public-1'), FUTURE_DATE, deps)
+
+    expect(saveCalledAfterSetup).toBe(false)
+  })
 })
