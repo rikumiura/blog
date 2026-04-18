@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { BodyKey } from '../../domain/models/article'
+import {
+  ArticleId,
+  BodyKey,
+  PublicArticleId,
+  restoreTitle,
+} from '../../domain/models/article'
 import { cleanupPendingBodyDeletions } from '../cleanup-pending-body-deletions'
 import {
+  InMemoryArticleRepository,
   InMemoryBodyKeyDeletionQueue,
   InMemoryBodyStorage,
 } from './in-memory-test-doubles'
@@ -10,8 +16,21 @@ describe('cleanupPendingBodyDeletions', () => {
   const setup = () => {
     const bodyKeyDeletionQueue = new InMemoryBodyKeyDeletionQueue()
     const bodyStorage = new InMemoryBodyStorage()
-    return { bodyKeyDeletionQueue, bodyStorage }
+    const articleRepository = new InMemoryArticleRepository()
+    return { bodyKeyDeletionQueue, bodyStorage, articleRepository }
   }
+
+  const makeDraftArticle = (id: string, bodyKey: string) => ({
+    id: ArticleId(id),
+    publicId: PublicArticleId(`public-${id}`),
+    title: restoreTitle(`記事${id}`),
+    bodyKey: BodyKey(bodyKey),
+    status: 'draft' as const,
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    publishedAt: null,
+    scheduledAt: null,
+  })
 
   it('キューが空の場合、deletedCount が 0 になる', async () => {
     const deps = setup()
@@ -49,6 +68,25 @@ describe('cleanupPendingBodyDeletions', () => {
 
     expect(result.deletedCount).toBe(0)
     expect(deps.bodyKeyDeletionQueue.has(BodyKey('key-1'))).toBe(true)
+  })
+
+  it('記事が参照中の bodyKey はR2から削除せずキューから取り除く', async () => {
+    const deps = setup()
+    await deps.bodyKeyDeletionQueue.enqueue(
+      BodyKey('key-1'),
+      '2026-01-01T00:00:00.000Z',
+    )
+    await deps.bodyStorage.save(BodyKey('key-1'), '本文')
+    // 記事がそのbodyKeyを参照中
+    await deps.articleRepository.save(makeDraftArticle('art-1', 'key-1'))
+
+    const result = await cleanupPendingBodyDeletions(deps)
+
+    // R2から削除されていない
+    expect(result.deletedCount).toBe(0)
+    expect(deps.bodyStorage.has(BodyKey('key-1'))).toBe(true)
+    // キューからは取り除かれる（ライブ参照がある限り削除不要なため）
+    expect(deps.bodyKeyDeletionQueue.has(BodyKey('key-1'))).toBe(false)
   })
 
   it('バックログが BATCH_LIMIT を超える場合、1 回の実行で BATCH_LIMIT 件まで処理される', async () => {

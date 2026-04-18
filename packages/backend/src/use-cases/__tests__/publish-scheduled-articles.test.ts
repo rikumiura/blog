@@ -107,6 +107,20 @@ describe('publishScheduledArticles', () => {
     consoleSpy.mockRestore()
   })
 
+  it('updateStatus が skipped を返した記事は publishedCount に含まれない（並行キャンセル対応）', async () => {
+    const deps = setup()
+    await deps.repository.save(
+      createTestScheduled('1', '2025-02-01T10:00:00.000Z'),
+    )
+
+    // 並行キャンセルをシミュレート: updateStatus が 'skipped' を返す
+    vi.spyOn(deps.repository, 'updateStatus').mockResolvedValue('skipped')
+
+    const result = await publishScheduledArticles(deps)
+
+    expect(result.publishedCount).toBe(0)
+  })
+
   it('予約公開操作は bodyKey を含む全列 save をしない（並行本文更新の上書き防止）', async () => {
     const deps = setup()
     await deps.repository.save(
