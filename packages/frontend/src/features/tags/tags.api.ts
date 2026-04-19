@@ -7,7 +7,7 @@ export type TagSummary = {
 
 function extractErrorMessage(data: unknown): string | undefined {
   if (data !== null && typeof data === 'object' && 'error' in data) {
-    const { error } = data as Record<string, unknown>
+    const error = Reflect.get(data, 'error')
     if (typeof error === 'string') return error
   }
   return undefined
