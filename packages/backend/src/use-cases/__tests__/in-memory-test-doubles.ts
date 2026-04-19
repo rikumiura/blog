@@ -258,6 +258,10 @@ export class InMemoryTagRepository implements TagRepository {
   private tags = new Map<string, Tag>()
   private articleTags = new Map<string, string[]>()
 
+  async findAll(): Promise<Tag[]> {
+    return [...this.tags.values()]
+  }
+
   async findByNames(names: TagName[]): Promise<Tag[]> {
     return [...this.tags.values()].filter((t) =>
       names.some((n) => String(n) === String(t.name)),
