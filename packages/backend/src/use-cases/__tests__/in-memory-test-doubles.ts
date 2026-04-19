@@ -295,6 +295,18 @@ export class InMemoryTagRepository implements TagRepository {
   ): Promise<void> {
     this.articleTags.set(articleId, tagIds)
   }
+
+  async deleteById(id: TagId): Promise<boolean> {
+    const existed = this.tags.has(id)
+    if (!existed) return false
+    this.tags.delete(id)
+    // 記事との紐付けからも該当タグIDを除去（DBのCASCADE相当）
+    for (const [articleId, tagIds] of this.articleTags.entries()) {
+      const filtered = tagIds.filter((t) => t !== id)
+      this.articleTags.set(articleId, filtered)
+    }
+    return true
+  }
 }
 
 export class InMemoryCommentRepository implements CommentRepository {
