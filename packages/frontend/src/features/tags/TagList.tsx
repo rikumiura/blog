@@ -33,22 +33,28 @@ export function TagList() {
     load()
   }, [load])
 
-  const handleDelete = useCallback(async (tag: TagSummary) => {
-    const confirmed = globalThis.confirm(
-      `「${tag.name}」を削除しますか？記事との紐付けも解除されます。`,
-    )
-    if (!confirmed) return
+  const handleDelete = useCallback(
+    async (tag: TagSummary) => {
+      if (deletingId !== null) return
 
-    setDeletingId(tag.id)
-    try {
-      await tagsApi.delete(tag.id)
-      setTags((prev) => prev.filter((t) => t.id !== tag.id))
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'タグの削除に失敗しました')
-    } finally {
-      setDeletingId(null)
-    }
-  }, [])
+      const confirmed = globalThis.confirm(
+        `「${tag.name}」を削除しますか？記事との紐付けも解除されます。`,
+      )
+      if (!confirmed) return
+
+      setError(null)
+      setDeletingId(tag.id)
+      try {
+        await tagsApi.delete(tag.id)
+        setTags((prev) => prev.filter((t) => t.id !== tag.id))
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'タグの削除に失敗しました')
+      } finally {
+        setDeletingId(null)
+      }
+    },
+    [deletingId],
+  )
 
   if (isLoading) return <p className="text-muted-foreground">読み込み中...</p>
 
