@@ -5,6 +5,7 @@ import { cors } from 'hono/cors'
 import { z } from 'zod'
 import { PublicArticleId } from './domain/models/article'
 import { CommentId } from './domain/models/comment'
+import { TagId } from './domain/models/tag'
 import { createAuthMiddleware } from './infrastructure/auth/auth-middleware'
 import { JwtTokenGenerator } from './infrastructure/auth/jwt-token-generator'
 import { Pbkdf2PasswordHasher } from './infrastructure/auth/pbkdf2-password-hasher'
@@ -32,10 +33,12 @@ import { cleanupPendingBodyDeletions } from './use-cases/cleanup-pending-body-de
 import { createArticle } from './use-cases/create-article'
 import { deleteArticle } from './use-cases/delete-article'
 import { deleteComment } from './use-cases/delete-comment'
+import { deleteTag } from './use-cases/delete-tag'
 import { getArticle } from './use-cases/get-article'
 import { listArticlesPaginated } from './use-cases/list-articles'
 import { listComments } from './use-cases/list-comments'
 import { listPublishedArticlesPaginated } from './use-cases/list-published-articles'
+import { listTags } from './use-cases/list-tags'
 import { postComment } from './use-cases/post-comment'
 import { publishArticle } from './use-cases/publish-article'
 import { publishScheduledArticles } from './use-cases/publish-scheduled-articles'
@@ -137,6 +140,10 @@ const commentIdParamSchema = z.object({
   id: z.string().min(1),
 })
 
+const tagIdParamSchema = z.object({
+  id: z.string().min(1),
+})
+
 const imageKeyParamSchema = z.object({
   imageKey: z
     .string()
@@ -163,6 +170,8 @@ app.use('/api/articles', authMiddleware)
 app.use('/api/auth/me', authMiddleware)
 app.use('/api/comments/*', authMiddleware)
 app.use('/api/images', authMiddleware)
+app.use('/api/tags', authMiddleware)
+app.use('/api/tags/*', authMiddleware)
 
 const routes = app
   .get('/api/hello', (c) => {
@@ -463,6 +472,36 @@ const routes = app
           return c.body(null, 204)
         case 'not_found':
           return c.json({ error: 'コメントが見つかりません' }, 404)
+      }
+    },
+  )
+
+  // --- タグ管理 API（管理者用） ---
+  .get('/api/tags', async (c) => {
+    const db = createDbClient(c.env.DB)
+    const tagRepository = new DrizzleTagRepository(db)
+
+    const result = await listTags({ tagRepository })
+
+    return c.json({
+      tags: result.tags.map((t) => ({ id: String(t.id), name: String(t.name) })),
+    })
+  })
+  .delete(
+    '/api/tags/:id',
+    zValidator('param', tagIdParamSchema),
+    async (c) => {
+      const id = TagId(c.req.valid('param').id)
+      const db = createDbClient(c.env.DB)
+      const tagRepository = new DrizzleTagRepository(db)
+
+      const result = await deleteTag(id, { tagRepository })
+
+      switch (result.status) {
+        case 'deleted':
+          return c.body(null, 204)
+        case 'not_found':
+          return c.json({ error: 'タグが見つかりません' }, 404)
       }
     },
   )
