@@ -8,9 +8,7 @@ describe('deleteTag', () => {
   it('存在するタグを削除できる', async () => {
     const tagRepository = new InMemoryTagRepository()
     const tagId = TagId('tag-1')
-    await tagRepository.saveMany([
-      { id: tagId, name: restoreTagName('React') },
-    ])
+    await tagRepository.saveMany([{ id: tagId, name: restoreTagName('React') }])
 
     const result = await deleteTag(tagId, { tagRepository })
 
@@ -30,9 +28,7 @@ describe('deleteTag', () => {
     const tagRepository = new InMemoryTagRepository()
     const tagId = TagId('tag-1')
     const articleId = ArticleId('article-1')
-    await tagRepository.saveMany([
-      { id: tagId, name: restoreTagName('React') },
-    ])
+    await tagRepository.saveMany([{ id: tagId, name: restoreTagName('React') }])
     await tagRepository.setArticleTags(articleId, [tagId])
 
     await deleteTag(tagId, { tagRepository })

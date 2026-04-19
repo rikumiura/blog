@@ -484,27 +484,26 @@ const routes = app
     const result = await listTags({ tagRepository })
 
     return c.json({
-      tags: result.tags.map((t) => ({ id: String(t.id), name: String(t.name) })),
+      tags: result.tags.map((t) => ({
+        id: String(t.id),
+        name: String(t.name),
+      })),
     })
   })
-  .delete(
-    '/api/tags/:id',
-    zValidator('param', tagIdParamSchema),
-    async (c) => {
-      const id = TagId(c.req.valid('param').id)
-      const db = createDbClient(c.env.DB)
-      const tagRepository = new DrizzleTagRepository(db)
+  .delete('/api/tags/:id', zValidator('param', tagIdParamSchema), async (c) => {
+    const id = TagId(c.req.valid('param').id)
+    const db = createDbClient(c.env.DB)
+    const tagRepository = new DrizzleTagRepository(db)
 
-      const result = await deleteTag(id, { tagRepository })
+    const result = await deleteTag(id, { tagRepository })
 
-      switch (result.status) {
-        case 'deleted':
-          return c.body(null, 204)
-        case 'not_found':
-          return c.json({ error: 'タグが見つかりません' }, 404)
-      }
-    },
-  )
+    switch (result.status) {
+      case 'deleted':
+        return c.body(null, 204)
+      case 'not_found':
+        return c.json({ error: 'タグが見つかりません' }, 404)
+    }
+  })
 
   // --- 公開読者向け API ---
   .get(
