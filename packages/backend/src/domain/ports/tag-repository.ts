@@ -2,6 +2,9 @@ import type { ArticleId } from '../models/article'
 import type { Tag, TagName } from '../models/tag'
 
 export interface TagRepository {
+  /** 全タグを取得する */
+  findAll(): Promise<Tag[]>
+
   /** タグ名の配列から既存タグを検索する */
   findByNames(names: TagName[]): Promise<Tag[]>
 
