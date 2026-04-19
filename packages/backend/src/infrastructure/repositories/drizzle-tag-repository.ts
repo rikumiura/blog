@@ -12,6 +12,11 @@ export class DrizzleTagRepository implements TagRepository {
     this.db = db
   }
 
+  async findAll(): Promise<Tag[]> {
+    const rows = await this.db.select().from(tags)
+    return rows.map(toEntity)
+  }
+
   async findByNames(names: Tag['name'][]): Promise<Tag[]> {
     if (names.length === 0) return []
     const rows = await this.db
