@@ -8,9 +8,7 @@ test.describe('ブログ読者のコメント機能', () => {
     await page.goto('/articles/pub-001')
 
     // コメントセクションの見出しが表示されること
-    await expect(
-      page.getByRole('heading', { name: /コメント/ }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: /コメント/ })).toBeVisible()
 
     // モックのコメントが表示されること
     await expect(page.getByText('読者A')).toBeVisible()
@@ -62,9 +60,7 @@ test.describe('管理者のコメント管理', () => {
     await page.goto('/admin/articles/pub-001')
 
     // コメントセクションが表示されること（件数付き）
-    await expect(
-      page.getByRole('heading', { name: /コメント/ }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: /コメント/ })).toBeVisible()
 
     // コメントが表示されること
     await expect(page.getByText('読者A')).toBeVisible()
