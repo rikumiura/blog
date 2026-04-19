@@ -64,6 +64,12 @@ export class DrizzleTagRepository implements TagRepository {
     return map
   }
 
+  async deleteById(id: TagId): Promise<boolean> {
+    // article_tagsのtag_idはON DELETE CASCADEなので、tagsの行を消せば紐付けも自動で消える
+    const result = await this.db.delete(tags).where(eq(tags.id, id)).returning()
+    return result.length > 0
+  }
+
   async setArticleTags(
     articleId: ArticleId,
     tagIds: Tag['id'][],
