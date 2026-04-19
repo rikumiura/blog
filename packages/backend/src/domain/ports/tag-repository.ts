@@ -1,5 +1,5 @@
 import type { ArticleId } from '../models/article'
-import type { Tag, TagName } from '../models/tag'
+import type { Tag, TagId, TagName } from '../models/tag'
 
 export interface TagRepository {
   /** 全タグを取得する */
@@ -19,4 +19,10 @@ export interface TagRepository {
 
   /** 記事とタグの紐付けを設定する（既存の紐付けは全て置換） */
   setArticleTags(articleId: ArticleId, tagIds: Tag['id'][]): Promise<void>
+
+  /**
+   * タグをIDで削除する。記事との紐付けもあわせて削除する。
+   * 削除できた場合は true、該当タグが存在しなければ false を返す
+   */
+  deleteById(id: TagId): Promise<boolean>
 }
