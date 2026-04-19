@@ -1,5 +1,5 @@
 import { articleTags, tags } from '@my-blog/db'
-import { eq, inArray } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import type { ArticleId } from '../../domain/models/article'
 import { restoreTagName, type Tag, TagId } from '../../domain/models/tag'
 import type { TagRepository } from '../../domain/ports/tag-repository'
@@ -13,7 +13,7 @@ export class DrizzleTagRepository implements TagRepository {
   }
 
   async findAll(): Promise<Tag[]> {
-    const rows = await this.db.select().from(tags)
+    const rows = await this.db.select().from(tags).orderBy(asc(tags.name))
     return rows.map(toEntity)
   }
 
