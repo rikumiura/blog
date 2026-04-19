@@ -486,9 +486,7 @@ export async function setupApiMock(
       }
 
       if (method === 'GET') {
-        const articleComments = comments.filter(
-          (c) => c.articleId === publicId,
-        )
+        const articleComments = comments.filter((c) => c.articleId === publicId)
         await route.fulfill({
           status: 200,
           contentType: 'application/json',

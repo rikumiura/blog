@@ -9,6 +9,7 @@ import { ArticlesPage } from '@/app/articles/ArticlesPage'
 import { LoginPage } from '@/app/auth/LoginPage'
 import { BlogArticlePage } from '@/app/blog/BlogArticlePage'
 import { BlogPage } from '@/app/blog/BlogPage'
+import { TagsPage } from '@/app/tags/TagsPage'
 import { ProtectedRoute } from '@/features/auth/ProtectedRoute'
 import './index.css'
 
@@ -53,6 +54,14 @@ createRoot(document.getElementById('root')!).render(
             element={
               <ProtectedRoute>
                 <ArticleEditPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/tags"
+            element={
+              <ProtectedRoute>
+                <TagsPage />
               </ProtectedRoute>
             }
           />

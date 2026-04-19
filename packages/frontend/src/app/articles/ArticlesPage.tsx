@@ -21,6 +21,9 @@ export function ArticlesPage() {
           <Button asChild>
             <Link to="/admin/articles/new">新規作成</Link>
           </Button>
+          <Button variant="outline" asChild>
+            <Link to="/admin/tags">タグ管理</Link>
+          </Button>
           <Button variant="outline" onClick={handleLogout}>
             ログアウト
           </Button>

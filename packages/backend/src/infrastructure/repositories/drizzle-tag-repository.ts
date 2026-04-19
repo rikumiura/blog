@@ -1,5 +1,5 @@
 import { articleTags, tags } from '@my-blog/db'
-import { eq, inArray } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import type { ArticleId } from '../../domain/models/article'
 import { restoreTagName, type Tag, TagId } from '../../domain/models/tag'
 import type { TagRepository } from '../../domain/ports/tag-repository'
@@ -10,6 +10,11 @@ export class DrizzleTagRepository implements TagRepository {
 
   constructor(db: DbClient) {
     this.db = db
+  }
+
+  async findAll(): Promise<Tag[]> {
+    const rows = await this.db.select().from(tags).orderBy(asc(tags.name))
+    return rows.map(toEntity)
   }
 
   async findByNames(names: Tag['name'][]): Promise<Tag[]> {
@@ -57,6 +62,12 @@ export class DrizzleTagRepository implements TagRepository {
       map.set(row.articleId, list)
     }
     return map
+  }
+
+  async deleteById(id: TagId): Promise<boolean> {
+    // article_tagsのtag_idはON DELETE CASCADEなので、tagsの行を消せば紐付けも自動で消える
+    const result = await this.db.delete(tags).where(eq(tags.id, id)).returning()
+    return result.length > 0
   }
 
   async setArticleTags(

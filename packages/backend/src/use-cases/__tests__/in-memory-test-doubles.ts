@@ -258,6 +258,10 @@ export class InMemoryTagRepository implements TagRepository {
   private tags = new Map<string, Tag>()
   private articleTags = new Map<string, string[]>()
 
+  async findAll(): Promise<Tag[]> {
+    return [...this.tags.values()]
+  }
+
   async findByNames(names: TagName[]): Promise<Tag[]> {
     return [...this.tags.values()].filter((t) =>
       names.some((n) => String(n) === String(t.name)),
@@ -290,6 +294,18 @@ export class InMemoryTagRepository implements TagRepository {
     tagIds: Tag['id'][],
   ): Promise<void> {
     this.articleTags.set(articleId, tagIds)
+  }
+
+  async deleteById(id: TagId): Promise<boolean> {
+    const existed = this.tags.has(id)
+    if (!existed) return false
+    this.tags.delete(id)
+    // 記事との紐付けからも該当タグIDを除去（DBのCASCADE相当）
+    for (const [articleId, tagIds] of this.articleTags.entries()) {
+      const filtered = tagIds.filter((t) => t !== id)
+      this.articleTags.set(articleId, filtered)
+    }
+    return true
   }
 }
 
