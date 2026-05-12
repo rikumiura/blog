@@ -24,8 +24,15 @@ describe('TagList — タグ新規作成フォーム', () => {
         return HttpResponse.json({ tags: stored })
       }),
       http.post(`${baseUrl}/api/tags`, async ({ request }) => {
-        const body = (await request.json()) as { name: string }
-        const created = { id: 'tag-new', name: body.name }
+        const body: unknown = await request.json()
+        if (typeof body !== 'object' || body === null) {
+          return HttpResponse.json({ error: 'Invalid body' }, { status: 400 })
+        }
+        const name = Reflect.get(body, 'name')
+        if (typeof name !== 'string') {
+          return HttpResponse.json({ error: 'Invalid body' }, { status: 400 })
+        }
+        const created = { id: 'tag-new', name }
         stored = [...stored, created]
         return HttpResponse.json(created, { status: 201 })
       }),
