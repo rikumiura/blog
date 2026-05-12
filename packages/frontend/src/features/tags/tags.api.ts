@@ -32,8 +32,7 @@ export const tagsApi = {
         `タグの作成に失敗しました: ${res.status}`
       throw new Error(message)
     }
-    const data = await res.json()
-    return { id: data.id, name: data.name }
+    return await res.json()
   },
 
   async delete(id: string): Promise<void> {
