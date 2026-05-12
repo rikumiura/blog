@@ -23,6 +23,19 @@ export const tagsApi = {
     return data.tags
   },
 
+  async create(name: string): Promise<TagSummary> {
+    const res = await apiClient.api.tags.$post({ json: { name } })
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null)
+      const message =
+        extractErrorMessage(errorData) ??
+        `タグの作成に失敗しました: ${res.status}`
+      throw new Error(message)
+    }
+    const data = await res.json()
+    return { id: data.id, name: data.name }
+  },
+
   async delete(id: string): Promise<void> {
     const res = await apiClient.api.tags[':id'].$delete({ param: { id } })
     if (!res.ok) {
