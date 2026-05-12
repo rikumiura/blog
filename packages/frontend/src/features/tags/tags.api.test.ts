@@ -43,6 +43,63 @@ describe('tagsApi.listAll', () => {
   })
 })
 
+describe('tagsApi.create', () => {
+  it('正常系: 作成されたタグを返す', async () => {
+    server.use(
+      http.post(`${baseUrl}/api/tags`, () => {
+        return HttpResponse.json(
+          { id: 'tag-new', name: 'React' },
+          { status: 201 },
+        )
+      }),
+    )
+
+    const result = await tagsApi.create('React')
+
+    expect(result).toEqual({ id: 'tag-new', name: 'React' })
+  })
+
+  it('409の場合: 重複エラーメッセージでthrowする', async () => {
+    server.use(
+      http.post(`${baseUrl}/api/tags`, () => {
+        return HttpResponse.json(
+          { error: '同名のタグが既に存在します' },
+          { status: 409 },
+        )
+      }),
+    )
+
+    await expect(tagsApi.create('React')).rejects.toThrow(
+      '同名のタグが既に存在します',
+    )
+  })
+
+  it('400の場合: バリデーションエラーメッセージでthrowする', async () => {
+    server.use(
+      http.post(`${baseUrl}/api/tags`, () => {
+        return HttpResponse.json(
+          { error: 'タグ名は空にできません' },
+          { status: 400 },
+        )
+      }),
+    )
+
+    await expect(tagsApi.create('')).rejects.toThrow('タグ名は空にできません')
+  })
+
+  it('500の場合: フォールバックメッセージでthrowする', async () => {
+    server.use(
+      http.post(`${baseUrl}/api/tags`, () => {
+        return new HttpResponse(null, { status: 500 })
+      }),
+    )
+
+    await expect(tagsApi.create('React')).rejects.toThrow(
+      'タグの作成に失敗しました: 500',
+    )
+  })
+})
+
 describe('tagsApi.delete', () => {
   it('正常系: 204で正常終了する', async () => {
     server.use(
