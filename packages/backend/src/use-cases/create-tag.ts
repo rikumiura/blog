@@ -28,5 +28,18 @@ export async function createTag(
     name: nameResult.value,
   }
   await deps.tagRepository.saveMany([tag])
-  return { status: 'created', tag }
+
+  // saveMany は onConflictDoNothing で重複時に挿入をスキップする可能性があるため、
+  // 永続化された行を再取得して、自分が挿入した ID と一致するか確認する。
+  // 一致しなければ事前チェックと saveMany の間に他者が同名タグを挿入した
+  // race condition なので duplicate を返す。
+  const persisted = await deps.tagRepository.findByNames([nameResult.value])
+  const persistedTag = persisted[0]
+  if (!persistedTag) {
+    throw new Error('タグの保存に失敗しました')
+  }
+  if (persistedTag.id !== tag.id) {
+    return { status: 'duplicate' }
+  }
+  return { status: 'created', tag: persistedTag }
 }
