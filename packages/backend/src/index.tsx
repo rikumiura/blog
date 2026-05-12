@@ -31,6 +31,7 @@ import { authenticateAdmin } from './use-cases/authenticate-admin'
 import { cancelSchedule } from './use-cases/cancel-schedule'
 import { cleanupPendingBodyDeletions } from './use-cases/cleanup-pending-body-deletions'
 import { createArticle } from './use-cases/create-article'
+import { createTag } from './use-cases/create-tag'
 import { deleteArticle } from './use-cases/delete-article'
 import { deleteComment } from './use-cases/delete-comment'
 import { deleteTag } from './use-cases/delete-tag'
@@ -104,6 +105,10 @@ const updateArticleSchema = z
 
 const updateTagsSchema = z.object({
   tags: z.array(tagNameSchema).max(10, 'タグは10個以内にしてください'),
+})
+
+const createTagSchema = z.object({
+  name: tagNameSchema,
 })
 
 const publicIdParamSchema = z.object({
@@ -489,6 +494,29 @@ const routes = app
         name: String(t.name),
       })),
     })
+  })
+  .post('/api/tags', zValidator('json', createTagSchema), async (c) => {
+    const input = c.req.valid('json')
+    const db = createDbClient(c.env.DB)
+    const tagRepository = new DrizzleTagRepository(db)
+    const idGenerator = new ArticleIdGeneratorImpl()
+
+    const result = await createTag(input, {
+      tagRepository,
+      generateTagId: () => idGenerator.generateTagId(),
+    })
+
+    switch (result.status) {
+      case 'created':
+        return c.json(
+          { id: String(result.tag.id), name: String(result.tag.name) },
+          201,
+        )
+      case 'duplicate':
+        return c.json({ error: '同名のタグが既に存在します' }, 409)
+      case 'validation_error':
+        return c.json({ error: result.message }, 400)
+    }
   })
   .delete('/api/tags/:id', zValidator('param', tagIdParamSchema), async (c) => {
     const id = TagId(c.req.valid('param').id)
