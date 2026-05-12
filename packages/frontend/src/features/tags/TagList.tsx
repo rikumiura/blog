@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { type FormEvent, useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -15,6 +16,8 @@ export function TagList() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [newName, setNewName] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -32,6 +35,29 @@ export function TagList() {
   useEffect(() => {
     load()
   }, [load])
+
+  const handleCreate = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault()
+      const trimmed = newName.trim()
+      if (trimmed.length === 0 || isCreating) return
+
+      setError(null)
+      setIsCreating(true)
+      try {
+        await tagsApi.create(trimmed)
+        setNewName('')
+        // サーバ側の並び順（ORDER BY name ASC）と一致させるため再フェッチする
+        const data = await tagsApi.listAll()
+        setTags(data)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'タグの作成に失敗しました')
+      } finally {
+        setIsCreating(false)
+      }
+    },
+    [newName, isCreating],
+  )
 
   const handleDelete = useCallback(
     async (tag: TagSummary) => {
@@ -58,8 +84,27 @@ export function TagList() {
 
   if (isLoading) return <p className="text-muted-foreground">読み込み中...</p>
 
+  const canSubmit = newName.trim().length > 0 && !isCreating
+
   return (
     <div className="flex flex-col gap-4">
+      <form className="flex gap-2" onSubmit={handleCreate}>
+        <label htmlFor="new-tag-name" className="sr-only">
+          新しいタグ名
+        </label>
+        <Input
+          id="new-tag-name"
+          type="text"
+          placeholder="新しいタグ名"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          disabled={isCreating}
+          maxLength={30}
+        />
+        <Button type="submit" disabled={!canSubmit}>
+          {isCreating ? '作成中...' : '作成'}
+        </Button>
+      </form>
       {error && <p className="text-sm text-destructive">{error}</p>}
       {tags.length === 0 ? (
         <p className="text-muted-foreground">タグはまだありません。</p>
