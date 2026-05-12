@@ -17,16 +17,17 @@ afterAll(() => server.close())
 describe('TagList — タグ新規作成フォーム', () => {
   it('入力 → 送信で API が呼ばれ、一覧に新タグが追加される', async () => {
     const user = userEvent.setup()
+    // 作成後の再フェッチで新タグが返ることを模擬するため、状態を保持する
+    let stored: { id: string; name: string }[] = []
     server.use(
       http.get(`${baseUrl}/api/tags`, () => {
-        return HttpResponse.json({ tags: [] })
+        return HttpResponse.json({ tags: stored })
       }),
       http.post(`${baseUrl}/api/tags`, async ({ request }) => {
         const body = (await request.json()) as { name: string }
-        return HttpResponse.json(
-          { id: 'tag-new', name: body.name },
-          { status: 201 },
-        )
+        const created = { id: 'tag-new', name: body.name }
+        stored = [...stored, created]
+        return HttpResponse.json(created, { status: 201 })
       }),
     )
 

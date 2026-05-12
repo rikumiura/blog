@@ -45,9 +45,11 @@ export function TagList() {
       setError(null)
       setIsCreating(true)
       try {
-        const created = await tagsApi.create(trimmed)
-        setTags((prev) => [...prev, created])
+        await tagsApi.create(trimmed)
         setNewName('')
+        // サーバ側の並び順（ORDER BY name ASC）と一致させるため再フェッチする
+        const data = await tagsApi.listAll()
+        setTags(data)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'タグの作成に失敗しました')
       } finally {
@@ -87,7 +89,11 @@ export function TagList() {
   return (
     <div className="flex flex-col gap-4">
       <form className="flex gap-2" onSubmit={handleCreate}>
+        <label htmlFor="new-tag-name" className="sr-only">
+          新しいタグ名
+        </label>
         <Input
+          id="new-tag-name"
           type="text"
           placeholder="新しいタグ名"
           value={newName}
