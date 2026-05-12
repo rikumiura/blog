@@ -57,6 +57,23 @@ describe('createTag', () => {
     expect(await tagRepository.findAll()).toHaveLength(0)
   })
 
+  it('ちょうど30文字のタグ名は作成できる（境界値）', async () => {
+    const tagRepository = new InMemoryTagRepository()
+    const exactlyMax = 'a'.repeat(30)
+
+    const result = await createTag(
+      { name: exactlyMax },
+      {
+        tagRepository,
+        generateTagId: () => TagId('tag-1'),
+      },
+    )
+
+    expect(result.status).toBe('created')
+    if (result.status !== 'created') return
+    expect(String(result.tag.name)).toBe(exactlyMax)
+  })
+
   it('31文字以上のタグ名は validation_error を返す', async () => {
     const tagRepository = new InMemoryTagRepository()
     const longName = 'a'.repeat(31)
