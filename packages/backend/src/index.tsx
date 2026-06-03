@@ -128,6 +128,15 @@ const paginationSchema = z.object({
     .string()
     .optional()
     .transform((s) => (s ? s.split(',').filter(Boolean) : undefined)),
+  // タイトルの部分一致検索キーワード。トリム後に空なら undefined 扱い。
+  search: z
+    .string()
+    .max(100, '検索キーワードは100文字以内にしてください')
+    .optional()
+    .transform((s) => {
+      const trimmed = s?.trim()
+      return trimmed && trimmed.length > 0 ? trimmed : undefined
+    }),
 })
 
 const postCommentSchema = z.object({
@@ -538,7 +547,7 @@ const routes = app
     '/api/public/articles',
     zValidator('query', paginationSchema),
     async (c) => {
-      const { page, limit, tags } = c.req.valid('query')
+      const { page, limit, tags, search } = c.req.valid('query')
       const db = createDbClient(c.env.DB)
       const repository = new DrizzleArticleRepository(db)
       const tagRepository = new DrizzleTagRepository(db)
@@ -546,6 +555,7 @@ const routes = app
         page,
         limit,
         ...(tags ? { tags } : {}),
+        ...(search ? { search } : {}),
       })
 
       return c.json(

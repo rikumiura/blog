@@ -153,6 +153,65 @@ describe('GET /api/articles', () => {
   })
 })
 
+describe('GET /api/public/articles', () => {
+  it('200: search クエリがユースケースに渡る', async () => {
+    mockListPublishedArticlesPaginated.mockClear()
+    mockListPublishedArticlesPaginated.mockResolvedValue({
+      items: [publishedArticle],
+      totalCount: 1,
+    })
+
+    const res = await app.request(
+      '/api/public/articles?search=Type',
+      undefined,
+      { DB: {}, ARTICLE_BUCKET: {} },
+    )
+
+    expect(res.status).toBe(200)
+    expect(mockListPublishedArticlesPaginated).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ search: 'Type' }),
+    )
+  })
+
+  it('search の前後空白はトリムされて渡る', async () => {
+    mockListPublishedArticlesPaginated.mockClear()
+    mockListPublishedArticlesPaginated.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+    })
+
+    await app.request(
+      '/api/public/articles?search=%20%20Type%20%20',
+      undefined,
+      { DB: {}, ARTICLE_BUCKET: {} },
+    )
+
+    expect(mockListPublishedArticlesPaginated).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ search: 'Type' }),
+    )
+  })
+
+  it('search が空白のみの場合はユースケースに渡されない', async () => {
+    mockListPublishedArticlesPaginated.mockClear()
+    mockListPublishedArticlesPaginated.mockResolvedValue({
+      items: [],
+      totalCount: 0,
+    })
+
+    await app.request('/api/public/articles?search=%20%20', undefined, {
+      DB: {},
+      ARTICLE_BUCKET: {},
+    })
+
+    expect(mockListPublishedArticlesPaginated).toHaveBeenCalledWith(
+      expect.anything(),
+      { page: 1, limit: 20 },
+    )
+  })
+})
+
 describe('GET /api/articles/:publicId', () => {
   it('200: 記事詳細をDTOで返す', async () => {
     mockGetArticle.mockResolvedValue({
