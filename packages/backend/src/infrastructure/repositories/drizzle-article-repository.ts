@@ -272,7 +272,18 @@ export class DrizzleArticleRepository implements ArticleRepository {
               .where(inArray(tags.name, params.tags)),
           )
         : undefined
-    const whereClause = and(eq(articles.status, 'published'), tagFilter)
+    // search はトリム後に空でなければタイトルの部分一致で絞り込む。
+    // ESCAPE '\' でユーザー入力中のワイルドカード（% _）をリテラル化する。
+    const searchKeyword = params.search?.trim()
+    const searchFilter =
+      searchKeyword && searchKeyword.length > 0
+        ? sql`${articles.title} LIKE ${`%${escapeLikePattern(searchKeyword)}%`} ESCAPE '\\'`
+        : undefined
+    const whereClause = and(
+      eq(articles.status, 'published'),
+      tagFilter,
+      searchFilter,
+    )
     const [rows, countResult] = await Promise.all([
       this.db
         .select()
@@ -289,6 +300,14 @@ export class DrizzleArticleRepository implements ArticleRepository {
       totalCount: countResult[0]?.count ?? 0,
     }
   }
+}
+
+/**
+ * LIKE 検索のワイルドカード（% _）とエスケープ文字（\）をリテラルとして
+ * 扱うためエスケープする。SQL 側の ESCAPE '\' 句と組み合わせて使う。
+ */
+export function escapeLikePattern(input: string): string {
+  return input.replace(/[\\%_]/g, '\\$&')
 }
 
 function toEntity(row: typeof articles.$inferSelect): Article {
