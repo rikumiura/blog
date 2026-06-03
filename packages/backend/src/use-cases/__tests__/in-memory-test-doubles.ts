@@ -206,10 +206,19 @@ export class InMemoryArticleRepository implements ArticleRepository {
     params: PaginationParams,
   ): Promise<PaginatedResult<PublishedArticle>> {
     const published = await this.findPublished()
+    // search はトリム後に空でなければタイトルの部分一致で絞り込む。
+    // SQLite の LIKE（ASCII 大文字小文字を無視）と挙動を合わせるため小文字化して比較する。
+    const search = params.search?.trim()
+    const filtered =
+      search && search.length > 0
+        ? published.filter((a) =>
+            String(a.title).toLowerCase().includes(search.toLowerCase()),
+          )
+        : published
     const offset = (params.page - 1) * params.limit
     return {
-      items: published.slice(offset, offset + params.limit),
-      totalCount: published.length,
+      items: filtered.slice(offset, offset + params.limit),
+      totalCount: filtered.length,
     }
   }
 
