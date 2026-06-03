@@ -14,6 +14,9 @@ export const blogPageLimitAtom = atom(20)
 /** 選択中のタグ（フィルター用） */
 export const blogSelectedTagsAtom = atom<string[]>([])
 
+/** 確定した検索キーワード（タイトル部分一致） */
+export const blogSearchQueryAtom = atom('')
+
 /** 全記事から重複なしのタグ一覧を派生 */
 export const blogAllTagsAtom = atom((get) => {
   const articles = get(blogArticlesAtom)
@@ -50,10 +53,12 @@ export const fetchBlogArticlesAtom = atom(null, async (get, set) => {
     const page = get(blogCurrentPageAtom)
     const limit = get(blogPageLimitAtom)
     const selectedTags = get(blogSelectedTagsAtom)
+    const search = get(blogSearchQueryAtom).trim()
     const result = await blogApi.findAll({
       page,
       limit,
       ...(selectedTags.length > 0 ? { tags: selectedTags } : {}),
+      ...(search ? { search } : {}),
     })
     set(blogArticlesAtom, result.items)
     set(blogTotalPagesAtom, result.totalPages)
@@ -92,3 +97,13 @@ export const clearBlogTagFilterAtom = atom(null, async (_get, set) => {
   set(blogCurrentPageAtom, 1)
   await set(fetchBlogArticlesAtom)
 })
+
+/** 検索キーワードを確定して再フェッチするアクション（ページを1にリセット） */
+export const searchBlogArticlesAtom = atom(
+  null,
+  async (_get, set, keyword: string) => {
+    set(blogSearchQueryAtom, keyword)
+    set(blogCurrentPageAtom, 1)
+    await set(fetchBlogArticlesAtom)
+  },
+)
