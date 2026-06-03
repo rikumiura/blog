@@ -72,6 +72,46 @@ describe('blogApi.findAll', () => {
       '記事一覧の取得に失敗しました: 500',
     )
   })
+
+  it('search パラメータがクエリに渡る', async () => {
+    let capturedSearch: string | null = null
+    server.use(
+      http.get(`${baseUrl}/api/public/articles`, ({ request }) => {
+        capturedSearch = new URL(request.url).searchParams.get('search')
+        return HttpResponse.json({
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 20,
+          totalPages: 1,
+        })
+      }),
+    )
+
+    await blogApi.findAll({ page: 1, limit: 20, search: 'TypeScript' })
+
+    expect(capturedSearch).toBe('TypeScript')
+  })
+
+  it('search 未指定時はクエリに search を含めない', async () => {
+    let hasSearch = true
+    server.use(
+      http.get(`${baseUrl}/api/public/articles`, ({ request }) => {
+        hasSearch = new URL(request.url).searchParams.has('search')
+        return HttpResponse.json({
+          items: [],
+          totalCount: 0,
+          page: 1,
+          limit: 20,
+          totalPages: 1,
+        })
+      }),
+    )
+
+    await blogApi.findAll({ page: 1, limit: 20 })
+
+    expect(hasSearch).toBe(false)
+  })
 })
 
 describe('blogApi.findByPublicId', () => {
