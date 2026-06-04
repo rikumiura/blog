@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Pagination } from '@/components/ui/pagination'
 import { formatDate } from '@/lib/format'
+import { BlogArticleCount } from './BlogArticleCount'
 import { BlogTagFilter } from './BlogTagFilter'
 import {
   blogCurrentPageAtom,
@@ -11,6 +12,7 @@ import {
   blogFilteredArticlesAtom,
   blogSearchQueryAtom,
   blogSelectedTagsAtom,
+  blogTotalCountAtom,
   blogTotalPagesAtom,
   changeBlogPageAtom,
   fetchBlogArticlesAtom,
@@ -22,6 +24,7 @@ export function BlogArticleList() {
   const selectedTags = useAtomValue(blogSelectedTagsAtom)
   const currentPage = useAtomValue(blogCurrentPageAtom)
   const totalPages = useAtomValue(blogTotalPagesAtom)
+  const totalCount = useAtomValue(blogTotalCountAtom)
   const isLoading = useAtomValue(blogFetchLoadingAtom)
   const error = useAtomValue(blogErrorAtom)
   const confirmedQuery = useAtomValue(blogSearchQueryAtom)
@@ -72,6 +75,11 @@ export function BlogArticleList() {
         </button>
       </div>
       <BlogTagFilter />
+      <BlogArticleCount
+        count={totalCount}
+        searchQuery={confirmedQuery}
+        hasTagFilter={selectedTags.length > 0}
+      />
       {articles.length === 0 ? (
         <p className="text-muted-foreground">
           {confirmedQuery
