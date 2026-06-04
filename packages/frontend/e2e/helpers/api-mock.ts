@@ -496,7 +496,7 @@ export async function setupApiMock(
         const reqBody = request.postDataJSON()
         const newComment: MockComment = {
           id: `comment-${Date.now()}`,
-          articleId: publicId,
+          articleId: article.publicId,
           authorName: reqBody.authorName,
           content: reqBody.content,
           createdAt: new Date().toISOString(),
