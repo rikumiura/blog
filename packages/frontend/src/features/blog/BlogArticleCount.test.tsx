@@ -8,9 +8,7 @@ afterEach(() => {
 
 describe('BlogArticleCount — 件数表示', () => {
   it('検索もタグ絞り込みもない場合は「全N件」を表示する', () => {
-    render(
-      <BlogArticleCount count={12} searchQuery="" hasTagFilter={false} />,
-    )
+    render(<BlogArticleCount count={12} searchQuery="" hasTagFilter={false} />)
     expect(screen.getByText('全12件')).toBeInTheDocument()
   })
 
@@ -18,15 +16,11 @@ describe('BlogArticleCount — 件数表示', () => {
     render(
       <BlogArticleCount count={3} searchQuery="React" hasTagFilter={false} />,
     )
-    expect(
-      screen.getByText('「React」の検索結果: 3件'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('「React」の検索結果: 3件')).toBeInTheDocument()
   })
 
   it('タグ絞り込みのみの場合は絞り込み結果の件数を表示する', () => {
-    render(
-      <BlogArticleCount count={5} searchQuery="" hasTagFilter={true} />,
-    )
+    render(<BlogArticleCount count={5} searchQuery="" hasTagFilter={true} />)
     expect(screen.getByText('絞り込み結果: 5件')).toBeInTheDocument()
   })
 
