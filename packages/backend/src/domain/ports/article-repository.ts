@@ -16,6 +16,8 @@ export type PaginationParams = {
   page: number
   limit: number
   tags?: string[]
+  /** タイトルの部分一致検索キーワード（前後の空白はトリム済みを想定） */
+  search?: string
 }
 
 export interface ArticleRepository {

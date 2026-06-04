@@ -31,6 +31,7 @@ export const blogApi = {
     page: number
     limit: number
     tags?: string[]
+    search?: string
   }): Promise<PaginatedResponse<PublishedArticle>> {
     const query = params ?? { page: 1, limit: 20 }
     const res = await apiClient.api.public.articles.$get({
@@ -40,6 +41,7 @@ export const blogApi = {
         ...(query.tags && query.tags.length > 0
           ? { tags: query.tags.join(',') }
           : {}),
+        ...(query.search ? { search: query.search } : {}),
       },
     })
     if (!res.ok) {

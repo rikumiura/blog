@@ -1,5 +1,5 @@
 import { useAtomValue, useSetAtom } from 'jotai'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { Pagination } from '@/components/ui/pagination'
 import { formatDate } from '@/lib/format'
@@ -9,10 +9,12 @@ import {
   blogErrorAtom,
   blogFetchLoadingAtom,
   blogFilteredArticlesAtom,
+  blogSearchQueryAtom,
   blogSelectedTagsAtom,
   blogTotalPagesAtom,
   changeBlogPageAtom,
   fetchBlogArticlesAtom,
+  searchBlogArticlesAtom,
 } from './blog.atom'
 
 export function BlogArticleList() {
@@ -22,12 +24,25 @@ export function BlogArticleList() {
   const totalPages = useAtomValue(blogTotalPagesAtom)
   const isLoading = useAtomValue(blogFetchLoadingAtom)
   const error = useAtomValue(blogErrorAtom)
+  const confirmedQuery = useAtomValue(blogSearchQueryAtom)
   const fetchArticles = useSetAtom(fetchBlogArticlesAtom)
   const changePage = useSetAtom(changeBlogPageAtom)
+  const searchArticles = useSetAtom(searchBlogArticlesAtom)
+
+  /** 入力欄の一時的な値（Enterまたはボタンで確定） */
+  const [inputValue, setInputValue] = useState(confirmedQuery)
 
   useEffect(() => {
     fetchArticles()
   }, [fetchArticles])
+
+  function handleSearch() {
+    searchArticles(inputValue)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter') handleSearch()
+  }
 
   if (isLoading) {
     return <p className="text-muted-foreground">読み込み中...</p>
@@ -39,12 +54,31 @@ export function BlogArticleList() {
 
   return (
     <>
+      <div className="mb-4 flex gap-2">
+        <input
+          type="search"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="記事を検索..."
+          className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        />
+        <button
+          type="button"
+          onClick={handleSearch}
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          検索
+        </button>
+      </div>
       <BlogTagFilter />
       {articles.length === 0 ? (
         <p className="text-muted-foreground">
-          {selectedTags.length > 0
-            ? '選択したタグに一致する記事がありません'
-            : 'まだ記事がありません'}
+          {confirmedQuery
+            ? `「${confirmedQuery}」に一致する記事がありません`
+            : selectedTags.length > 0
+              ? '選択したタグに一致する記事がありません'
+              : 'まだ記事がありません'}
         </p>
       ) : (
         <div className="space-y-6">
