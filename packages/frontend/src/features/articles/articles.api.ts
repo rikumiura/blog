@@ -7,6 +7,7 @@ import type {
   UpdateArticleInput,
 } from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
+import { throwApiError } from '@/lib/api-error'
 
 function toArticle(data: {
   publicId: string
@@ -52,14 +53,6 @@ function toArticle(data: {
     publishedAt: null,
     scheduledAt: null,
   }
-}
-
-function extractErrorMessage(data: unknown): string | undefined {
-  if (data !== null && typeof data === 'object' && 'error' in data) {
-    const { error } = data as Record<string, unknown>
-    if (typeof error === 'string') return error
-  }
-  return undefined
 }
 
 /** Hono RPCクライアントによるArticleRepositoryの実装 */
@@ -113,11 +106,7 @@ export const articleApi: ArticleRepository = {
       },
     })
     if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      const message =
-        extractErrorMessage(errorData) ??
-        `記事の作成に失敗しました: ${res.status}`
-      throw new Error(message)
+      await throwApiError(res, '記事の作成に失敗しました')
     }
     const data = await res.json()
     return toArticle(data)
@@ -132,11 +121,7 @@ export const articleApi: ArticleRepository = {
       json: input,
     })
     if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      const message =
-        extractErrorMessage(errorData) ??
-        `記事の更新に失敗しました: ${res.status}`
-      throw new Error(message)
+      await throwApiError(res, '記事の更新に失敗しました')
     }
     const data = await res.json()
     return { ...toArticle(data), body: data.body }
@@ -147,11 +132,7 @@ export const articleApi: ArticleRepository = {
       param: { publicId },
     })
     if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      const message =
-        extractErrorMessage(errorData) ??
-        `記事の公開に失敗しました: ${res.status}`
-      throw new Error(message)
+      await throwApiError(res, '記事の公開に失敗しました')
     }
     const data = await res.json()
     return toArticle(data)
@@ -163,11 +144,7 @@ export const articleApi: ArticleRepository = {
       json: { scheduledAt },
     })
     if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      const message =
-        extractErrorMessage(errorData) ??
-        `予約公開の設定に失敗しました: ${res.status}`
-      throw new Error(message)
+      await throwApiError(res, '予約公開の設定に失敗しました')
     }
     const data = await res.json()
     return toArticle(data)
@@ -180,11 +157,7 @@ export const articleApi: ArticleRepository = {
       param: { publicId },
     })
     if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      const message =
-        extractErrorMessage(errorData) ??
-        `予約の取消に失敗しました: ${res.status}`
-      throw new Error(message)
+      await throwApiError(res, '予約の取消に失敗しました')
     }
     const data = await res.json()
     return toArticle(data)

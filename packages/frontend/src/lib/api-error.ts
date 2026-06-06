@@ -20,6 +20,7 @@ export async function throwApiError(
   defaultMessage: string,
 ): Promise<never> {
   const data = await res.json().catch(() => null)
-  const message = extractErrorMessage(data) ?? `${defaultMessage}: ${res.status}`
+  const message =
+    extractErrorMessage(data) ?? `${defaultMessage}: ${res.status}`
   throw new Error(message)
 }

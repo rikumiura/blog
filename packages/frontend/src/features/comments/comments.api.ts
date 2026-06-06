@@ -1,5 +1,6 @@
 import type { Comment } from '@/core/types/comment'
 import { apiClient } from '@/lib/api-client'
+import { throwApiError } from '@/lib/api-error'
 
 export const commentsApi = {
   async listByArticle(publicId: string): Promise<Comment[]> {
@@ -24,15 +25,7 @@ export const commentsApi = {
       },
     )
     if (!res.ok) {
-      const data = await res.json().catch(() => null)
-      const message =
-        data !== null &&
-        typeof data === 'object' &&
-        'error' in data &&
-        typeof data.error === 'string'
-          ? data.error
-          : `コメントの投稿に失敗しました: ${res.status}`
-      throw new Error(message)
+      await throwApiError(res, 'コメントの投稿に失敗しました')
     }
     return res.json()
   },

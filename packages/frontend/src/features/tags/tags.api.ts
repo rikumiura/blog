@@ -1,16 +1,9 @@
 import { apiClient } from '@/lib/api-client'
+import { throwApiError } from '@/lib/api-error'
 
 export type TagSummary = {
   id: string
   name: string
-}
-
-function extractErrorMessage(data: unknown): string | undefined {
-  if (data !== null && typeof data === 'object' && 'error' in data) {
-    const error = Reflect.get(data, 'error')
-    if (typeof error === 'string') return error
-  }
-  return undefined
 }
 
 export const tagsApi = {
@@ -26,11 +19,7 @@ export const tagsApi = {
   async create(name: string): Promise<TagSummary> {
     const res = await apiClient.api.tags.$post({ json: { name } })
     if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      const message =
-        extractErrorMessage(errorData) ??
-        `タグの作成に失敗しました: ${res.status}`
-      throw new Error(message)
+      await throwApiError(res, 'タグの作成に失敗しました')
     }
     return await res.json()
   },
@@ -38,11 +27,7 @@ export const tagsApi = {
   async delete(id: string): Promise<void> {
     const res = await apiClient.api.tags[':id'].$delete({ param: { id } })
     if (!res.ok) {
-      const errorData = await res.json().catch(() => null)
-      const message =
-        extractErrorMessage(errorData) ??
-        `タグの削除に失敗しました: ${res.status}`
-      throw new Error(message)
+      await throwApiError(res, 'タグの削除に失敗しました')
     }
   },
 }
