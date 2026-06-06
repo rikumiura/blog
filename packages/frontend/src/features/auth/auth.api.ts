@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api-client'
+import { extractErrorMessage } from '@/lib/api-error'
 
 export type LoginInput = {
   username: string
@@ -13,15 +14,6 @@ export type MeResult =
   | { status: 'authenticated'; username: string }
   | { status: 'unauthenticated' }
 
-function isErrorResponse(data: unknown): data is { error: string } {
-  return (
-    typeof data === 'object' &&
-    data !== null &&
-    'error' in data &&
-    typeof (data as { error: unknown }).error === 'string'
-  )
-}
-
 export const authApi = {
   async login(input: LoginInput): Promise<LoginResult> {
     const res = await apiClient.api.auth.login.$post({
@@ -31,9 +23,7 @@ export const authApi = {
     if (!res.ok) {
       if (res.status === 400 || res.status === 401 || res.status === 422) {
         const data = await res.json().catch(() => null)
-        const message = isErrorResponse(data)
-          ? data.error
-          : 'ログインに失敗しました'
+        const message = extractErrorMessage(data) ?? 'ログインに失敗しました'
         return { status: 'error', message }
       }
       throw new Error(`ログインリクエストに失敗しました (HTTP ${res.status})`)
