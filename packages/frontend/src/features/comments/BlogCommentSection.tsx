@@ -1,14 +1,16 @@
+import { useAtomValue } from 'jotai'
 import { useEffect, useState } from 'react'
 import type { Comment } from '@/core/types/comment'
 import { CommentForm } from '@/features/comments/CommentForm'
 import { CommentList } from '@/features/comments/CommentList'
-import { commentsApi } from '@/features/comments/comments.api'
+import { commentRepositoryAtom } from '@/features/comments/comments.atom'
 
 type Props = {
   publicId: string
 }
 
 export function BlogCommentSection({ publicId }: Props) {
+  const repository = useAtomValue(commentRepositoryAtom)
   const [comments, setComments] = useState<Comment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +21,7 @@ export function BlogCommentSection({ publicId }: Props) {
     setError(null)
     setComments([])
 
-    commentsApi
+    repository
       .listByArticle(publicId)
       .then((data) => {
         if (!cancelled) setComments(data)
@@ -37,13 +39,13 @@ export function BlogCommentSection({ publicId }: Props) {
     return () => {
       cancelled = true
     }
-  }, [publicId])
+  }, [publicId, repository])
 
   const handlePostComment = async (input: {
     authorName: string
     content: string
   }) => {
-    const newComment = await commentsApi.post(publicId, input)
+    const newComment = await repository.post(publicId, input)
     setComments((prev) => [...prev, newComment])
   }
 
