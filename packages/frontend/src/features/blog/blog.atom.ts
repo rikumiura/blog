@@ -1,6 +1,10 @@
 import { atom } from 'jotai'
+import type { BlogRepository } from '@/core/ports/blog-repository'
 import type { PublishedArticle } from '@/core/types/article'
 import { blogApi } from './blog.api'
+
+/** ブログリポジトリの依存注入用atom（テスト時に差し替え可能） */
+export const blogRepositoryAtom = atom<BlogRepository>(blogApi)
 
 /** 公開記事一覧の状態 */
 export const blogArticlesAtom = atom<PublishedArticle[]>([])
@@ -50,11 +54,12 @@ export const fetchBlogArticlesAtom = atom(null, async (get, set) => {
   set(blogFetchLoadingAtom, true)
   set(blogErrorAtom, null)
   try {
+    const repository = get(blogRepositoryAtom)
     const page = get(blogCurrentPageAtom)
     const limit = get(blogPageLimitAtom)
     const selectedTags = get(blogSelectedTagsAtom)
     const search = get(blogSearchQueryAtom).trim()
-    const result = await blogApi.findAll({
+    const result = await repository.findAll({
       page,
       limit,
       ...(selectedTags.length > 0 ? { tags: selectedTags } : {}),
