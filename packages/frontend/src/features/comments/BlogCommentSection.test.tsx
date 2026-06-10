@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Provider, createStore } from 'jotai'
+import { createStore, Provider } from 'jotai'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CommentRepository } from '@/core/ports/comment-repository'
 import type { Comment } from '@/core/types/comment'

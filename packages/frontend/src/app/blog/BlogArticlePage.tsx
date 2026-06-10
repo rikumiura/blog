@@ -1,13 +1,15 @@
+import { useAtomValue } from 'jotai'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import type { ArticleDetail } from '@/core/types/article'
 import { BlogArticleContent } from '@/features/blog/BlogArticleContent'
-import { blogApi } from '@/features/blog/blog.api'
+import { blogRepositoryAtom } from '@/features/blog/blog.atom'
 import { BlogCommentSection } from '@/features/comments/BlogCommentSection'
 import { formatDate } from '@/lib/format'
 
 export function BlogArticlePage() {
   const { publicId } = useParams<{ publicId: string }>()
+  const repository = useAtomValue(blogRepositoryAtom)
   const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -20,7 +22,7 @@ export function BlogArticlePage() {
     setArticle(null)
     setError(null)
 
-    blogApi
+    repository
       .findByPublicId(publicId)
       .then((articleData) => {
         if (!cancelled) setArticle(articleData)
@@ -36,7 +38,7 @@ export function BlogArticlePage() {
     return () => {
       cancelled = true
     }
-  }, [publicId])
+  }, [publicId, repository])
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-10 font-sans">
