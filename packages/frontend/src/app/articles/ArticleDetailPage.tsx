@@ -50,19 +50,31 @@ export function ArticleDetailPage() {
   useEffect(() => {
     if (!publicId) return
 
+    let cancelled = false
     setIsLoading(true)
+    setArticle(null)
+    setComments([])
+    setError(null)
     Promise.all([
       articleRepository.findByPublicId(publicId),
       commentRepository.listByArticle(publicId),
     ])
       .then(([articleData, commentsData]) => {
+        if (cancelled) return
         setArticle(articleData)
         setComments(commentsData)
       })
       .catch((e: unknown) => {
-        setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
+        }
       })
-      .finally(() => setIsLoading(false))
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [publicId, articleRepository, commentRepository])
 
   return (

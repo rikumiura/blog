@@ -115,10 +115,7 @@ describe('ArticleDetailPage — 依存注入', () => {
     function GoNextButton() {
       const navigate = useNavigate()
       return (
-        <button
-          type="button"
-          onClick={() => navigate('/admin/articles/pub-2')}
-        >
+        <button type="button" onClick={() => navigate('/admin/articles/pub-2')}>
           次の記事へ
         </button>
       )
