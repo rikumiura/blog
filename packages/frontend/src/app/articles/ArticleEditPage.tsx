@@ -1,11 +1,13 @@
+import { useAtomValue } from 'jotai'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import type { ArticleDetail } from '@/core/types/article'
 import { ArticleEditForm } from '@/features/articles/ArticleEditForm'
-import { articleApi } from '@/features/articles/articles.api'
+import { articleRepositoryAtom } from '@/features/articles/articles.atom'
 
 export function ArticleEditPage() {
   const { publicId } = useParams<{ publicId: string }>()
+  const repository = useAtomValue(articleRepositoryAtom)
   const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -21,7 +23,7 @@ export function ArticleEditPage() {
     setIsLoading(true)
     setArticle(null)
     setError(null)
-    articleApi
+    repository
       .findByPublicId(publicId)
       .then((data) => {
         if (!cancelled) setArticle(data)
@@ -37,7 +39,7 @@ export function ArticleEditPage() {
     return () => {
       cancelled = true
     }
-  }, [publicId])
+  }, [publicId, repository])
 
   return (
     <div className="mx-auto max-w-4xl p-5 font-sans">

@@ -1,3 +1,4 @@
+import { useAtomValue } from 'jotai'
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,9 +10,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { type TagSummary, tagsApi } from './tags.api'
+import type { TagSummary } from '@/core/types/tag'
+import { tagRepositoryAtom } from './tags.atom'
 
 export function TagList() {
+  const repository = useAtomValue(tagRepositoryAtom)
   const [tags, setTags] = useState<TagSummary[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,14 +26,14 @@ export function TagList() {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await tagsApi.listAll()
+      const data = await repository.listAll()
       setTags(data)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'タグの取得に失敗しました')
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [repository])
 
   useEffect(() => {
     load()
@@ -45,10 +48,10 @@ export function TagList() {
       setError(null)
       setIsCreating(true)
       try {
-        await tagsApi.create(trimmed)
+        await repository.create(trimmed)
         setNewName('')
         // サーバ側の並び順（ORDER BY name ASC）と一致させるため再フェッチする
-        const data = await tagsApi.listAll()
+        const data = await repository.listAll()
         setTags(data)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'タグの作成に失敗しました')
@@ -56,7 +59,7 @@ export function TagList() {
         setIsCreating(false)
       }
     },
-    [newName, isCreating],
+    [newName, isCreating, repository],
   )
 
   const handleDelete = useCallback(
@@ -71,7 +74,7 @@ export function TagList() {
       setError(null)
       setDeletingId(tag.id)
       try {
-        await tagsApi.delete(tag.id)
+        await repository.delete(tag.id)
         setTags((prev) => prev.filter((t) => t.id !== tag.id))
       } catch (e) {
         setError(e instanceof Error ? e.message : 'タグの削除に失敗しました')
@@ -79,7 +82,7 @@ export function TagList() {
         setDeletingId(null)
       }
     },
-    [deletingId],
+    [deletingId, repository],
   )
 
   if (isLoading) return <p className="text-muted-foreground">読み込み中...</p>

@@ -1,10 +1,6 @@
+import type { TagSummary } from '@/core/types/tag'
 import { apiClient } from '@/lib/api-client'
 import { throwApiError } from '@/lib/api-error'
-
-export type TagSummary = {
-  id: string
-  name: string
-}
 
 export const tagsApi = {
   async listAll(): Promise<TagSummary[]> {

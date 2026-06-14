@@ -1,9 +1,20 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { createStore, Provider } from 'jotai'
 import { HttpResponse, http } from 'msw'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
+import type { TagRepository } from '@/core/ports/tag-repository'
 import { server } from '@/mocks/server'
 import { TagList } from './TagList'
+import { tagRepositoryAtom } from './tags.atom'
 
 const baseUrl = 'http://localhost:8787'
 
@@ -13,6 +24,60 @@ afterEach(() => {
   server.resetHandlers()
 })
 afterAll(() => server.close())
+
+describe('TagList — 依存注入', () => {
+  it('注入したモックリポジトリからタグ一覧を表示する', async () => {
+    const repository: TagRepository = {
+      listAll: vi.fn().mockResolvedValue([{ id: 'tag-1', name: 'Hono' }]),
+      create: vi.fn(),
+      delete: vi.fn(),
+    }
+    const store = createStore()
+    store.set(tagRepositoryAtom, repository)
+
+    render(
+      <Provider store={store}>
+        <TagList />
+      </Provider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Hono')).toBeInTheDocument()
+    })
+    expect(repository.listAll).toHaveBeenCalled()
+  })
+
+  it('タグ削除時に注入したリポジトリの delete が呼ばれる', async () => {
+    const user = userEvent.setup()
+    const confirmSpy = vi
+      .spyOn(globalThis, 'confirm')
+      .mockImplementation(() => true)
+    const repository: TagRepository = {
+      listAll: vi.fn().mockResolvedValue([{ id: 'tag-1', name: 'Hono' }]),
+      create: vi.fn(),
+      delete: vi.fn().mockResolvedValue(undefined),
+    }
+    const store = createStore()
+    store.set(tagRepositoryAtom, repository)
+
+    render(
+      <Provider store={store}>
+        <TagList />
+      </Provider>,
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('Hono')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: '削除' }))
+
+    await waitFor(() => {
+      expect(repository.delete).toHaveBeenCalledWith('tag-1')
+    })
+    confirmSpy.mockRestore()
+  })
+})
 
 describe('TagList — タグ新規作成フォーム', () => {
   it('入力 → 送信で API が呼ばれ、一覧に新タグが追加される', async () => {

@@ -1,16 +1,19 @@
+import { useAtomValue } from 'jotai'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { Button } from '@/components/ui/button'
 import type { ArticleDetail } from '@/core/types/article'
 import type { Comment } from '@/core/types/comment'
-import { articleApi } from '@/features/articles/articles.api'
+import { articleRepositoryAtom } from '@/features/articles/articles.atom'
 import { DeleteArticleDialog } from '@/features/articles/DeleteArticleDialog'
 import { CommentList } from '@/features/comments/CommentList'
-import { commentsApi } from '@/features/comments/comments.api'
+import { commentRepositoryAtom } from '@/features/comments/comments.atom'
 
 export function ArticleDetailPage() {
   const { publicId } = useParams<{ publicId: string }>()
   const navigate = useNavigate()
+  const articleRepository = useAtomValue(articleRepositoryAtom)
+  const commentRepository = useAtomValue(commentRepositoryAtom)
   const [article, setArticle] = useState<ArticleDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -24,7 +27,7 @@ export function ArticleDetailPage() {
     setIsDeleting(true)
     setDeleteError(null)
     try {
-      await articleApi.delete(publicId)
+      await articleRepository.delete(publicId)
       navigate('/admin')
     } catch (e: unknown) {
       setDeleteError(
@@ -34,30 +37,45 @@ export function ArticleDetailPage() {
     } finally {
       setIsDeleting(false)
     }
-  }, [publicId, navigate])
+  }, [publicId, navigate, articleRepository])
 
-  const handleDeleteComment = useCallback(async (commentId: string) => {
-    await commentsApi.deleteComment(commentId)
-    setComments((prev) => prev.filter((c) => c.id !== commentId))
-  }, [])
+  const handleDeleteComment = useCallback(
+    async (commentId: string) => {
+      await commentRepository.deleteComment(commentId)
+      setComments((prev) => prev.filter((c) => c.id !== commentId))
+    },
+    [commentRepository],
+  )
 
   useEffect(() => {
     if (!publicId) return
 
+    let cancelled = false
     setIsLoading(true)
+    setArticle(null)
+    setComments([])
+    setError(null)
     Promise.all([
-      articleApi.findByPublicId(publicId),
-      commentsApi.listByArticle(publicId),
+      articleRepository.findByPublicId(publicId),
+      commentRepository.listByArticle(publicId),
     ])
       .then(([articleData, commentsData]) => {
+        if (cancelled) return
         setArticle(articleData)
         setComments(commentsData)
       })
       .catch((e: unknown) => {
-        setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : '記事の取得に失敗しました')
+        }
       })
-      .finally(() => setIsLoading(false))
-  }, [publicId])
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [publicId, articleRepository, commentRepository])
 
   return (
     <div className="mx-auto max-w-4xl p-5 font-sans">
