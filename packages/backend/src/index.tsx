@@ -4,10 +4,7 @@ import { cors } from 'hono/cors'
 import type { AppEnv, Bindings } from './env'
 import { createAuthMiddleware } from './infrastructure/auth/auth-middleware'
 import { JwtTokenGenerator } from './infrastructure/auth/jwt-token-generator'
-import { createDbClient } from './infrastructure/database'
-import { DrizzleArticleRepository } from './infrastructure/repositories/drizzle-article-repository'
-import { DrizzleBodyKeyDeletionQueue } from './infrastructure/repositories/drizzle-body-key-deletion-queue'
-import { R2BodyStorage } from './infrastructure/storage/r2-body-storage'
+import { createDeps } from './infrastructure/deps'
 import { articleRoutes } from './routes/articles'
 import { authRoutes } from './routes/auth'
 import { commentRoutes } from './routes/comments'
@@ -24,6 +21,10 @@ const authMiddleware = createAuthMiddleware(
 const app = new Hono<AppEnv>()
 
 app.use('/*', cors())
+app.use('/*', async (c, next) => {
+  c.set('deps', createDeps(c.env))
+  await next()
+})
 
 // 管理者用APIに認証ミドルウェアを適用
 app.use('/api/articles/*', authMiddleware)
@@ -88,13 +89,13 @@ export default {
     env: Bindings,
     _ctx: ExecutionContext,
   ) {
-    const db = createDbClient(env.DB)
+    const { articleRepository, bodyKeyDeletionQueue, bodyStorage, now } =
+      createDeps(env)
 
     try {
-      const repository = new DrizzleArticleRepository(db)
       const result = await publishScheduledArticles({
-        repository,
-        now: () => new Date().toISOString(),
+        repository: articleRepository,
+        now,
       })
       if (result.publishedCount > 0) {
         console.log(`予約公開: ${result.publishedCount}件の記事を公開しました`)
@@ -104,12 +105,10 @@ export default {
     }
 
     try {
-      const bodyKeyDeletionQueue = new DrizzleBodyKeyDeletionQueue(db)
-      const bodyStorage = new R2BodyStorage(env.ARTICLE_BUCKET)
       const result = await cleanupPendingBodyDeletions({
         bodyKeyDeletionQueue,
         bodyStorage,
-        articleRepository: new DrizzleArticleRepository(db),
+        articleRepository,
       })
       if (result.deletedCount > 0) {
         console.log(

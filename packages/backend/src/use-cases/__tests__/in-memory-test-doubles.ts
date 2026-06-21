@@ -6,7 +6,7 @@ import {
   type PublishedArticle,
   type Title,
 } from '../../domain/models/article'
-import type { Comment, CommentId } from '../../domain/models/comment'
+import { type Comment, CommentId } from '../../domain/models/comment'
 import type { Tag, TagName } from '../../domain/models/tag'
 import { TagId } from '../../domain/models/tag'
 import type {
@@ -373,6 +373,12 @@ export class FakeArticleIdGenerator implements ArticleIdGenerator {
   generateTagId(): TagId {
     this._tagIdCounter++
     return TagId(`tag-${this._tagIdCounter}`)
+  }
+
+  private _commentIdCounter = 0
+  generateCommentId(): CommentId {
+    this._commentIdCounter++
+    return CommentId(`comment-${this._commentIdCounter}`)
   }
 }
 
