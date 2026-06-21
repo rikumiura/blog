@@ -1,3 +1,5 @@
+import type { Deps } from './infrastructure/deps'
+
 export type Bindings = {
   DB: D1Database
   ARTICLE_BUCKET: R2Bucket
@@ -8,6 +10,7 @@ export type Bindings = {
 
 export type Variables = {
   user: { sub: string }
+  deps: Deps
 }
 
 export type AppEnv = { Bindings: Bindings; Variables: Variables }

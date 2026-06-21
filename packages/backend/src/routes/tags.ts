@@ -2,9 +2,6 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { TagId } from '../domain/models/tag'
 import type { AppEnv } from '../env'
-import { createDbClient } from '../infrastructure/database'
-import { ArticleIdGeneratorImpl } from '../infrastructure/id/article-id-generator-impl'
-import { DrizzleTagRepository } from '../infrastructure/repositories/drizzle-tag-repository'
 import {
   createTagSchema,
   tagIdParamSchema,
@@ -15,8 +12,7 @@ import { listTags } from '../use-cases/list-tags'
 
 export const tagRoutes = new Hono<AppEnv>()
   .get('/', async (c) => {
-    const db = createDbClient(c.env.DB)
-    const tagRepository = new DrizzleTagRepository(db)
+    const { tagRepository } = c.get('deps')
 
     const result = await listTags({ tagRepository })
 
@@ -29,9 +25,7 @@ export const tagRoutes = new Hono<AppEnv>()
   })
   .post('/', zValidator('json', createTagSchema), async (c) => {
     const input = c.req.valid('json')
-    const db = createDbClient(c.env.DB)
-    const tagRepository = new DrizzleTagRepository(db)
-    const idGenerator = new ArticleIdGeneratorImpl()
+    const { tagRepository, idGenerator } = c.get('deps')
 
     const result = await createTag(input, {
       tagRepository,
@@ -52,8 +46,7 @@ export const tagRoutes = new Hono<AppEnv>()
   })
   .delete('/:id', zValidator('param', tagIdParamSchema), async (c) => {
     const id = TagId(c.req.valid('param').id)
-    const db = createDbClient(c.env.DB)
-    const tagRepository = new DrizzleTagRepository(db)
+    const { tagRepository } = c.get('deps')
 
     const result = await deleteTag(id, { tagRepository })
 

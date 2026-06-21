@@ -2,12 +2,6 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 import { PublicArticleId } from '../domain/models/article'
 import type { AppEnv } from '../env'
-import { createDbClient } from '../infrastructure/database'
-import { ArticleIdGeneratorImpl } from '../infrastructure/id/article-id-generator-impl'
-import { DrizzleArticleRepository } from '../infrastructure/repositories/drizzle-article-repository'
-import { DrizzleBodyKeyDeletionQueue } from '../infrastructure/repositories/drizzle-body-key-deletion-queue'
-import { DrizzleTagRepository } from '../infrastructure/repositories/drizzle-tag-repository'
-import { R2BodyStorage } from '../infrastructure/storage/r2-body-storage'
 import {
   toArticleDetailDto,
   toArticleSummaryDto,
@@ -34,10 +28,8 @@ import { updateArticleTags } from '../use-cases/update-article-tags'
 export const articleRoutes = new Hono<AppEnv>()
   .get('/', zValidator('query', paginationSchema), async (c) => {
     const { page, limit, tags } = c.req.valid('query')
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const tagRepository = new DrizzleTagRepository(db)
-    const paginatedResult = await listArticlesPaginated(repository, {
+    const { articleRepository, tagRepository } = c.get('deps')
+    const paginatedResult = await listArticlesPaginated(articleRepository, {
       page,
       limit,
       ...(tags ? { tags } : {}),
@@ -48,12 +40,12 @@ export const articleRoutes = new Hono<AppEnv>()
   })
   .get('/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
     const publicId = PublicArticleId(c.req.valid('param').publicId)
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const tagRepository = new DrizzleTagRepository(db)
-    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
+    const { articleRepository, tagRepository, bodyStorage } = c.get('deps')
 
-    const result = await getArticle(publicId, { repository, bodyStorage })
+    const result = await getArticle(publicId, {
+      repository: articleRepository,
+      bodyStorage,
+    })
 
     switch (result.status) {
       case 'found': {
@@ -68,18 +60,15 @@ export const articleRoutes = new Hono<AppEnv>()
   })
   .post('/', zValidator('json', createArticleSchema), async (c) => {
     const input = c.req.valid('json')
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const tagRepository = new DrizzleTagRepository(db)
-    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
-    const idGenerator = new ArticleIdGeneratorImpl()
+    const { articleRepository, tagRepository, bodyStorage, idGenerator, now } =
+      c.get('deps')
 
     const result = await createArticle(input, {
-      repository,
+      repository: articleRepository,
       bodyStorage,
       idGenerator,
       tagRepository,
-      now: () => new Date().toISOString(),
+      now,
     })
 
     switch (result.status) {
@@ -101,21 +90,23 @@ export const articleRoutes = new Hono<AppEnv>()
         ...(rawInput.body !== undefined ? { body: rawInput.body } : {}),
         ...(rawInput.tags !== undefined ? { tags: rawInput.tags } : {}),
       }
-      const db = createDbClient(c.env.DB)
-      const repository = new DrizzleArticleRepository(db)
-      const tagRepository = new DrizzleTagRepository(db)
-      const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
-      const idGenerator = new ArticleIdGeneratorImpl()
-      const bodyKeyDeletionQueue = new DrizzleBodyKeyDeletionQueue(db)
+      const {
+        articleRepository,
+        tagRepository,
+        bodyStorage,
+        idGenerator,
+        bodyKeyDeletionQueue,
+        now,
+      } = c.get('deps')
 
       const result = await updateArticle(publicId, input, {
-        repository,
+        repository: articleRepository,
         bodyStorage,
         tagRepository,
         bodyKeyDeletionQueue,
         generateTagId: () => idGenerator.generateTagId(),
         generateBodyKey: () => idGenerator.generateBodyKey(),
-        now: () => new Date().toISOString(),
+        now,
         waitUntil: (p) => c.executionCtx.waitUntil(p),
       })
 
@@ -143,13 +134,11 @@ export const articleRoutes = new Hono<AppEnv>()
     zValidator('param', publicIdParamSchema),
     async (c) => {
       const publicId = PublicArticleId(c.req.valid('param').publicId)
-      const db = createDbClient(c.env.DB)
-      const repository = new DrizzleArticleRepository(db)
-      const tagRepository = new DrizzleTagRepository(db)
+      const { articleRepository, tagRepository, now } = c.get('deps')
 
       const result = await publishArticle(publicId, {
-        repository,
-        now: () => new Date().toISOString(),
+        repository: articleRepository,
+        now,
       })
 
       switch (result.status) {
@@ -179,13 +168,11 @@ export const articleRoutes = new Hono<AppEnv>()
     async (c) => {
       const publicId = PublicArticleId(c.req.valid('param').publicId)
       const { scheduledAt } = c.req.valid('json')
-      const db = createDbClient(c.env.DB)
-      const repository = new DrizzleArticleRepository(db)
-      const tagRepository = new DrizzleTagRepository(db)
+      const { articleRepository, tagRepository, now } = c.get('deps')
 
       const result = await scheduleArticle(publicId, scheduledAt, {
-        repository,
-        now: () => new Date().toISOString(),
+        repository: articleRepository,
+        now,
       })
 
       switch (result.status) {
@@ -215,13 +202,11 @@ export const articleRoutes = new Hono<AppEnv>()
     zValidator('param', publicIdParamSchema),
     async (c) => {
       const publicId = PublicArticleId(c.req.valid('param').publicId)
-      const db = createDbClient(c.env.DB)
-      const repository = new DrizzleArticleRepository(db)
-      const tagRepository = new DrizzleTagRepository(db)
+      const { articleRepository, tagRepository, now } = c.get('deps')
 
       const result = await cancelSchedule(publicId, {
-        repository,
-        now: () => new Date().toISOString(),
+        repository: articleRepository,
+        now,
       })
 
       switch (result.status) {
@@ -251,16 +236,14 @@ export const articleRoutes = new Hono<AppEnv>()
     async (c) => {
       const publicId = PublicArticleId(c.req.valid('param').publicId)
       const { tags } = c.req.valid('json')
-      const db = createDbClient(c.env.DB)
-      const articleRepository = new DrizzleArticleRepository(db)
-      const tagRepository = new DrizzleTagRepository(db)
-      const idGenerator = new ArticleIdGeneratorImpl()
+      const { articleRepository, tagRepository, idGenerator, now } =
+        c.get('deps')
 
       const result = await updateArticleTags(publicId, tags, {
         articleRepository,
         tagRepository,
         generateTagId: () => idGenerator.generateTagId(),
-        now: () => new Date().toISOString(),
+        now,
       })
 
       switch (result.status) {
@@ -277,14 +260,12 @@ export const articleRoutes = new Hono<AppEnv>()
   )
   .delete('/:publicId', zValidator('param', publicIdParamSchema), async (c) => {
     const publicId = PublicArticleId(c.req.valid('param').publicId)
-    const db = createDbClient(c.env.DB)
-    const repository = new DrizzleArticleRepository(db)
-    const bodyStorage = new R2BodyStorage(c.env.ARTICLE_BUCKET)
+    const { articleRepository, bodyStorage, now } = c.get('deps')
 
     const result = await deleteArticle(publicId, {
-      repository,
+      repository: articleRepository,
       bodyStorage,
-      now: () => new Date().toISOString(),
+      now,
       waitUntil: (p) => c.executionCtx.waitUntil(p),
     })
 

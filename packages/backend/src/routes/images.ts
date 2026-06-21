@@ -3,7 +3,6 @@ import type { AppEnv } from '../env'
 import {
   isAllowedImageContentType,
   MAX_IMAGE_SIZE_BYTES,
-  R2ImageStorage,
 } from '../infrastructure/storage/r2-image-storage'
 
 export const imageRoutes = new Hono<AppEnv>().post('/', async (c) => {
@@ -32,7 +31,7 @@ export const imageRoutes = new Hono<AppEnv>().post('/', async (c) => {
   const { uuidv7 } = await import('uuidv7')
   const key = `${uuidv7()}.${ext}`
 
-  const imageStorage = new R2ImageStorage(c.env.ARTICLE_BUCKET)
+  const { imageStorage } = c.get('deps')
   const data = await file.arrayBuffer()
   await imageStorage.save(key, data, file.type)
 
