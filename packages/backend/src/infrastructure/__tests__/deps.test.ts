@@ -33,23 +33,13 @@ vi.mock('../id/article-id-generator-impl', () => ({
   ArticleIdGeneratorImpl: vi.fn(),
 }))
 
-vi.mock('../auth/jwt-token-generator', () => ({
-  JwtTokenGenerator: vi.fn(),
-}))
-
-vi.mock('../auth/pbkdf2-password-hasher', () => ({
-  Pbkdf2PasswordHasher: vi.fn(),
-}))
-
 const { createDeps } = await import('../deps')
 
-const env: Bindings = {
+// JWT_SECRET 等は createDeps が参照しないことを確認するため、意図的に未設定にする
+const env = {
   DB: {} as Bindings['DB'],
   ARTICLE_BUCKET: {} as Bindings['ARTICLE_BUCKET'],
-  ADMIN_USERNAME: 'admin',
-  ADMIN_PASSWORD_HASH: 'hashed',
-  JWT_SECRET: 'secret',
-}
+} as Bindings
 
 describe('createDeps', () => {
   it('リクエスト処理に必要な依存一式を生成する', () => {
@@ -62,8 +52,6 @@ describe('createDeps', () => {
     expect(deps.bodyStorage).toBeDefined()
     expect(deps.imageStorage).toBeDefined()
     expect(deps.idGenerator).toBeDefined()
-    expect(deps.tokenGenerator).toBeDefined()
-    expect(deps.passwordHasher).toBeDefined()
     expect(typeof deps.now).toBe('function')
     expect(typeof deps.now()).toBe('string')
   })
