@@ -7,7 +7,7 @@ import type {
   UpdateArticleInput,
 } from '@/core/types/article'
 import { apiClient } from '@/lib/api-client'
-import { throwApiError } from '@/lib/api-error'
+import { createApiError } from '@/lib/api-error'
 
 function toArticle(data: {
   publicId: string
@@ -106,7 +106,7 @@ export const articleApi: ArticleRepository = {
       },
     })
     if (!res.ok) {
-      await throwApiError(res, '記事の作成に失敗しました')
+      throw await createApiError(res, '記事の作成に失敗しました')
     }
     const data = await res.json()
     return toArticle(data)
@@ -121,7 +121,7 @@ export const articleApi: ArticleRepository = {
       json: input,
     })
     if (!res.ok) {
-      await throwApiError(res, '記事の更新に失敗しました')
+      throw await createApiError(res, '記事の更新に失敗しました')
     }
     const data = await res.json()
     return { ...toArticle(data), body: data.body }
@@ -132,7 +132,7 @@ export const articleApi: ArticleRepository = {
       param: { publicId },
     })
     if (!res.ok) {
-      await throwApiError(res, '記事の公開に失敗しました')
+      throw await createApiError(res, '記事の公開に失敗しました')
     }
     const data = await res.json()
     return toArticle(data)
@@ -144,7 +144,7 @@ export const articleApi: ArticleRepository = {
       json: { scheduledAt },
     })
     if (!res.ok) {
-      await throwApiError(res, '予約公開の設定に失敗しました')
+      throw await createApiError(res, '予約公開の設定に失敗しました')
     }
     const data = await res.json()
     return toArticle(data)
@@ -157,7 +157,7 @@ export const articleApi: ArticleRepository = {
       param: { publicId },
     })
     if (!res.ok) {
-      await throwApiError(res, '予約の取消に失敗しました')
+      throw await createApiError(res, '予約の取消に失敗しました')
     }
     const data = await res.json()
     return toArticle(data)

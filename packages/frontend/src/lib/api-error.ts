@@ -11,16 +11,19 @@ export function extractErrorMessage(data: unknown): string | undefined {
 }
 
 /**
- * 失敗レスポンスから Error を生成して throw する。
+ * 失敗レスポンスから Error を生成して返す（throw はしない）。
  * レスポンスボディに error フィールドがあればそのメッセージを、
  * なければ defaultMessage とステータスコードを組み合わせたメッセージを用いる。
+ *
+ * 呼び出し側で `throw await createApiError(...)` と明示的に throw することで、
+ * TypeScript の到達不能解析が働き、後続の res.json() が成功型へ絞り込まれる。
  */
-export async function throwApiError(
+export async function createApiError(
   res: Response,
   defaultMessage: string,
-): Promise<never> {
+): Promise<Error> {
   const data = await res.json().catch(() => null)
   const message =
     extractErrorMessage(data) ?? `${defaultMessage}: ${res.status}`
-  throw new Error(message)
+  return new Error(message)
 }
