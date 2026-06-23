@@ -27,15 +27,3 @@ export async function createApiError(
     extractErrorMessage(data) ?? `${defaultMessage}: ${res.status}`
   return new Error(message)
 }
-
-/**
- * 失敗レスポンスから Error を生成して throw する。
- * レスポンスボディに error フィールドがあればそのメッセージを、
- * なければ defaultMessage とステータスコードを組み合わせたメッセージを用いる。
- */
-export async function throwApiError(
-  res: Response,
-  defaultMessage: string,
-): Promise<never> {
-  throw await createApiError(res, defaultMessage)
-}

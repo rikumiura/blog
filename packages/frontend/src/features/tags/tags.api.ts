@@ -1,6 +1,6 @@
 import type { TagSummary } from '@/core/types/tag'
 import { apiClient } from '@/lib/api-client'
-import { throwApiError } from '@/lib/api-error'
+import { createApiError } from '@/lib/api-error'
 
 export const tagsApi = {
   async listAll(): Promise<TagSummary[]> {
@@ -15,7 +15,7 @@ export const tagsApi = {
   async create(name: string): Promise<TagSummary> {
     const res = await apiClient.api.tags.$post({ json: { name } })
     if (!res.ok) {
-      await throwApiError(res, 'タグの作成に失敗しました')
+      throw await createApiError(res, 'タグの作成に失敗しました')
     }
     return await res.json()
   },
@@ -23,7 +23,7 @@ export const tagsApi = {
   async delete(id: string): Promise<void> {
     const res = await apiClient.api.tags[':id'].$delete({ param: { id } })
     if (!res.ok) {
-      await throwApiError(res, 'タグの削除に失敗しました')
+      throw await createApiError(res, 'タグの削除に失敗しました')
     }
   },
 }
