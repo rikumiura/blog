@@ -73,3 +73,6 @@ playwright-report/
 .claude/agent-memory/
 
 plan.md
+
+# シードデータ生成物
+packages/db/seeds/seed.sql
