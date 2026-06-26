@@ -5,19 +5,40 @@ type ArticleRow = InferInsertModel<typeof articles>
 type TagRow = InferInsertModel<typeof tags>
 type ArticleTagRow = InferInsertModel<typeof articleTags>
 
+// buildSeedArticles/buildSeedTags と buildSeedArticleTags の参照整合性を保つため、IDを一箇所で管理する
+const TAG_ID: Record<
+  'typescript' | 'react' | 'cloudflare' | 'drizzle',
+  string
+> = {
+  typescript: 'seed-tag-typescript',
+  react: 'seed-tag-react',
+  cloudflare: 'seed-tag-cloudflare',
+  drizzle: 'seed-tag-drizzle',
+}
+
+const ARTICLE_ID: Record<
+  'draft1' | 'scheduled1' | 'published1' | 'published2',
+  string
+> = {
+  draft1: 'seed-article-draft-1',
+  scheduled1: 'seed-article-scheduled-1',
+  published1: 'seed-article-published-1',
+  published2: 'seed-article-published-2',
+}
+
 export function buildSeedTags(): TagRow[] {
   return [
-    { id: 'seed-tag-typescript', name: 'TypeScript' },
-    { id: 'seed-tag-react', name: 'React' },
-    { id: 'seed-tag-cloudflare', name: 'Cloudflare' },
-    { id: 'seed-tag-drizzle', name: 'Drizzle' },
+    { id: TAG_ID.typescript, name: 'TypeScript' },
+    { id: TAG_ID.react, name: 'React' },
+    { id: TAG_ID.cloudflare, name: 'Cloudflare' },
+    { id: TAG_ID.drizzle, name: 'Drizzle' },
   ]
 }
 
 export function buildSeedArticles(): ArticleRow[] {
   return [
     {
-      id: 'seed-article-draft-1',
+      id: ARTICLE_ID.draft1,
       publicId: 'seed-public-draft-1',
       title: '下書き記事のサンプル',
       bodyKey: 'seed-body-draft-1.md',
@@ -28,7 +49,7 @@ export function buildSeedArticles(): ArticleRow[] {
       scheduledAt: null,
     },
     {
-      id: 'seed-article-scheduled-1',
+      id: ARTICLE_ID.scheduled1,
       publicId: 'seed-public-scheduled-1',
       title: '予約投稿記事のサンプル',
       bodyKey: 'seed-body-scheduled-1.md',
@@ -39,7 +60,7 @@ export function buildSeedArticles(): ArticleRow[] {
       scheduledAt: '2026-07-01T00:00:00.000Z',
     },
     {
-      id: 'seed-article-published-1',
+      id: ARTICLE_ID.published1,
       publicId: 'seed-public-published-1',
       title: '公開済み記事のサンプル',
       bodyKey: 'seed-body-published-1.md',
@@ -50,7 +71,7 @@ export function buildSeedArticles(): ArticleRow[] {
       scheduledAt: null,
     },
     {
-      id: 'seed-article-published-2',
+      id: ARTICLE_ID.published2,
       publicId: 'seed-public-published-2',
       title: 'もう一つの公開済み記事のサンプル',
       bodyKey: 'seed-body-published-2.md',
@@ -65,11 +86,11 @@ export function buildSeedArticles(): ArticleRow[] {
 
 export function buildSeedArticleTags(): ArticleTagRow[] {
   return [
-    { articleId: 'seed-article-draft-1', tagId: 'seed-tag-typescript' },
-    { articleId: 'seed-article-scheduled-1', tagId: 'seed-tag-react' },
-    { articleId: 'seed-article-scheduled-1', tagId: 'seed-tag-typescript' },
-    { articleId: 'seed-article-published-1', tagId: 'seed-tag-cloudflare' },
-    { articleId: 'seed-article-published-1', tagId: 'seed-tag-drizzle' },
-    { articleId: 'seed-article-published-2', tagId: 'seed-tag-typescript' },
+    { articleId: ARTICLE_ID.draft1, tagId: TAG_ID.typescript },
+    { articleId: ARTICLE_ID.scheduled1, tagId: TAG_ID.react },
+    { articleId: ARTICLE_ID.scheduled1, tagId: TAG_ID.typescript },
+    { articleId: ARTICLE_ID.published1, tagId: TAG_ID.cloudflare },
+    { articleId: ARTICLE_ID.published1, tagId: TAG_ID.drizzle },
+    { articleId: ARTICLE_ID.published2, tagId: TAG_ID.typescript },
   ]
 }
