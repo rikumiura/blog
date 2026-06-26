@@ -1,9 +1,10 @@
 import type { InferInsertModel } from 'drizzle-orm'
 import type { articles, articleTags, tags } from '../schema'
 
-type ArticleRow = InferInsertModel<typeof articles>
-type TagRow = InferInsertModel<typeof tags>
-type ArticleTagRow = InferInsertModel<typeof articleTags>
+// シードSQL生成側ではdefaultを持つカラムも省略不可として扱うため、ここでも全カラムを必須にする
+type ArticleRow = Required<InferInsertModel<typeof articles>>
+type TagRow = Required<InferInsertModel<typeof tags>>
+type ArticleTagRow = Required<InferInsertModel<typeof articleTags>>
 
 // buildSeedArticles/buildSeedTags と buildSeedArticleTags の参照整合性を保つため、IDを一箇所で管理する
 const TAG_ID: Record<

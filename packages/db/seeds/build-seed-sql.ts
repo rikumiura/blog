@@ -1,9 +1,10 @@
 import type { InferInsertModel } from 'drizzle-orm'
 import type { articles, articleTags, tags } from '../schema'
 
-type ArticleRow = InferInsertModel<typeof articles>
-type TagRow = InferInsertModel<typeof tags>
-type ArticleTagRow = InferInsertModel<typeof articleTags>
+// INSERT文には全カラムを明示的に渡すため、defaultを持つカラムも省略不可にする
+type ArticleRow = Required<InferInsertModel<typeof articles>>
+type TagRow = Required<InferInsertModel<typeof tags>>
+type ArticleTagRow = Required<InferInsertModel<typeof articleTags>>
 
 type SeedRows = {
   tags: TagRow[]
