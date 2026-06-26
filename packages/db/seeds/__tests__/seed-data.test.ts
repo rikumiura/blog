@@ -27,7 +27,9 @@ describe('buildSeedTags', () => {
 describe('buildSeedArticles', () => {
   it('draft記事は publishedAt と scheduledAt が null である', () => {
     const articles = buildSeedArticles()
-    const draftArticles = articles.filter((article) => article.status === 'draft')
+    const draftArticles = articles.filter(
+      (article) => article.status === 'draft',
+    )
 
     expect(draftArticles.length).toBeGreaterThan(0)
     for (const article of draftArticles) {
@@ -38,7 +40,9 @@ describe('buildSeedArticles', () => {
 
   it('scheduled記事は scheduledAt が設定され publishedAt が null である', () => {
     const articles = buildSeedArticles()
-    const scheduledArticles = articles.filter((article) => article.status === 'scheduled')
+    const scheduledArticles = articles.filter(
+      (article) => article.status === 'scheduled',
+    )
 
     expect(scheduledArticles.length).toBeGreaterThan(0)
     for (const article of scheduledArticles) {
@@ -49,7 +53,9 @@ describe('buildSeedArticles', () => {
 
   it('published記事は publishedAt が設定される', () => {
     const articles = buildSeedArticles()
-    const publishedArticles = articles.filter((article) => article.status === 'published')
+    const publishedArticles = articles.filter(
+      (article) => article.status === 'published',
+    )
 
     expect(publishedArticles.length).toBeGreaterThan(0)
     for (const article of publishedArticles) {
@@ -99,7 +105,9 @@ describe('buildSeedArticleTags', () => {
   it('同じ記事・タグの組は重複しない', () => {
     const articleTags = buildSeedArticleTags()
 
-    const keys = articleTags.map((articleTag) => `${articleTag.articleId}:${articleTag.tagId}`)
+    const keys = articleTags.map(
+      (articleTag) => `${articleTag.articleId}:${articleTag.tagId}`,
+    )
     expect(new Set(keys).size).toBe(keys.length)
   })
 })
