@@ -11,8 +11,8 @@ describe('buildSeedTags', () => {
 
     expect(tags.length).toBeGreaterThan(0)
     for (const tag of tags) {
-      expect(tag.name.length).toBeGreaterThanOrEqual(1)
-      expect(tag.name.length).toBeLessThanOrEqual(30)
+      expect(tag.name.trim().length).toBeGreaterThanOrEqual(1)
+      expect(tag.name.trim().length).toBeLessThanOrEqual(30)
     }
   })
 
@@ -21,6 +21,13 @@ describe('buildSeedTags', () => {
 
     const ids = new Set(tags.map((tag) => tag.id))
     expect(ids.size).toBe(tags.length)
+  })
+
+  it('タグ名はすべて一意である', () => {
+    const tags = buildSeedTags()
+
+    const names = new Set(tags.map((tag) => tag.name))
+    expect(names.size).toBe(tags.length)
   })
 })
 

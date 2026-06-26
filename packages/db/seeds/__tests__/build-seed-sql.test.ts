@@ -57,4 +57,12 @@ describe('buildSeedSql', () => {
       "INSERT INTO tags (id, name) VALUES ('tag-1', 'O''Reilly');",
     )
   })
+
+  it('DELETE/INSERT文全体をトランザクションで囲む', () => {
+    const sql = buildSeedSql({ tags: [], articles: [], articleTags: [] })
+    const statements = sql.split('\n')
+
+    expect(statements[0]).toBe('BEGIN;')
+    expect(statements[statements.length - 1]).toBe('COMMIT;')
+  })
 })
