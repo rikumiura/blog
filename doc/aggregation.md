@@ -93,6 +93,7 @@ Draft ──────────────────────→ Publ
 | 名前 | 分類 | 型 / 実装 | 説明 |
 | :--- | :--- | :--- | :--- |
 | `CommentId` | 内部識別子 | `string`（Branded Type） | コメントをシステム内部で一意に識別する値 |
+| `articleId` | 参照 | `string` | 紐づく記事の内部識別子（`ArticleId`） |
 | `AuthorName` | 値オブジェクト | `string`（Branded Type・空文字不可・50文字以内） | コメント投稿者の表示名 |
 | `CommentContent` | 値オブジェクト | `string`（Branded Type・空文字不可・500文字以内） | コメント本文 |
 | `createdAt` | 値オブジェクト | 日時文字列（サーバー側で採番） | コメントの投稿日時 |
