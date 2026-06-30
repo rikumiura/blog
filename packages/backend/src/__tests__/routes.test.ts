@@ -13,8 +13,7 @@ const mockListArticlesPaginated =
   vi.fn<() => Promise<PaginatedResult<DraftArticle | PublishedArticle>>>()
 const mockListPublishedArticlesPaginated =
   vi.fn<() => Promise<PaginatedResult<PublishedArticle>>>()
-const mockListPublishedArticles =
-  vi.fn<() => Promise<PublishedArticle[]>>()
+const mockListPublishedArticles = vi.fn<() => Promise<PublishedArticle[]>>()
 const mockPublishArticle = vi.fn<() => Promise<PublishArticleResult>>()
 
 vi.mock('../use-cases/create-article', () => ({

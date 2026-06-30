@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { type FeedArticle, buildRssFeed } from '../build-rss-feed'
+import { buildRssFeed, type FeedArticle } from '../build-rss-feed'
 
 const siteUrl = 'https://blog.example.com'
 
