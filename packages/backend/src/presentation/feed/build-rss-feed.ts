@@ -34,6 +34,7 @@ function toRfc822(isoDate: string): string {
   return new Date(isoDate).toUTCString()
 }
 
+/** 1記事を RSS の `<item>` 要素文字列に変換する。siteUrl は正規化済みを想定 */
 function buildItem(siteUrl: string, article: FeedArticle): string {
   const articleUrl = `${siteUrl}/articles/${article.publicId}`
   return [
@@ -52,16 +53,18 @@ function buildItem(siteUrl: string, article: FeedArticle): string {
  */
 export function buildRssFeed(input: BuildRssFeedInput): string {
   const { siteUrl, articles, buildDate = new Date() } = input
-  const feedUrl = `${siteUrl}${FEED_PATH}`
+  // 末尾スラッシュを除去し、URL 連結時の二重スラッシュを防ぐ
+  const baseUrl = siteUrl.replace(/\/+$/, '')
+  const feedUrl = `${baseUrl}${FEED_PATH}`
 
-  const items = articles.map((article) => buildItem(siteUrl, article))
+  const items = articles.map((article) => buildItem(baseUrl, article))
 
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
     '  <channel>',
     `    <title>${escapeXml(CHANNEL_TITLE)}</title>`,
-    `    <link>${escapeXml(siteUrl)}</link>`,
+    `    <link>${escapeXml(baseUrl)}</link>`,
     `    <description>${escapeXml(CHANNEL_DESCRIPTION)}</description>`,
     '    <language>ja</language>',
     `    <lastBuildDate>${buildDate.toUTCString()}</lastBuildDate>`,

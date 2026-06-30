@@ -106,7 +106,9 @@ describe('buildRssFeed', () => {
     })
 
     expect(xml).toContain('<link>https://blog.example.com</link>')
-    expect(xml).toContain('<link>https://blog.example.com/articles/abc123</link>')
+    expect(xml).toContain(
+      '<link>https://blog.example.com/articles/abc123</link>',
+    )
     expect(xml).toContain(
       '<atom:link href="https://blog.example.com/api/public/feed.xml" rel="self" type="application/rss+xml"/>',
     )
