@@ -98,4 +98,19 @@ describe('buildRssFeed', () => {
     expect(xml).toContain('</channel>')
     expect(xml).not.toContain('<item>')
   })
+
+  it('siteUrl の末尾スラッシュを正規化して二重スラッシュを防ぐ', () => {
+    const xml = buildRssFeed({
+      siteUrl: 'https://blog.example.com/',
+      articles: sampleArticles,
+    })
+
+    expect(xml).toContain('<link>https://blog.example.com</link>')
+    expect(xml).toContain('<link>https://blog.example.com/articles/abc123</link>')
+    expect(xml).toContain(
+      '<atom:link href="https://blog.example.com/api/public/feed.xml" rel="self" type="application/rss+xml"/>',
+    )
+    expect(xml).not.toContain('//articles/')
+    expect(xml).not.toContain('com//')
+  })
 })

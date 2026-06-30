@@ -249,6 +249,41 @@ describe('GET /api/public/feed.xml', () => {
       '<link>https://my-blog.example.com/articles/pub-1</link>',
     )
   })
+
+  it('SITE_URL 未設定時は既定の絶対 URL（http://localhost:5173）を使う', async () => {
+    mockListPublishedArticles.mockClear()
+    mockListPublishedArticles.mockResolvedValue([publishedArticle])
+
+    const res = await app.request('/api/public/feed.xml', undefined, {
+      DB: {},
+      ARTICLE_BUCKET: {},
+    })
+
+    const body = await res.text()
+    expect(body).toContain('<link>http://localhost:5173/articles/pub-1</link>')
+  })
+
+  it('最新 20 件に制限し、21 件目以降は含めない', async () => {
+    mockListPublishedArticles.mockClear()
+    // 公開日時降順に並んだ 25 件を返す（route 側で先頭 20 件に絞る想定）
+    const articles = Array.from({ length: 25 }, (_, i) => ({
+      ...publishedArticle,
+      publicId: `pub-${i + 1}` as PublishedArticle['publicId'],
+    }))
+    mockListPublishedArticles.mockResolvedValue(articles)
+
+    const res = await app.request('/api/public/feed.xml', undefined, {
+      DB: {},
+      ARTICLE_BUCKET: {},
+    })
+
+    const body = await res.text()
+    const itemCount = (body.match(/<item>/g) ?? []).length
+    expect(itemCount).toBe(20)
+    expect(body).toContain('/articles/pub-1</link>')
+    expect(body).toContain('/articles/pub-20</link>')
+    expect(body).not.toContain('/articles/pub-21</link>')
+  })
 })
 
 describe('GET /api/articles/:publicId', () => {
