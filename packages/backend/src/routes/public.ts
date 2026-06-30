@@ -7,6 +7,7 @@ import {
   toPaginatedArticlesDto,
 } from '../presentation/dto/article-dto'
 import { toCommentDto } from '../presentation/dto/comment-dto'
+import { buildRssFeed } from '../presentation/feed/build-rss-feed'
 import {
   paginationSchema,
   publicIdParamSchema,
@@ -14,8 +15,16 @@ import {
 import { postCommentSchema } from '../presentation/schemas/comment-schemas'
 import { imageKeyParamSchema } from '../presentation/schemas/image-schemas'
 import { listComments } from '../use-cases/list-comments'
-import { listPublishedArticlesPaginated } from '../use-cases/list-published-articles'
+import {
+  listPublishedArticles,
+  listPublishedArticlesPaginated,
+} from '../use-cases/list-published-articles'
 import { postComment } from '../use-cases/post-comment'
+
+/** SITE_URL 未設定時に使用するフィード用のサイトベース URL */
+const DEFAULT_SITE_URL = 'http://localhost:5173'
+/** フィードに含める記事の最大件数 */
+const FEED_MAX_ITEMS = 20
 
 export const publicRoutes = new Hono<AppEnv>()
   .get('/articles', zValidator('query', paginationSchema), async (c) => {
@@ -34,6 +43,23 @@ export const publicRoutes = new Hono<AppEnv>()
     return c.json(
       await toPaginatedArticlesDto(paginatedResult, page, limit, tagRepository),
     )
+  })
+  .get('/feed.xml', async (c) => {
+    const { articleRepository } = c.get('deps')
+    const siteUrl = c.env.SITE_URL ?? DEFAULT_SITE_URL
+
+    const published = await listPublishedArticles(articleRepository)
+    const articles = published.slice(0, FEED_MAX_ITEMS).map((article) => ({
+      publicId: article.publicId,
+      title: article.title,
+      publishedAt: article.publishedAt,
+    }))
+
+    const xml = buildRssFeed({ siteUrl, articles })
+
+    return c.body(xml, 200, {
+      'content-type': 'application/rss+xml; charset=utf-8',
+    })
   })
   .get(
     '/articles/:publicId',
