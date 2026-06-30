@@ -13,6 +13,8 @@ const mockListArticlesPaginated =
   vi.fn<() => Promise<PaginatedResult<DraftArticle | PublishedArticle>>>()
 const mockListPublishedArticlesPaginated =
   vi.fn<() => Promise<PaginatedResult<PublishedArticle>>>()
+const mockListPublishedArticles =
+  vi.fn<() => Promise<PublishedArticle[]>>()
 const mockPublishArticle = vi.fn<() => Promise<PublishArticleResult>>()
 
 vi.mock('../use-cases/create-article', () => ({
@@ -31,6 +33,8 @@ vi.mock('../use-cases/list-articles', () => ({
 vi.mock('../use-cases/list-published-articles', () => ({
   listPublishedArticlesPaginated: (...args: unknown[]) =>
     mockListPublishedArticlesPaginated(...args),
+  listPublishedArticles: (...args: unknown[]) =>
+    mockListPublishedArticles(...args),
 }))
 
 vi.mock('../use-cases/publish-article', () => ({
@@ -208,6 +212,42 @@ describe('GET /api/public/articles', () => {
     expect(mockListPublishedArticlesPaginated).toHaveBeenCalledWith(
       expect.anything(),
       { page: 1, limit: 20 },
+    )
+  })
+})
+
+describe('GET /api/public/feed.xml', () => {
+  it('200: RSS 2.0 フィードを application/rss+xml で返す', async () => {
+    mockListPublishedArticles.mockClear()
+    mockListPublishedArticles.mockResolvedValue([publishedArticle])
+
+    const res = await app.request('/api/public/feed.xml', undefined, {
+      DB: {},
+      ARTICLE_BUCKET: {},
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('application/rss+xml')
+
+    const body = await res.text()
+    expect(body).toContain('<rss version="2.0"')
+    expect(body).toContain('<title>テスト記事</title>')
+    expect(body).toContain('/articles/pub-1</link>')
+  })
+
+  it('SITE_URL が設定されている場合は記事リンクに反映する', async () => {
+    mockListPublishedArticles.mockClear()
+    mockListPublishedArticles.mockResolvedValue([publishedArticle])
+
+    const res = await app.request('/api/public/feed.xml', undefined, {
+      DB: {},
+      ARTICLE_BUCKET: {},
+      SITE_URL: 'https://my-blog.example.com',
+    })
+
+    const body = await res.text()
+    expect(body).toContain(
+      '<link>https://my-blog.example.com/articles/pub-1</link>',
     )
   })
 })
